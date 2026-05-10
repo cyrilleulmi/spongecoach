@@ -1,0 +1,62 @@
+<div class="page">
+  @if (error()) {
+    <p class="error-message">{{ error() }}</p>
+  }
+
+  @if (club(); as club) {
+    <div class="page-header">
+      <div>
+        <a routerLink="/clubs" style="font-size: var(--font-size-sm); color: var(--color-text-muted)">← Clubs</a>
+        <h1 style="margin-top: var(--space-1)">{{ club.name }}</h1>
+        <p style="color: var(--color-text-muted)">{{ club.location }}</p>
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top: var(--space-6)">
+      <h2>Teams</h2>
+      <button class="btn btn-primary" (click)="openCreateTeam()">+ New Team</button>
+    </div>
+
+    @if (showTeamForm()) {
+      <div class="card" style="margin-bottom: var(--space-4)">
+        <form [formGroup]="teamForm" (ngSubmit)="submitTeam()">
+          <div class="form-field" style="margin-bottom: var(--space-4)">
+            <label for="teamName">Team Name</label>
+            <input id="teamName" formControlName="name" placeholder="U17"
+                   [class.invalid]="teamForm.controls.name.invalid && teamForm.controls.name.touched" />
+          </div>
+          <div style="display: flex; gap: var(--space-2)">
+            <button type="submit" class="btn btn-primary" [disabled]="teamForm.invalid">Save</button>
+            <button type="button" class="btn btn-ghost" (click)="cancelTeamForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    @if (teams().length === 0) {
+      <p style="color: var(--color-text-muted)">No teams yet.</p>
+    } @else {
+      <div class="card" style="padding: 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (team of teams(); track team.id) {
+              <tr>
+                <td>{{ team.name }}</td>
+                <td style="text-align: right; display: flex; gap: var(--space-2); justify-content: flex-end">
+                  <button class="btn btn-ghost" (click)="openEditTeam(team)">Edit</button>
+                  <button class="btn btn-danger" (click)="deleteTeam(team.id)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>

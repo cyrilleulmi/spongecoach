@@ -1,0 +1,68 @@
+<div class="page">
+  <div class="page-header">
+    <h1>Clubs</h1>
+    <button class="btn btn-primary" (click)="openCreate()">+ New Club</button>
+  </div>
+
+  @if (error()) {
+    <p class="error-message">{{ error() }}</p>
+  }
+
+  @if (showForm()) {
+    <div class="card" style="margin-bottom: var(--space-6)">
+      <h2 style="margin-bottom: var(--space-4); font-size: var(--font-size-xl)">
+        {{ editingId() ? 'Edit Club' : 'New Club' }}
+      </h2>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div style="display: grid; gap: var(--space-4); margin-bottom: var(--space-4)">
+          <div class="form-field">
+            <label for="name">Name</label>
+            <input id="name" formControlName="name" placeholder="FC Muster"
+                   [class.invalid]="form.controls.name.invalid && form.controls.name.touched" />
+          </div>
+          <div class="form-field">
+            <label for="location">Location</label>
+            <input id="location" formControlName="location" placeholder="Zurich"
+                   [class.invalid]="form.controls.location.invalid && form.controls.location.touched" />
+          </div>
+        </div>
+        <div style="display: flex; gap: var(--space-2)">
+          <button type="submit" class="btn btn-primary" [disabled]="form.invalid">Save</button>
+          <button type="button" class="btn btn-ghost" (click)="cancelForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (loading()) {
+    <p style="color: var(--color-text-muted)">Loading…</p>
+  } @else if (clubs().length === 0) {
+    <p style="color: var(--color-text-muted)">No clubs yet. Create one above.</p>
+  } @else {
+    <div class="card" style="padding: 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Location</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (club of clubs(); track club.id) {
+            <tr>
+              <td>
+                <a [routerLink]="[club.id]">{{ club.name }}</a>
+              </td>
+              <td>{{ club.location }}</td>
+              <td style="text-align: right; display: flex; gap: var(--space-2); justify-content: flex-end">
+                <button class="btn btn-ghost" (click)="openEdit(club)">Edit</button>
+                <button class="btn btn-danger" (click)="delete(club.id)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

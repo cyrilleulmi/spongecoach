@@ -131,6 +131,15 @@ When in doubt, ask first. The cost of a 30-second clarification is nothing compa
 - CI pipeline and production deployment manifests.
 - i18n (DE / FR / IT will come — keep strings extractable, but don't wire i18n yet).
 
+## Test data conventions
+
+SpongeCoach is a floorball (unihockey) app. All test data — in unit tests, slice tests, integration tests, and Liquibase dev seed scripts — must reflect this:
+
+- **Club names**: use Swiss floorball club naming style — `UHC <City>` (Unihockey Club) or `SHC <City>` (Schul- und Hobby-Club). Examples: `UHC Malters`, `UHC Köniz`, `SHC Bümpliz`. Never use `FC` (football) prefixes.
+- **Locations**: Swiss towns associated with real Swiss floorball clubs are preferred — Malters, Köniz, Zug, Kloten, Thun, Langnau, etc. Generic cities like Zurich or Bern are acceptable; Geneva is not (French-speaking Switzerland has little floorball tradition).
+- **Team names**: use Swiss league category naming — `Herren 1`, `Damen`, `Junioren A`, `Juniorinnen B`, `Junioren C`, etc. Never use `U17` or other football-style age-group notation.
+- **Person names**: any realistic names are fine (no domain constraint).
+
 ## Verification before reporting "done"
 
 - Backend: `./gradlew test` is green, including ArchUnit and Testcontainers integration tests.

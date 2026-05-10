@@ -1,0 +1,225 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-dev-seed-data
+      author: spongecoach
+      context: dev
+      changes:
+        # Club
+        - insert:
+            tableName: club
+            columns:
+              - column: { name: id,       value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: name,     value: "Eintracht Beromünster" }
+              - column: { name: location, value: "Beromünster" }
+
+        # Teams
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000001" }
+              - column: { name: name,    value: "Damen" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000001" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000002" }
+              - column: { name: name,    value: "Herren 1" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000001" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000003" }
+              - column: { name: name,    value: "Herren 2" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000001" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000004" }
+              - column: { name: name,    value: "Junioren A" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000001" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000005" }
+              - column: { name: name,    value: "Juniorinnen C" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000001" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000006" }
+              - column: { name: name,    value: "Junioren D" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000001" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000007" }
+              - column: { name: name,    value: "Junioren E" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000001" }
+
+        # Persons — Damen
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000001" }
+              - column: { name: first_name,  value: "Cyrille" }
+              - column: { name: last_name,   value: "Ulmi" }
+              - column: { name: email,       value: "cyrille.ulmi@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000002" }
+              - column: { name: first_name,  value: "Jan" }
+              - column: { name: last_name,   value: "Milczarek" }
+              - column: { name: email,       value: "jan.milczarek@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000003" }
+              - column: { name: first_name,  value: "Seraina" }
+              - column: { name: last_name,   value: "Esposito" }
+              - column: { name: email,       value: "seraina.esposito@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000004" }
+              - column: { name: first_name,  value: "Samuel" }
+              - column: { name: last_name,   value: "Nievergelt" }
+              - column: { name: email,       value: "samuel.nievergelt@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000005" }
+              - column: { name: first_name,  value: "Sophie" }
+              - column: { name: last_name,   value: "Irrgang" }
+              - column: { name: email,       value: "sophie.irrgang@eintracht-beromunster.ch" }
+
+        # Persons — Herren 1
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000006" }
+              - column: { name: first_name,  value: "Ramon" }
+              - column: { name: last_name,   value: "Wandeler" }
+              - column: { name: email,       value: "ramon.wandeler@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000007" }
+              - column: { name: first_name,  value: "Julian" }
+              - column: { name: last_name,   value: "Aebi" }
+              - column: { name: email,       value: "julian.aebi@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000008" }
+              - column: { name: first_name,  value: "Andy" }
+              - column: { name: last_name,   value: "Schüpfer" }
+              - column: { name: email,       value: "andy.schupfer@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000009" }
+              - column: { name: first_name,  value: "Samuel" }
+              - column: { name: last_name,   value: "Holdener" }
+              - column: { name: email,       value: "samuel.holdener@eintracht-beromunster.ch" }
+
+        # Persons — Herren 2
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000010" }
+              - column: { name: first_name,  value: "Aleksandar" }
+              - column: { name: last_name,   value: "Jarakovic" }
+              - column: { name: email,       value: "aleksandar.jarakovic@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000011" }
+              - column: { name: first_name,  value: "Florin" }
+              - column: { name: last_name,   value: "Rüedi" }
+              - column: { name: email,       value: "florin.ruedi@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000012" }
+              - column: { name: first_name,  value: "Thomas" }
+              - column: { name: last_name,   value: "Muheim" }
+              - column: { name: email,       value: "thomas.muheim@eintracht-beromunster.ch" }
+
+        # Persons — Junioren A (Ramon Wandeler and Samuel Holdener already created above)
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000013" }
+              - column: { name: first_name,  value: "Erich" }
+              - column: { name: last_name,   value: "Richli" }
+              - column: { name: email,       value: "erich.richli@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000014" }
+              - column: { name: first_name,  value: "David" }
+              - column: { name: last_name,   value: "Aebi" }
+              - column: { name: email,       value: "david.aebi@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000015" }
+              - column: { name: first_name,  value: "Marco Jonas" }
+              - column: { name: last_name,   value: "Aebi" }
+              - column: { name: email,       value: "marco.jonas.aebi@eintracht-beromunster.ch" }
+
+        # Persons — Juniorinnen C
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000016" }
+              - column: { name: first_name,  value: "Lukas" }
+              - column: { name: last_name,   value: "Holdener" }
+              - column: { name: email,       value: "lukas.holdener@eintracht-beromunster.ch" }
+
+        # Persons — Junioren D
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000017" }
+              - column: { name: first_name,  value: "Patric" }
+              - column: { name: last_name,   value: "Merian" }
+              - column: { name: email,       value: "patric.merian@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000018" }
+              - column: { name: first_name,  value: "Christian" }
+              - column: { name: last_name,   value: "Pieper" }
+              - column: { name: email,       value: "christian.pieper@eintracht-beromunster.ch" }
+
+        # Persons — Junioren E (Erich Richli already created above)
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000019" }
+              - column: { name: first_name,  value: "Fabian" }
+              - column: { name: last_name,   value: "Luccarini" }
+              - column: { name: email,       value: "fabian.luccarini@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000020" }
+              - column: { name: first_name,  value: "Patrick" }
+              - column: { name: last_name,   value: "Schmidiger" }
+              - column: { name: email,       value: "patrick.schmidiger@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000021" }
+              - column: { name: first_name,  value: "Marc" }
+              - column: { name: last_name,   value: "Gut" }
+              - column: { name: email,       value: "marc.gut@eintracht-beromunster.ch" }
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,         value: "c0000000-0000-0000-0000-000000000022" }
+              - column: { name: first_name,  value: "Geri" }
+              - column: { name: last_name,   value: "Stocker" }
+              - column: { name: email,       value: "geri.stocker@eintracht-beromunster.ch" }

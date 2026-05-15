@@ -40,6 +40,11 @@ class TeamPersistenceAdapter implements TeamRepository {
     }
 
     @Override
+    public boolean existsById(UUID id) {
+        return springDataRepo.existsById(id);
+    }
+
+    @Override
     public void delete(UUID id) {
         springDataRepo.deleteById(id);
     }

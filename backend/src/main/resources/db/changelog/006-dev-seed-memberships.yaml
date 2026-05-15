@@ -1,0 +1,144 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-dev-seed-memberships
+      author: spongecoach
+      context: dev
+      changes:
+        # Damen (b...0001): Cyrille, Jan, Seraina, Samuel N, Sophie
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000001" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000002" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000003" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000004" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000005" }
+
+        # Herren 1 (b...0002): Ramon, Julian, Andy, Samuel H
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000002" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000006" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000002" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000007" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000002" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000008" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000002" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000009" }
+
+        # Herren 2 (b...0003): Aleksandar, Florin, Thomas
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000003" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000010" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000003" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000011" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000003" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000012" }
+
+        # Junioren A (b...0004): Ramon, Samuel H, Erich, David, Marco Jonas
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000004" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000006" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000004" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000009" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000004" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000013" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000004" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000014" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000004" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000015" }
+
+        # Juniorinnen C (b...0005): Lukas
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000005" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000016" }
+
+        # Junioren D (b...0006): Patric, Christian
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000006" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000017" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000006" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000018" }
+
+        # Junioren E (b...0007): Erich, Fabian, Patrick S, Marc, Geri
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000007" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000013" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000007" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000019" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000007" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000020" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000007" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000021" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000007" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000022" }

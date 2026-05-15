@@ -72,6 +72,9 @@ class TeamServiceTest {
         }
 
         @Override
+        public boolean existsById(UUID id) { return store.containsKey(id); }
+
+        @Override
         public void delete(UUID id) { store.remove(id); }
     }
 

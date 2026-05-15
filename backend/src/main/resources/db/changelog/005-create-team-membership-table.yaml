@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-team-membership-table
+      author: spongecoach
+      changes:
+        - createTable:
+            tableName: team_membership
+            columns:
+              - column:
+                  name: team_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_team_membership_team
+                    references: team(id)
+                    deleteCascade: true
+              - column:
+                  name: person_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_team_membership_person
+                    references: person(id)
+                    deleteCascade: true
+        - addPrimaryKey:
+            tableName: team_membership
+            columnNames: team_id, person_id
+            constraintName: pk_team_membership

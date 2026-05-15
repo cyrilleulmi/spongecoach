@@ -1,0 +1,90 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-seed-lok-reinach
+      author: spongecoach
+      context: dev
+      changes:
+        # Club
+        - insert:
+            tableName: club
+            columns:
+              - column: { name: id,       value: "a1b2c3d4-0001-0001-0001-000000000002" }
+              - column: { name: name,     value: "UHC Lok Reinach" }
+              - column: { name: location, value: "Reinach" }
+
+        # Teams
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000008" }
+              - column: { name: name,    value: "C Junioren" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000002" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000009" }
+              - column: { name: name,    value: "Damen 1. Liga" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000002" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000010" }
+              - column: { name: name,    value: "Herren 3. Liga" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000002" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000011" }
+              - column: { name: name,    value: "Herren NLB" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000002" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000012" }
+              - column: { name: name,    value: "Junioren U16C" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000002" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000013" }
+              - column: { name: name,    value: "Junioren U21" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000002" }
+        - insert:
+            tableName: team
+            columns:
+              - column: { name: id,      value: "b0000000-0000-0000-0000-000000000014" }
+              - column: { name: name,    value: "JuniorInnen D1" }
+              - column: { name: club_id, value: "a1b2c3d4-0001-0001-0001-000000000002" }
+
+        # Coach / admin for Reinach: Daniel Schiess (staff in 3. Liga, NLB, JuniorInnen D1)
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,        value: "c0000000-0000-0000-0000-000000000023" }
+              - column: { name: first_name, value: "Daniel" }
+              - column: { name: last_name,  value: "Schiess" }
+              - column: { name: email,      value: "daniel.schiess@lok-reinach.ch" }
+
+        # Daniel Schiess memberships (teams he coaches at Reinach)
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000010" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000023" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000011" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000023" }
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000014" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000023" }
+
+        # Lukas Holdener (c...016) — player in Herren NLB at Lok Reinach
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000011" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000016" }

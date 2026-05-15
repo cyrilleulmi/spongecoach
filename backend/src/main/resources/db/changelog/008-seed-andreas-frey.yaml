@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-seed-andreas-frey
+      author: spongecoach
+      context: dev
+      changes:
+        - insert:
+            tableName: person
+            columns:
+              - column: { name: id,        value: "c0000000-0000-0000-0000-000000000024" }
+              - column: { name: first_name, value: "Andreas" }
+              - column: { name: last_name,  value: "Frey" }
+              - column: { name: email,      value: "andreas.frey@lok-reinach.ch" }
+
+        # Andreas Frey — player in Herren NLB at Lok Reinach only
+        - insert:
+            tableName: team_membership
+            columns:
+              - column: { name: team_id,   value: "b0000000-0000-0000-0000-000000000011" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000024" }

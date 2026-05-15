@@ -7,3 +7,11 @@ databaseChangeLog:
       file: db/changelog/003-create-team-table.yaml
   - include:
       file: db/changelog/004-dev-seed-data.yaml
+  - include:
+      file: db/changelog/005-create-team-membership-table.yaml
+  - include:
+      file: db/changelog/006-dev-seed-memberships.yaml
+  - include:
+      file: db/changelog/007-seed-lok-reinach.yaml
+  - include:
+      file: db/changelog/008-seed-andreas-frey.yaml

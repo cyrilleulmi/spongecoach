@@ -11,5 +11,6 @@ public interface TeamRepository {
     Optional<Team> findById(UUID id);
     List<Team> findAll();
     List<Team> findByClubId(UUID clubId);
+    boolean existsById(UUID id);
     void delete(UUID id);
 }

@@ -59,6 +59,11 @@ import { AuthService, MockUser } from './auth.service';
     .role-admin { background: #fef3c7; color: #92400e; }
     .role-user  { background: #dbeafe; color: #1e40af; }
 
+    @media (prefers-color-scheme: dark) {
+      .role-admin { background: #3d2800; color: #fde68a; }
+      .role-user  { background: #1e3a5f; color: #93c5fd; }
+    }
+
     .chevron { font-size: 10px; color: var(--color-text-muted); }
 
     .dropdown {
@@ -90,6 +95,11 @@ import { AuthService, MockUser } from './auth.service';
     }
     .dropdown-item:hover { background: var(--color-surface-hover, #f3f4f6); }
     .dropdown-item.active { background: #eff6ff; }
+
+    @media (prefers-color-scheme: dark) {
+      .dropdown-item:hover { background: var(--color-surface-hover, #23263a); }
+      .dropdown-item.active { background: #1e3a5f; }
+    }
 
     .item-email { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   `]

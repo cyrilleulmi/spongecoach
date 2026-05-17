@@ -156,3 +156,9 @@ input, select, textarea {
 .role-admin  { background: #fef3c7; color: #92400e; }
 .role-member { background: #dcfce7; color: #166534; }
 .role-user   { background: #dbeafe; color: #1e40af; }
+
+@media (prefers-color-scheme: dark) {
+  .role-admin  { background: #3d2800; color: #fde68a; }
+  .role-member { background: #052e16; color: #86efac; }
+  .role-user   { background: #1e3a5f; color: #93c5fd; }
+}

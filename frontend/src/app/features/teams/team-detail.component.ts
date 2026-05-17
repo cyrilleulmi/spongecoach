@@ -32,7 +32,9 @@ export class TeamDetailComponent {
   members = signal<TeamMember[]>([]);
   clubMembers = signal<ClubMemberOption[]>([]);
   error = signal<string | null>(null);
-  selectedPersonId = signal<string>('');
+  showAddPanel = signal<boolean>(false);
+  selectedPersonIds = signal<Set<string>>(new Set());
+  searchQuery = signal<string>('');
 
   readonly isAdminOfClub = computed(() => {
     const clubId = this.team()?.clubId;
@@ -42,6 +44,16 @@ export class TeamDetailComponent {
   readonly addablePersons = computed(() => {
     const memberIds = new Set(this.members().map(m => m.personId));
     return this.clubMembers().filter(p => !memberIds.has(p.personId));
+  });
+
+  readonly selectedCount = computed(() => this.selectedPersonIds().size);
+
+  readonly filteredPersons = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    if (!query) return this.addablePersons();
+    return this.addablePersons().filter(p =>
+      `${p.firstName} ${p.lastName}`.toLowerCase().includes(query)
+    );
   });
 
   constructor() {
@@ -89,17 +101,43 @@ export class TeamDetailComponent {
     });
   }
 
-  addMember(): void {
-    const personId = this.selectedPersonId();
-    const teamId = this.team()?.id;
-    if (!personId || !teamId) return;
+  openAddPanel(): void {
+    this.selectedPersonIds.set(new Set());
+    this.searchQuery.set('');
+    this.showAddPanel.set(true);
+  }
 
-    this.teamApi.addMember(teamId, personId).subscribe({
+  closeAddPanel(): void {
+    this.showAddPanel.set(false);
+    this.selectedPersonIds.set(new Set());
+    this.searchQuery.set('');
+  }
+
+  togglePerson(personId: string): void {
+    const current = new Set(this.selectedPersonIds());
+    if (current.has(personId)) {
+      current.delete(personId);
+    } else {
+      current.add(personId);
+    }
+    this.selectedPersonIds.set(current);
+  }
+
+  isSelected(personId: string): boolean {
+    return this.selectedPersonIds().has(personId);
+  }
+
+  addSelectedMembers(): void {
+    const teamId = this.team()?.id;
+    const personIds = [...this.selectedPersonIds()];
+    if (!teamId || personIds.length === 0) return;
+
+    this.teamApi.addMembers(teamId, personIds).subscribe({
       next: () => {
-        this.selectedPersonId.set('');
+        this.closeAddPanel();
         this.loadMembers(teamId);
       },
-      error: () => this.error.set('Failed to add member'),
+      error: () => this.error.set('Failed to add members'),
     });
   }
 

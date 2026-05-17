@@ -60,6 +60,10 @@ export class TeamApiService {
     return this.http.post<TeamMember>(`${this.base}/${teamId}/members`, { personId });
   }
 
+  addMembers(teamId: string, personIds: string[]): Observable<TeamMember[]> {
+    return this.http.post<TeamMember[]>(`${this.base}/${teamId}/members/bulk`, { personIds });
+  }
+
   removeMember(teamId: string, personId: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${teamId}/members/${personId}`);
   }

@@ -47,6 +47,16 @@ class TeamMembershipController {
         return TeamMemberResponse.from(membership, personService.getPerson(membership.personId()));
     }
 
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    List<TeamMemberResponse> addBulk(@PathVariable UUID teamId, @Valid @RequestBody AddMembersRequest request) {
+        Team team = teamService.getTeam(teamId);
+        auth.requireClubAdmin(team.clubId());
+        return membershipService.addMembers(teamId, request.personIds()).stream()
+                .map(m -> TeamMemberResponse.from(m, personService.getPerson(m.personId())))
+                .toList();
+    }
+
     @DeleteMapping("/{personId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void remove(@PathVariable UUID teamId, @PathVariable UUID personId) {

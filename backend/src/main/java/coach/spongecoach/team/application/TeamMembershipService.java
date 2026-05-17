@@ -40,6 +40,12 @@ public class TeamMembershipService {
         return membershipRepository.save(new TeamMembership(teamId, personId));
     }
 
+    public List<TeamMembership> addMembers(UUID teamId, List<UUID> personIds) {
+        return personIds.stream()
+                .map(personId -> addMember(teamId, personId))
+                .toList();
+    }
+
     public void removeMember(UUID teamId, UUID personId) {
         if (!membershipRepository.exists(teamId, personId)) {
             throw new MembershipNotFoundException(teamId, personId);

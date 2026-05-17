@@ -85,11 +85,10 @@ The maintainer reviews your work commit-by-commit. Make their life easy:
 
 3. **Order commits the way a reviewer would want to read them**: domain → application → adapters → frontend. Migrations land with the code that needs them.
 
-4. **Commit message style**: short imperative subject (≤ 70 chars), then a blank line, then a body that explains *why* if non-obvious. Examples:
-   - `add Club aggregate and repository port`
-   - `expose /api/clubs CRUD endpoints`
-   - `add Club list page with create form`
-   - `add Liquibase changeset for team_members`
+4. **Commit message style**: single-line imperative subject (≤ 70 chars). No body unless the commit is very large (100+ changed lines) or very non-obvious. For example
+   - `had to split up implementation because of ADR 35`
+   - `used workaround because of known bug in library xyz`
+   - `had to implement special handling of this case because of domain logic described in context.md`
 
 5. **Do not squash before review.** Hand the maintainer the granular history.
 

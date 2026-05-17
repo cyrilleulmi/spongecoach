@@ -1,0 +1,163 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-seed-club-memberships
+      author: spongecoach
+      context: dev
+      changes:
+        # Eintracht Beromünster (a1b2c3d4-0001-0001-0001-000000000001)
+        # Admins
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000001" }
+              - column: { name: role,      value: "ADMIN" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000002" }
+              - column: { name: role,      value: "ADMIN" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000016" }
+              - column: { name: role,      value: "ADMIN" }
+        # Members
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000003" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000004" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000005" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000006" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000007" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000008" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000009" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000010" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000011" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000012" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000013" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000014" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000015" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000017" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000018" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000019" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000020" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000021" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000001" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000022" }
+              - column: { name: role,      value: "MEMBER" }
+
+        # UHC Lok Reinach (a1b2c3d4-0001-0001-0001-000000000002)
+        # Admin
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000002" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000023" }
+              - column: { name: role,      value: "ADMIN" }
+        # Members
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000002" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000016" }
+              - column: { name: role,      value: "MEMBER" }
+        - insert:
+            tableName: club_membership
+            columns:
+              - column: { name: club_id,   value: "a1b2c3d4-0001-0001-0001-000000000002" }
+              - column: { name: person_id, value: "c0000000-0000-0000-0000-000000000024" }
+              - column: { name: role,      value: "MEMBER" }

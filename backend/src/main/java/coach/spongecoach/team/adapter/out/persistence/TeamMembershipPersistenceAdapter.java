@@ -30,6 +30,12 @@ class TeamMembershipPersistenceAdapter implements TeamMembershipRepository {
     }
 
     @Override
+    @Transactional
+    public void deleteByClubAndPerson(UUID clubId, UUID personId) {
+        springDataRepo.deleteByClubIdAndPersonId(clubId, personId);
+    }
+
+    @Override
     public List<TeamMembership> findByTeamId(UUID teamId) {
         return springDataRepo.findByIdTeamId(teamId).stream()
                 .map(e -> new TeamMembership(e.getTeamId(), e.getPersonId()))

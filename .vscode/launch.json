@@ -8,6 +8,7 @@
             "mainClass": "coach.spongecoach.BackendApplication",
             "projectName": "backend",
             "args": "",
+            "vmArgs": "-Dspring.profiles.active=dev,mock",
             "envFile": "${workspaceFolder}/.env"
         }
     ]

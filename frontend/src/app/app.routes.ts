@@ -11,7 +11,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/clubs/club-detail.component').then(m => m.ClubDetailComponent),
   },
   {
-    path: 'persons',
-    loadComponent: () => import('./features/persons/persons.component').then(m => m.PersonsComponent),
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+  },
+  {
+    path: 'teams/:id',
+    loadComponent: () => import('./features/teams/team-detail.component').then(m => m.TeamDetailComponent),
   },
 ];

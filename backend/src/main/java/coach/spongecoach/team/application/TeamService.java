@@ -45,6 +45,11 @@ public class TeamService {
         return teamRepository.findByClubId(clubId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Team> listTeamsByMember(UUID personId) {
+        return teamRepository.findByMemberId(personId);
+    }
+
     public Team updateTeam(UUID id, String name) {
         Team existing = teamRepository.findById(id)
                 .orElseThrow(() -> new TeamNotFoundException(id));

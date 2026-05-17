@@ -1,7 +1,9 @@
 package coach.spongecoach.team.adapter.in.web;
 
 import coach.spongecoach.auth.adapter.in.web.CurrentUserContext;
+import coach.spongecoach.auth.domain.model.AuthenticatedUser;
 import coach.spongecoach.team.application.TeamService;
+import coach.spongecoach.team.domain.model.Team;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -24,35 +26,36 @@ class TeamController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     TeamResponse create(@Valid @RequestBody CreateTeamRequest request) {
-        auth.requireAdmin();
+        auth.requireClubAdmin(request.clubId());
         return TeamResponse.from(teamService.createTeam(request.name(), request.clubId()));
     }
 
     @GetMapping
-    List<TeamResponse> list(@RequestParam(required = false) UUID clubId) {
-        auth.requireAuthenticated();
-        if (clubId != null) {
-            return teamService.listTeamsByClub(clubId).stream().map(TeamResponse::from).toList();
-        }
-        return teamService.listTeams().stream().map(TeamResponse::from).toList();
+    List<TeamResponse> list() {
+        AuthenticatedUser user = auth.requireAuthenticated();
+        return teamService.listTeamsByMember(user.personId()).stream().map(TeamResponse::from).toList();
     }
 
     @GetMapping("/{id}")
     TeamResponse get(@PathVariable UUID id) {
-        auth.requireAuthenticated();
-        return TeamResponse.from(teamService.getTeam(id));
+        AuthenticatedUser user = auth.requireAuthenticated();
+        Team team = teamService.getTeam(id);
+        auth.requireClubMember(team.clubId());
+        return TeamResponse.from(team);
     }
 
     @PutMapping("/{id}")
     TeamResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateTeamRequest request) {
-        auth.requireAdmin();
+        Team team = teamService.getTeam(id);
+        auth.requireClubAdmin(team.clubId());
         return TeamResponse.from(teamService.updateTeam(id, request.name()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@PathVariable UUID id) {
-        auth.requireAdmin();
+        Team team = teamService.getTeam(id);
+        auth.requireClubAdmin(team.clubId());
         teamService.deleteTeam(id);
     }
 }

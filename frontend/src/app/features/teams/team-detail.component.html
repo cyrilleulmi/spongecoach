@@ -1,0 +1,79 @@
+<div class="page">
+  @if (error()) {
+    <p class="error-message">{{ error() }}</p>
+  }
+
+  @if (team(); as team) {
+    <div class="page-header">
+      <div>
+        @if (club(); as club) {
+          <a [routerLink]="['/clubs', club.id]" style="font-size: var(--font-size-sm); color: var(--color-text-muted)">
+            ← {{ club.name }}
+          </a>
+        }
+        <div style="display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-1)">
+          <h1>{{ team.name }}</h1>
+          <span class="role-badge" [class]="isAdminOfClub() ? 'role-admin' : 'role-member'">
+            {{ isAdminOfClub() ? 'Admin' : 'Member' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-header" style="margin-top: var(--space-6)">
+      <h2>Players</h2>
+    </div>
+
+    @if (isAdminOfClub() && addablePersons().length > 0) {
+      <div class="card" style="margin-bottom: var(--space-4); display: flex; gap: var(--space-3); align-items: flex-end">
+        <div class="form-field" style="flex: 1">
+          <label for="addMember">Add player</label>
+          <select id="addMember"
+                  [value]="selectedPersonId()"
+                  (change)="selectedPersonId.set($any($event.target).value)"
+                  style="padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text)">
+            <option value="">— select person —</option>
+            @for (person of addablePersons(); track person.personId) {
+              <option [value]="person.personId">{{ person.firstName }} {{ person.lastName }}</option>
+            }
+          </select>
+        </div>
+        <button class="btn btn-primary" [disabled]="!selectedPersonId()" (click)="addMember()">Add</button>
+      </div>
+    }
+
+    @if (members().length === 0) {
+      <p style="color: var(--color-text-muted)">No players yet.</p>
+    } @else {
+      <div class="card" style="padding: 0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (member of members(); track member.personId) {
+              <tr>
+                <td>
+                  {{ member.firstName }} {{ member.lastName }}
+                  @if (auth.currentUser()?.personId === member.personId) {
+                    <span class="role-badge role-user" style="margin-left: var(--space-2)">you</span>
+                  }
+                </td>
+                <td>{{ member.email }}</td>
+                <td style="text-align: right">
+                  @if (isAdminOfClub()) {
+                    <button class="btn btn-danger" (click)="removeMember(member.personId)">Remove</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>

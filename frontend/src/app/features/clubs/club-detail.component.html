@@ -7,55 +7,136 @@
     <div class="page-header">
       <div>
         <a routerLink="/clubs" style="font-size: var(--font-size-sm); color: var(--color-text-muted)">← Clubs</a>
-        <h1 style="margin-top: var(--space-1)">{{ club.name }}</h1>
+        <div style="display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-1)">
+          <h1>{{ club.name }}</h1>
+          @if (clubRoleLabel(); as role) {
+            <span class="role-badge" [class]="role === 'ADMIN' ? 'role-admin' : 'role-member'">
+              {{ role }}
+            </span>
+          }
+        </div>
         <p style="color: var(--color-text-muted)">{{ club.location }}</p>
       </div>
     </div>
 
-    <div class="page-header" style="margin-top: var(--space-6)">
-      <h2>Teams</h2>
-      <button class="btn btn-primary" (click)="openCreateTeam()">+ New Team</button>
+    <!-- Tab navigation -->
+    <div class="tab-nav">
+      <button class="tab-btn" [class.active]="activeTab() === 'teams'" (click)="switchTab('teams')">Teams</button>
+      <button class="tab-btn" [class.active]="activeTab() === 'members'" (click)="switchTab('members')">Members</button>
     </div>
 
-    @if (showTeamForm()) {
-      <div class="card" style="margin-bottom: var(--space-4)">
-        <form [formGroup]="teamForm" (ngSubmit)="submitTeam()">
-          <div class="form-field" style="margin-bottom: var(--space-4)">
-            <label for="teamName">Team Name</label>
-            <input id="teamName" formControlName="name" placeholder="U17"
-                   [class.invalid]="teamForm.controls.name.invalid && teamForm.controls.name.touched" />
+    <!-- Teams tab -->
+    @if (activeTab() === 'teams') {
+      <div class="tab-content">
+        <div class="page-header" style="margin-bottom: var(--space-4)">
+          <h2 style="font-size: var(--font-size-xl)">Teams</h2>
+          @if (isAdminOfClub()) {
+            <button class="btn btn-primary" (click)="openCreateTeam()">+ New Team</button>
+          }
+        </div>
+
+        @if (showTeamForm()) {
+          <div class="card" style="margin-bottom: var(--space-4)">
+            <form [formGroup]="teamForm" (ngSubmit)="submitTeam()">
+              <div class="form-field" style="margin-bottom: var(--space-4)">
+                <label for="teamName">Team Name</label>
+                <input id="teamName" formControlName="name" placeholder="Herren 1"
+                       [class.invalid]="teamForm.controls.name.invalid && teamForm.controls.name.touched" />
+              </div>
+              <div style="display: flex; gap: var(--space-2)">
+                <button type="submit" class="btn btn-primary" [disabled]="teamForm.invalid">Save</button>
+                <button type="button" class="btn btn-ghost" (click)="cancelTeamForm()">Cancel</button>
+              </div>
+            </form>
           </div>
-          <div style="display: flex; gap: var(--space-2)">
-            <button type="submit" class="btn btn-primary" [disabled]="teamForm.invalid">Save</button>
-            <button type="button" class="btn btn-ghost" (click)="cancelTeamForm()">Cancel</button>
+        }
+
+        @if (teams().length === 0) {
+          <p style="color: var(--color-text-muted)">No teams yet.</p>
+        } @else {
+          <div class="card" style="padding: 0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (team of teams(); track team.id) {
+                  <tr>
+                    <td>
+                      <a [routerLink]="['/teams', team.id]">{{ team.name }}</a>
+                    </td>
+                    <td style="text-align: right">
+                      <div style="display: flex; gap: var(--space-2); justify-content: flex-end">
+                        @if (isAdminOfClub()) {
+                          <button class="btn btn-ghost" (click)="openEditTeam(team)">Edit</button>
+                          <button class="btn btn-danger" (click)="deleteTeam(team.id)">Delete</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
-        </form>
+        }
       </div>
     }
 
-    @if (teams().length === 0) {
-      <p style="color: var(--color-text-muted)">No teams yet.</p>
-    } @else {
-      <div class="card" style="padding: 0">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (team of teams(); track team.id) {
-              <tr>
-                <td>{{ team.name }}</td>
-                <td style="text-align: right; display: flex; gap: var(--space-2); justify-content: flex-end">
-                  <button class="btn btn-ghost" (click)="openEditTeam(team)">Edit</button>
-                  <button class="btn btn-danger" (click)="deleteTeam(team.id)">Delete</button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+    <!-- Members tab -->
+    @if (activeTab() === 'members') {
+      <div class="tab-content">
+        <div class="page-header" style="margin-bottom: var(--space-4)">
+          <h2 style="font-size: var(--font-size-xl)">Members</h2>
+        </div>
+
+        @if (membersLoading()) {
+          <p style="color: var(--color-text-muted)">Loading…</p>
+        } @else if (members().length === 0) {
+          <p style="color: var(--color-text-muted)">No members.</p>
+        } @else {
+          <div class="card" style="padding: 0">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  @if (isAdminOfClub()) {
+                    <th></th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (member of members(); track member.personId) {
+                  <tr>
+                    <td>{{ member.firstName }} {{ member.lastName }}</td>
+                    <td style="color: var(--color-text-muted)">{{ member.email }}</td>
+                    <td>
+                      <span class="role-badge" [class]="member.role === 'ADMIN' ? 'role-admin' : 'role-member'">
+                        {{ member.role }}
+                      </span>
+                    </td>
+                    @if (isAdminOfClub()) {
+                      <td style="text-align: right">
+                        <div style="display: flex; gap: var(--space-2); justify-content: flex-end">
+                          <button class="btn btn-ghost" (click)="toggleRole(member)">
+                            Make {{ member.role === 'ADMIN' ? 'Member' : 'Admin' }}
+                          </button>
+                          @if (member.personId !== currentPersonId()) {
+                            <button class="btn btn-danger" (click)="removeMember(member)">Remove</button>
+                          }
+                        </div>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     }
   }

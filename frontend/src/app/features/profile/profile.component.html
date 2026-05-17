@@ -1,0 +1,52 @@
+<div class="page">
+  <div class="page-header">
+    <h1>My Profile</h1>
+  </div>
+
+  @if (error()) {
+    <p class="error-message">{{ error() }}</p>
+  }
+
+  @if (success()) {
+    <p style="color: var(--color-success); margin-bottom: var(--space-4)">Profile saved.</p>
+  }
+
+  @if (loading()) {
+    <p style="color: var(--color-text-muted)">Loading…</p>
+  } @else {
+    <div class="card" style="max-width: 480px">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div style="display: grid; gap: var(--space-4); margin-bottom: var(--space-6)">
+          <div class="form-field">
+            <label for="firstName">First name</label>
+            <input id="firstName" formControlName="firstName"
+                   [class.invalid]="form.controls.firstName.invalid && form.controls.firstName.touched" />
+          </div>
+          <div class="form-field">
+            <label for="lastName">Last name</label>
+            <input id="lastName" formControlName="lastName"
+                   [class.invalid]="form.controls.lastName.invalid && form.controls.lastName.touched" />
+          </div>
+          <div class="form-field">
+            <label for="email">Email</label>
+            <input id="email" type="email" formControlName="email"
+                   [class.invalid]="form.controls.email.invalid && form.controls.email.touched" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
+          {{ saving() ? 'Saving…' : 'Save changes' }}
+        </button>
+      </form>
+    </div>
+
+    <div class="card" style="max-width: 480px; margin-top: var(--space-6); border-color: var(--color-danger)">
+      <h2 style="font-size: var(--font-size-lg); color: var(--color-danger); margin-bottom: var(--space-2)">
+        Danger zone
+      </h2>
+      <p style="color: var(--color-text-muted); margin-bottom: var(--space-4); font-size: var(--font-size-sm)">
+        Permanently delete your account and remove all club and team memberships.
+      </p>
+      <button class="btn btn-danger" (click)="deleteAccount()">Delete my account</button>
+    </div>
+  }
+</div>

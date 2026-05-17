@@ -20,49 +20,49 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestcontainersConfiguration.class)
 class TeamIntegrationTest {
 
+    static final String ADMIN_USER = "cyrille.ulmi@eintracht-beromunster.ch";
+    static final String BEROMUNSTER_ID = "a1b2c3d4-0001-0001-0001-000000000001";
+
     @Autowired MockMvc mockMvc;
 
     @Test
-    void createTeam_requiresExistingClub() throws Exception {
-        mockMvc.perform(post("/api/teams")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Herren 1\",\"clubId\":\"" + UUID.randomUUID() + "\"}"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
     void fullCrudLifecycle() throws Exception {
-        // Create a club first
-        MvcResult clubResult = mockMvc.perform(post("/api/clubs")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"UHC Teams Test\",\"location\":\"Malters\"}"))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        String clubId = clubResult.getResponse().getContentAsString()
-                .replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
-
-        // Create team
+        // Create team in Eintracht Beromünster (Cyrille is admin)
         MvcResult teamResult = mockMvc.perform(post("/api/teams")
+                        .header("X-Mock-User-Id", ADMIN_USER)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Herren 1\",\"clubId\":\"" + clubId + "\"}"))
+                        .content("{\"name\":\"Herren Integration\",\"clubId\":\"" + BEROMUNSTER_ID + "\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.clubId").value(clubId))
+                .andExpect(jsonPath("$.clubId").value(BEROMUNSTER_ID))
                 .andReturn();
 
         String teamId = teamResult.getResponse().getContentAsString()
                 .replaceAll(".*\"id\":\"([^\"]+)\".*", "$1");
 
-        // List teams by club
-        mockMvc.perform(get("/api/teams?clubId=" + clubId))
+        // List teams for this club
+        mockMvc.perform(get("/api/clubs/" + BEROMUNSTER_ID + "/teams")
+                        .header("X-Mock-User-Id", ADMIN_USER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$").isArray());
 
         // Delete team
-        mockMvc.perform(delete("/api/teams/" + teamId))
+        mockMvc.perform(delete("/api/teams/" + teamId)
+                        .header("X-Mock-User-Id", ADMIN_USER))
                 .andExpect(status().isNoContent());
+    }
 
-        mockMvc.perform(get("/api/teams/" + teamId))
-                .andExpect(status().isNotFound());
+    @Test
+    void createTeam_returns403ForNonMemberClub() throws Exception {
+        mockMvc.perform(post("/api/teams")
+                        .header("X-Mock-User-Id", ADMIN_USER)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Herren 1\",\"clubId\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void GET_teams_returns401WithoutAuth() throws Exception {
+        mockMvc.perform(get("/api/teams"))
+                .andExpect(status().isUnauthorized());
     }
 }

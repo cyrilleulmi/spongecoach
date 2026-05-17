@@ -1,7 +1,8 @@
 package coach.spongecoach.club.adapter.in.web;
 
 import coach.spongecoach.auth.domain.model.AuthenticatedUser;
-import coach.spongecoach.auth.domain.model.Role;
+import coach.spongecoach.auth.domain.model.ClubMembership;
+import coach.spongecoach.auth.domain.model.ClubRole;
 import coach.spongecoach.auth.domain.port.CurrentUserPort;
 import coach.spongecoach.club.application.ClubNotFoundException;
 import coach.spongecoach.club.application.ClubService;
@@ -21,7 +22,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -32,6 +34,9 @@ class ClubControllerTest {
 
     static final String ADMIN_EMAIL = "admin@test.ch";
     static final String USER_EMAIL = "user@test.ch";
+    static final UUID CLUB_ID = UUID.fromString("a0000000-0000-0000-0000-000000000001");
+    static final UUID ADMIN_PERSON_ID = UUID.fromString("a0000000-0000-0000-0000-000000000002");
+    static final UUID USER_PERSON_ID = UUID.fromString("a0000000-0000-0000-0000-000000000003");
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
@@ -41,24 +46,37 @@ class ClubControllerTest {
     @BeforeEach
     void setUpAuth() {
         when(currentUserPort.resolve(ADMIN_EMAIL))
-                .thenReturn(Optional.of(new AuthenticatedUser(UUID.randomUUID(), ADMIN_EMAIL, Role.ADMIN)));
+                .thenReturn(Optional.of(new AuthenticatedUser(ADMIN_PERSON_ID, ADMIN_EMAIL,
+                        List.of(new ClubMembership(CLUB_ID, ADMIN_PERSON_ID, ClubRole.ADMIN)))));
         when(currentUserPort.resolve(USER_EMAIL))
-                .thenReturn(Optional.of(new AuthenticatedUser(UUID.randomUUID(), USER_EMAIL, Role.USER)));
+                .thenReturn(Optional.of(new AuthenticatedUser(USER_PERSON_ID, USER_EMAIL,
+                        List.of(new ClubMembership(CLUB_ID, USER_PERSON_ID, ClubRole.MEMBER)))));
     }
 
     @Test
     void POST_clubs_returns201WithBody() throws Exception {
-        UUID id = UUID.randomUUID();
-        when(clubService.createClub("UHC Test", "Malters"))
-                .thenReturn(new Club(id, "UHC Test", "Malters"));
+        when(clubService.createClub(eq("UHC Test"), eq("Malters"), any()))
+                .thenReturn(new Club(CLUB_ID, "UHC Test", "Malters"));
 
         mockMvc.perform(post("/api/clubs")
                         .header("X-Mock-User-Id", ADMIN_EMAIL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateClubRequest("UHC Test", "Malters"))))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.id").value(CLUB_ID.toString()))
                 .andExpect(jsonPath("$.name").value("UHC Test"));
+    }
+
+    @Test
+    void POST_clubs_returns201ForMember() throws Exception {
+        when(clubService.createClub(eq("UHC Test"), eq("Malters"), any()))
+                .thenReturn(new Club(CLUB_ID, "UHC Test", "Malters"));
+
+        mockMvc.perform(post("/api/clubs")
+                        .header("X-Mock-User-Id", USER_EMAIL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateClubRequest("UHC Test", "Malters"))))
+                .andExpect(status().isCreated());
     }
 
     @Test
@@ -67,15 +85,6 @@ class ClubControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CreateClubRequest("UHC Test", "Malters"))))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void POST_clubs_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(post("/api/clubs")
-                        .header("X-Mock-User-Id", USER_EMAIL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new CreateClubRequest("UHC Test", "Malters"))))
-                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -88,16 +97,15 @@ class ClubControllerTest {
     }
 
     @Test
-    void GET_clubs_returnsAll() throws Exception {
-        when(clubService.listClubs()).thenReturn(List.of(
-                new Club(UUID.randomUUID(), "UHC Malters", "Malters"),
-                new Club(UUID.randomUUID(), "UHC Köniz", "Köniz")
-        ));
+    void GET_clubs_returnsOnlyUserClubs() throws Exception {
+        when(clubService.getClub(CLUB_ID))
+                .thenReturn(new Club(CLUB_ID, "UHC Malters", "Malters"));
 
         mockMvc.perform(get("/api/clubs")
                         .header("X-Mock-User-Id", USER_EMAIL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(CLUB_ID.toString()));
     }
 
     @Test
@@ -107,30 +115,57 @@ class ClubControllerTest {
     }
 
     @Test
-    void GET_club_returns404WhenMissing() throws Exception {
-        UUID id = UUID.randomUUID();
-        when(clubService.getClub(id)).thenThrow(new ClubNotFoundException(id));
+    void GET_club_returns200ForMember() throws Exception {
+        when(clubService.getClub(CLUB_ID)).thenReturn(new Club(CLUB_ID, "UHC Test", "Malters"));
 
-        mockMvc.perform(get("/api/clubs/{id}", id)
+        mockMvc.perform(get("/api/clubs/{id}", CLUB_ID)
                         .header("X-Mock-User-Id", USER_EMAIL))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void GET_club_returns403ForNonMember() throws Exception {
+        UUID otherClub = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/clubs/{id}", otherClub)
+                        .header("X-Mock-User-Id", USER_EMAIL))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void GET_club_returns404WhenMissing() throws Exception {
+        when(clubService.getClub(CLUB_ID)).thenThrow(new ClubNotFoundException(CLUB_ID));
+
+        mockMvc.perform(get("/api/clubs/{id}", CLUB_ID)
+                        .header("X-Mock-User-Id", ADMIN_EMAIL))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void DELETE_club_returns204() throws Exception {
-        UUID id = UUID.randomUUID();
-        mockMvc.perform(delete("/api/clubs/{id}", id)
-                        .header("X-Mock-User-Id", ADMIN_EMAIL))
-                .andExpect(status().isNoContent());
+    void PUT_club_returns200ForAdmin() throws Exception {
+        when(clubService.updateClub(eq(CLUB_ID), eq("New"), eq("New City")))
+                .thenReturn(new Club(CLUB_ID, "New", "New City"));
+
+        mockMvc.perform(put("/api/clubs/{id}", CLUB_ID)
+                        .header("X-Mock-User-Id", ADMIN_EMAIL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateClubRequest("New", "New City"))))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void DELETE_club_returns404WhenMissing() throws Exception {
-        UUID id = UUID.randomUUID();
-        doThrow(new ClubNotFoundException(id)).when(clubService).deleteClub(id);
+    void PUT_club_returns403ForMember() throws Exception {
+        mockMvc.perform(put("/api/clubs/{id}", CLUB_ID)
+                        .header("X-Mock-User-Id", USER_EMAIL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateClubRequest("New", "New City"))))
+                .andExpect(status().isForbidden());
+    }
 
-        mockMvc.perform(delete("/api/clubs/{id}", id)
+    @Test
+    void DELETE_club_returns405() throws Exception {
+        mockMvc.perform(delete("/api/clubs/{id}", CLUB_ID)
                         .header("X-Mock-User-Id", ADMIN_EMAIL))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isMethodNotAllowed());
     }
 }

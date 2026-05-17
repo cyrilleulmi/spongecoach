@@ -1,10 +1,13 @@
 package coach.spongecoach.club.adapter.in.web;
 
 import coach.spongecoach.auth.adapter.in.web.CurrentUserContext;
+import coach.spongecoach.auth.domain.model.AuthenticatedUser;
+import coach.spongecoach.auth.domain.model.ClubMembership;
 import coach.spongecoach.club.application.ClubService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.MethodNotAllowedException;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,32 +27,35 @@ class ClubController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     ClubResponse create(@Valid @RequestBody CreateClubRequest request) {
-        auth.requireAdmin();
-        return ClubResponse.from(clubService.createClub(request.name(), request.location()));
+        AuthenticatedUser user = auth.requireAuthenticated();
+        return ClubResponse.from(clubService.createClub(request.name(), request.location(), user.personId()));
     }
 
     @GetMapping
     List<ClubResponse> list() {
-        auth.requireAuthenticated();
-        return clubService.listClubs().stream().map(ClubResponse::from).toList();
+        AuthenticatedUser user = auth.requireAuthenticated();
+        List<UUID> clubIds = user.clubMemberships().stream().map(ClubMembership::clubId).toList();
+        return clubIds.stream()
+                .map(clubService::getClub)
+                .map(ClubResponse::from)
+                .toList();
     }
 
     @GetMapping("/{id}")
     ClubResponse get(@PathVariable UUID id) {
-        auth.requireAuthenticated();
+        auth.requireClubMember(id);
         return ClubResponse.from(clubService.getClub(id));
     }
 
     @PutMapping("/{id}")
     ClubResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateClubRequest request) {
-        auth.requireAdmin();
+        auth.requireClubAdmin(id);
         return ClubResponse.from(clubService.updateClub(id, request.name(), request.location()));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     void delete(@PathVariable UUID id) {
-        auth.requireAdmin();
-        clubService.deleteClub(id);
+        throw new MethodNotAllowedException("DELETE", null);
     }
 }

@@ -3,7 +3,7 @@ package coach.spongecoach.auth.adapter.in.web;
 import coach.spongecoach.auth.application.ForbiddenException;
 import coach.spongecoach.auth.application.UnauthorizedException;
 import coach.spongecoach.auth.domain.model.AuthenticatedUser;
-import coach.spongecoach.auth.domain.model.Role;
+import coach.spongecoach.auth.domain.model.ClubRole;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
 
@@ -27,19 +27,19 @@ public class CurrentUserContext {
         return currentUser().orElseThrow(UnauthorizedException::new);
     }
 
-    public AuthenticatedUser requireAdmin() {
+    public AuthenticatedUser requireClubMember(UUID clubId) {
         AuthenticatedUser user = requireAuthenticated();
-        if (user.role() != Role.ADMIN) {
-            throw new ForbiddenException();
-        }
+        boolean isMember = user.clubMemberships().stream()
+                .anyMatch(m -> m.clubId().equals(clubId));
+        if (!isMember) throw new ForbiddenException();
         return user;
     }
 
-    public AuthenticatedUser requireSelfOrAdmin(UUID personId) {
+    public AuthenticatedUser requireClubAdmin(UUID clubId) {
         AuthenticatedUser user = requireAuthenticated();
-        if (user.role() == Role.ADMIN || user.personId().equals(personId)) {
-            return user;
-        }
-        throw new ForbiddenException();
+        boolean isAdmin = user.clubMemberships().stream()
+                .anyMatch(m -> m.clubId().equals(clubId) && m.role() == ClubRole.ADMIN);
+        if (!isAdmin) throw new ForbiddenException();
+        return user;
     }
 }

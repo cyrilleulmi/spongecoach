@@ -1,10 +1,17 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+export interface ClubMembership {
+  clubId: string;
+  personId: string;
+  role: 'ADMIN' | 'MEMBER';
+}
+
 export interface MockUser {
   personId: string;
   email: string;
   role: 'ADMIN' | 'USER';
+  clubMemberships: ClubMembership[];
 }
 
 const STORAGE_KEY = 'mockUserId';
@@ -18,11 +25,21 @@ export class AuthService {
 
   readonly isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
 
+  isClubAdmin(clubId: string): boolean {
+    return this.currentUser()?.clubMemberships?.some(
+      m => m.clubId === clubId && m.role === 'ADMIN'
+    ) ?? false;
+  }
+
   loadMockUsers(): void {
     this.http.get<MockUser[]>('/api/auth/mock/users').subscribe(users => {
       this.availableUsers.set(users);
       if (!this.currentUser() && users.length > 0) {
         this.selectUser(users[0]);
+      } else if (this.currentUser()) {
+        // Refresh current user with full data (including clubMemberships)
+        const refreshed = users.find(u => u.email === this.currentUser()!.email);
+        if (refreshed) this.currentUser.set(refreshed);
       }
     });
   }
@@ -34,6 +51,6 @@ export class AuthService {
 
   private loadFromStorage(): MockUser | null {
     const email = localStorage.getItem(STORAGE_KEY);
-    return email ? { personId: '', email, role: 'USER' } : null;
+    return email ? { personId: '', email, role: 'USER', clubMemberships: [] } : null;
   }
 }

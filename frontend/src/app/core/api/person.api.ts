@@ -20,10 +20,6 @@ export class PersonApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/persons';
 
-  list(): Observable<Person[]> {
-    return this.http.get<Person[]>(this.base);
-  }
-
   get(id: string): Observable<Person> {
     return this.http.get<Person>(`${this.base}/${id}`);
   }

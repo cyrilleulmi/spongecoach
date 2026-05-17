@@ -1,12 +1,13 @@
 package coach.spongecoach.person.adapter.in.web;
 
 import coach.spongecoach.auth.adapter.in.web.CurrentUserContext;
+import coach.spongecoach.auth.application.ForbiddenException;
+import coach.spongecoach.auth.domain.model.AuthenticatedUser;
 import coach.spongecoach.person.application.PersonService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,14 +25,8 @@ class PersonController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     PersonResponse create(@Valid @RequestBody CreatePersonRequest request) {
-        auth.requireAdmin();
-        return PersonResponse.from(personService.createPerson(request.firstName(), request.lastName(), request.email()));
-    }
-
-    @GetMapping
-    List<PersonResponse> list() {
         auth.requireAuthenticated();
-        return personService.listPersons().stream().map(PersonResponse::from).toList();
+        return PersonResponse.from(personService.createPerson(request.firstName(), request.lastName(), request.email()));
     }
 
     @GetMapping("/{id}")
@@ -42,14 +37,16 @@ class PersonController {
 
     @PutMapping("/{id}")
     PersonResponse update(@PathVariable UUID id, @Valid @RequestBody UpdatePersonRequest request) {
-        auth.requireSelfOrAdmin(id);
+        AuthenticatedUser user = auth.requireAuthenticated();
+        if (!user.personId().equals(id)) throw new ForbiddenException();
         return PersonResponse.from(personService.updatePerson(id, request.firstName(), request.lastName(), request.email()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@PathVariable UUID id) {
-        auth.requireAdmin();
+        AuthenticatedUser user = auth.requireAuthenticated();
+        if (!user.personId().equals(id)) throw new ForbiddenException();
         personService.deletePerson(id);
     }
 }

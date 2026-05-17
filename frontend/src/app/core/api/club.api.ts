@@ -13,6 +13,12 @@ export interface CreateClubRequest {
   location: string;
 }
 
+export interface ClubMembership {
+  clubId: string;
+  personId: string;
+  role: 'ADMIN' | 'MEMBER';
+}
+
 @Injectable({ providedIn: 'root' })
 export class ClubApiService {
   private readonly http = inject(HttpClient);
@@ -36,5 +42,17 @@ export class ClubApiService {
 
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  listMembers(clubId: string): Observable<ClubMembership[]> {
+    return this.http.get<ClubMembership[]>(`${this.base}/${clubId}/members`);
+  }
+
+  updateMemberRole(clubId: string, personId: string, role: 'ADMIN' | 'MEMBER'): Observable<ClubMembership> {
+    return this.http.put<ClubMembership>(`${this.base}/${clubId}/members/${personId}`, { role });
+  }
+
+  removeMember(clubId: string, personId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${clubId}/members/${personId}`);
   }
 }

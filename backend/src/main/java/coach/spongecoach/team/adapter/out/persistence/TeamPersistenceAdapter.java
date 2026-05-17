@@ -40,6 +40,11 @@ class TeamPersistenceAdapter implements TeamRepository {
     }
 
     @Override
+    public List<Team> findByMemberId(UUID personId) {
+        return springDataRepo.findByMemberId(personId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public boolean existsById(UUID id) {
         return springDataRepo.existsById(id);
     }

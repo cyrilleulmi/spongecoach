@@ -1,7 +1,8 @@
 package coach.spongecoach.person.adapter.in.web;
 
 import coach.spongecoach.auth.domain.model.AuthenticatedUser;
-import coach.spongecoach.auth.domain.model.Role;
+import coach.spongecoach.auth.domain.model.ClubMembership;
+import coach.spongecoach.auth.domain.model.ClubRole;
 import coach.spongecoach.auth.domain.port.CurrentUserPort;
 import coach.spongecoach.person.application.PersonNotFoundException;
 import coach.spongecoach.person.application.PersonService;
@@ -31,8 +32,9 @@ class PersonControllerTest {
 
     static final String ADMIN_EMAIL = "admin@test.ch";
     static final String USER_EMAIL = "user@test.ch";
-    static final UUID ADMIN_PERSON_ID = UUID.randomUUID();
-    static final UUID USER_PERSON_ID = UUID.randomUUID();
+    static final UUID CLUB_ID = UUID.fromString("a0000000-0000-0000-0000-000000000001");
+    static final UUID ADMIN_PERSON_ID = UUID.fromString("a0000000-0000-0000-0000-000000000002");
+    static final UUID USER_PERSON_ID = UUID.fromString("a0000000-0000-0000-0000-000000000003");
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
@@ -42,9 +44,11 @@ class PersonControllerTest {
     @BeforeEach
     void setUpAuth() {
         when(currentUserPort.resolve(ADMIN_EMAIL))
-                .thenReturn(Optional.of(new AuthenticatedUser(ADMIN_PERSON_ID, ADMIN_EMAIL, Role.ADMIN)));
+                .thenReturn(Optional.of(new AuthenticatedUser(ADMIN_PERSON_ID, ADMIN_EMAIL,
+                        List.of(new ClubMembership(CLUB_ID, ADMIN_PERSON_ID, ClubRole.ADMIN)))));
         when(currentUserPort.resolve(USER_EMAIL))
-                .thenReturn(Optional.of(new AuthenticatedUser(USER_PERSON_ID, USER_EMAIL, Role.USER)));
+                .thenReturn(Optional.of(new AuthenticatedUser(USER_PERSON_ID, USER_EMAIL,
+                        List.of(new ClubMembership(CLUB_ID, USER_PERSON_ID, ClubRole.MEMBER)))));
     }
 
     @Test
@@ -64,22 +68,26 @@ class PersonControllerTest {
     }
 
     @Test
+    void POST_persons_returns201ForAnyAuthenticatedUser() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(personService.createPerson("Alice", "Smith", "alice@test.ch"))
+                .thenReturn(new Person(id, "Alice", "Smith", "alice@test.ch"));
+
+        mockMvc.perform(post("/api/persons")
+                        .header("X-Mock-User-Id", USER_EMAIL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new CreatePersonRequest("Alice", "Smith", "alice@test.ch"))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void POST_persons_returns401WithoutAuth() throws Exception {
         mockMvc.perform(post("/api/persons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new CreatePersonRequest("Alice", "Smith", "alice@test.ch"))))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void POST_persons_returns403ForNonAdmin() throws Exception {
-        mockMvc.perform(post("/api/persons")
-                        .header("X-Mock-User-Id", USER_EMAIL)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(
-                                new CreatePersonRequest("Alice", "Smith", "alice@test.ch"))))
-                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -90,24 +98,6 @@ class PersonControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 new CreatePersonRequest("Alice", "Smith", "not-an-email"))))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void GET_persons_returnsAll() throws Exception {
-        when(personService.listPersons()).thenReturn(List.of(
-                new Person(UUID.randomUUID(), "Alice", "Smith", "alice@test.ch")
-        ));
-
-        mockMvc.perform(get("/api/persons")
-                        .header("X-Mock-User-Id", USER_EMAIL))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
-    }
-
-    @Test
-    void GET_persons_returns401WithoutAuth() throws Exception {
-        mockMvc.perform(get("/api/persons"))
-                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -142,5 +132,25 @@ class PersonControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 new UpdatePersonRequest("Bob", "Smith", "other@test.ch"))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void DELETE_person_returns204ForSelf() throws Exception {
+        mockMvc.perform(delete("/api/persons/{id}", USER_PERSON_ID)
+                        .header("X-Mock-User-Id", USER_EMAIL))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void DELETE_person_returns403WhenNotSelf() throws Exception {
+        mockMvc.perform(delete("/api/persons/{id}", ADMIN_PERSON_ID)
+                        .header("X-Mock-User-Id", USER_EMAIL))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void DELETE_person_returns401WithoutAuth() throws Exception {
+        mockMvc.perform(delete("/api/persons/{id}", USER_PERSON_ID))
+                .andExpect(status().isUnauthorized());
     }
 }

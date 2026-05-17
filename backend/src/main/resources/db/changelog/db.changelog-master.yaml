@@ -15,3 +15,7 @@ databaseChangeLog:
       file: db/changelog/007-seed-lok-reinach.yaml
   - include:
       file: db/changelog/008-seed-andreas-frey.yaml
+  - include:
+      file: db/changelog/009-create-club-membership-table.yaml
+  - include:
+      file: db/changelog/010-seed-club-memberships.yaml

@@ -1,8 +1,9 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ClubApiService, Club } from '../../core/api/club.api';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'app-clubs',
@@ -13,6 +14,7 @@ import { ClubApiService, Club } from '../../core/api/club.api';
 })
 export class ClubsComponent {
   private readonly api = inject(ClubApiService);
+  protected readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
 
   clubs = signal<Club[]>([]);
@@ -27,7 +29,9 @@ export class ClubsComponent {
   });
 
   constructor() {
-    this.loadClubs();
+    effect(() => {
+      if (this.auth.currentUser()) this.loadClubs();
+    });
   }
 
   loadClubs(): void {
@@ -71,11 +75,4 @@ export class ClubsComponent {
     });
   }
 
-  delete(id: string): void {
-    if (!confirm('Delete this club? All its teams will also be deleted.')) return;
-    this.api.delete(id).subscribe({
-      next: () => this.loadClubs(),
-      error: () => this.error.set('Failed to delete club'),
-    });
-  }
 }

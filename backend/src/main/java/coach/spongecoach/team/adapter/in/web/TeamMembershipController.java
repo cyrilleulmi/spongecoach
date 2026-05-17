@@ -1,7 +1,10 @@
 package coach.spongecoach.team.adapter.in.web;
 
 import coach.spongecoach.auth.adapter.in.web.CurrentUserContext;
+import coach.spongecoach.person.application.PersonService;
 import coach.spongecoach.team.application.TeamMembershipService;
+import coach.spongecoach.team.application.TeamService;
+import coach.spongecoach.team.domain.model.Team;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -14,30 +17,41 @@ import java.util.UUID;
 class TeamMembershipController {
 
     private final TeamMembershipService membershipService;
+    private final TeamService teamService;
+    private final PersonService personService;
     private final CurrentUserContext auth;
 
-    TeamMembershipController(TeamMembershipService membershipService, CurrentUserContext auth) {
+    TeamMembershipController(TeamMembershipService membershipService, TeamService teamService,
+                             PersonService personService, CurrentUserContext auth) {
         this.membershipService = membershipService;
+        this.teamService = teamService;
+        this.personService = personService;
         this.auth = auth;
     }
 
     @GetMapping
-    List<TeamMembershipResponse> list(@PathVariable UUID teamId) {
-        auth.requireAuthenticated();
-        return membershipService.listMembers(teamId).stream().map(TeamMembershipResponse::from).toList();
+    List<TeamMemberResponse> list(@PathVariable UUID teamId) {
+        Team team = teamService.getTeam(teamId);
+        auth.requireClubMember(team.clubId());
+        return membershipService.listMembers(teamId).stream()
+                .map(m -> TeamMemberResponse.from(m, personService.getPerson(m.personId())))
+                .toList();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    TeamMembershipResponse add(@PathVariable UUID teamId, @Valid @RequestBody AddMemberRequest request) {
-        auth.requireAdmin();
-        return TeamMembershipResponse.from(membershipService.addMember(teamId, request.personId()));
+    TeamMemberResponse add(@PathVariable UUID teamId, @Valid @RequestBody AddMemberRequest request) {
+        Team team = teamService.getTeam(teamId);
+        auth.requireClubAdmin(team.clubId());
+        var membership = membershipService.addMember(teamId, request.personId());
+        return TeamMemberResponse.from(membership, personService.getPerson(membership.personId()));
     }
 
     @DeleteMapping("/{personId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void remove(@PathVariable UUID teamId, @PathVariable UUID personId) {
-        auth.requireAdmin();
+        Team team = teamService.getTeam(teamId);
+        auth.requireClubAdmin(team.clubId());
         membershipService.removeMember(teamId, personId);
     }
 }

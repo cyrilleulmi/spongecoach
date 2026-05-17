@@ -1,5 +1,6 @@
 package coach.spongecoach.person.application;
 
+import coach.spongecoach.person.domain.DeletePersonGuard;
 import coach.spongecoach.person.domain.PersonRepository;
 import coach.spongecoach.person.domain.model.Person;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,16 +13,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PersonServiceTest {
 
-    private PersonService service;
+    private PersonService serviceWithNoGuard;
+    private PersonService serviceBlockedByGuard;
+    private InMemoryPersonRepository personRepo;
 
     @BeforeEach
     void setUp() {
-        service = new PersonService(new InMemoryPersonRepository());
+        personRepo = new InMemoryPersonRepository();
+        serviceWithNoGuard = new PersonService(personRepo, personId -> List.of());
+        serviceBlockedByGuard = new PersonService(personRepo, personId -> List.of("UHC Malters"));
     }
 
     @Test
     void createPerson_persistsAndReturnsPerson() {
-        Person person = service.createPerson("Alice", "Smith", "alice@test.ch");
+        Person person = serviceWithNoGuard.createPerson("Alice", "Smith", "alice@test.ch");
         assertThat(person.id()).isNotNull();
         assertThat(person.firstName()).isEqualTo("Alice");
         assertThat(person.email()).isEqualTo("alice@test.ch");
@@ -29,22 +34,38 @@ class PersonServiceTest {
 
     @Test
     void createPerson_throwsOnDuplicateEmail() {
-        service.createPerson("Alice", "Smith", "alice@test.ch");
-        assertThatThrownBy(() -> service.createPerson("Alice2", "Smith2", "alice@test.ch"))
+        serviceWithNoGuard.createPerson("Alice", "Smith", "alice@test.ch");
+        assertThatThrownBy(() -> serviceWithNoGuard.createPerson("Alice2", "Smith2", "alice@test.ch"))
                 .isInstanceOf(DuplicateEmailException.class);
     }
 
     @Test
     void getPerson_throwsWhenNotFound() {
-        assertThatThrownBy(() -> service.getPerson(UUID.randomUUID()))
+        assertThatThrownBy(() -> serviceWithNoGuard.getPerson(UUID.randomUUID()))
                 .isInstanceOf(PersonNotFoundException.class);
     }
 
     @Test
     void deletePerson_removesPerson() {
-        Person person = service.createPerson("Bob", "Jones", "bob@test.ch");
-        service.deletePerson(person.id());
-        assertThatThrownBy(() -> service.getPerson(person.id()))
+        Person person = serviceWithNoGuard.createPerson("Bob", "Jones", "bob@test.ch");
+        serviceWithNoGuard.deletePerson(person.id());
+        assertThatThrownBy(() -> serviceWithNoGuard.getPerson(person.id()))
+                .isInstanceOf(PersonNotFoundException.class);
+    }
+
+    @Test
+    void deletePerson_blockedWhenLastAdminOfClub() {
+        Person person = serviceWithNoGuard.createPerson("Charlie", "Sole", "charlie@test.ch");
+        assertThatThrownBy(() -> serviceBlockedByGuard.deletePerson(person.id()))
+                .isInstanceOf(LastClubAdminException.class)
+                .hasMessageContaining("UHC Malters");
+    }
+
+    @Test
+    void deletePerson_allowedWhenGuardReturnsEmpty() {
+        Person person = serviceWithNoGuard.createPerson("Dave", "Safe", "dave@test.ch");
+        serviceWithNoGuard.deletePerson(person.id());
+        assertThatThrownBy(() -> serviceWithNoGuard.getPerson(person.id()))
                 .isInstanceOf(PersonNotFoundException.class);
     }
 

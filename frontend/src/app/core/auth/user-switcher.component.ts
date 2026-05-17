@@ -24,7 +24,7 @@ import { AuthService, MockUser } from './auth.service';
               [class.active]="user.email === currentUser()?.email"
               (click)="select(user)">
               <span class="item-email">{{ user.email }}</span>
-              <span class="role-badge" [class]="'role-' + user.role.toLowerCase()">{{ user.role }}</span>
+              <span class="role-badge" [class]="'role-' + (user.role?.toLowerCase() ?? 'user')">{{ user.role }}</span>
             </button>
           }
         </div>

@@ -13,14 +13,27 @@ export interface CreateTeamRequest {
   clubId: string;
 }
 
+export interface TeamMember {
+  teamId: string;
+  personId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TeamApiService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/teams';
 
-  list(clubId?: string): Observable<Team[]> {
-    const url = clubId ? `${this.base}?clubId=${clubId}` : this.base;
-    return this.http.get<Team[]>(url);
+  /** All teams the current user is a member of. */
+  list(): Observable<Team[]> {
+    return this.http.get<Team[]>(this.base);
+  }
+
+  /** Teams belonging to a specific club (correct scoped endpoint). */
+  listByClub(clubId: string): Observable<Team[]> {
+    return this.http.get<Team[]>(`/api/clubs/${clubId}/teams`);
   }
 
   get(id: string): Observable<Team> {
@@ -37,5 +50,17 @@ export class TeamApiService {
 
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  listMembers(teamId: string): Observable<TeamMember[]> {
+    return this.http.get<TeamMember[]>(`${this.base}/${teamId}/members`);
+  }
+
+  addMember(teamId: string, personId: string): Observable<TeamMember> {
+    return this.http.post<TeamMember>(`${this.base}/${teamId}/members`, { personId });
+  }
+
+  removeMember(teamId: string, personId: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${teamId}/members/${personId}`);
   }
 }

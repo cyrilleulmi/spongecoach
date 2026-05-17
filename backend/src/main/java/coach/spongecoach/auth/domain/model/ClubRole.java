@@ -1,6 +1,6 @@
 package coach.spongecoach.auth.domain.model;
 
-public enum Role {
+public enum ClubRole {
     ADMIN,
-    USER
+    MEMBER
 }

@@ -1,7 +1,10 @@
 package coach.spongecoach.team.application;
 
+import coach.spongecoach.club.application.NotAClubMemberException;
+import coach.spongecoach.club.domain.ClubMembershipRepository;
 import coach.spongecoach.team.domain.TeamMembershipRepository;
 import coach.spongecoach.team.domain.TeamRepository;
+import coach.spongecoach.team.domain.model.Team;
 import coach.spongecoach.team.domain.model.TeamMembership;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,15 +18,21 @@ public class TeamMembershipService {
 
     private final TeamMembershipRepository membershipRepository;
     private final TeamRepository teamRepository;
+    private final ClubMembershipRepository clubMembershipRepository;
 
-    public TeamMembershipService(TeamMembershipRepository membershipRepository, TeamRepository teamRepository) {
+    public TeamMembershipService(TeamMembershipRepository membershipRepository,
+                                 TeamRepository teamRepository,
+                                 ClubMembershipRepository clubMembershipRepository) {
         this.membershipRepository = membershipRepository;
         this.teamRepository = teamRepository;
+        this.clubMembershipRepository = clubMembershipRepository;
     }
 
     public TeamMembership addMember(UUID teamId, UUID personId) {
-        if (!teamRepository.existsById(teamId)) {
-            throw new TeamNotFoundException(teamId);
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new TeamNotFoundException(teamId));
+        if (!clubMembershipRepository.existsByClubIdAndPersonId(team.clubId(), personId)) {
+            throw new NotAClubMemberException(personId, team.clubId());
         }
         if (membershipRepository.exists(teamId, personId)) {
             throw new MembershipAlreadyExistsException(teamId, personId);

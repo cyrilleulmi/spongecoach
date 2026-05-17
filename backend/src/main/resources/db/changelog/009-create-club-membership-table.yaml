@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-create-club-membership-table
+      author: spongecoach
+      changes:
+        - createTable:
+            tableName: club_membership
+            columns:
+              - column:
+                  name: club_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_club_membership_club
+                    references: club(id)
+              - column:
+                  name: person_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_club_membership_person
+                    references: person(id)
+              - column:
+                  name: role
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: club_membership
+            columnNames: club_id, person_id
+            constraintName: pk_club_membership

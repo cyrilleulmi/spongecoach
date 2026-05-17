@@ -72,6 +72,9 @@ class TeamServiceTest {
         }
 
         @Override
+        public List<Team> findByMemberId(UUID personId) { return List.of(); }
+
+        @Override
         public boolean existsById(UUID id) { return store.containsKey(id); }
 
         @Override

@@ -17,7 +17,7 @@ The maintainer is a software architect. They will frequently edit the critical d
 | Database | Postgres 16 |
 | Migrations | Liquibase (YAML changelogs under `backend/src/main/resources/db/changelog/`) |
 | Deployment | Local + Docker Compose; everything must be dockerizable |
-| Auth | None yet — Person is a pure domain object; anyone using the app can manage everything |
+| Auth | Mock profile in dev, Keycloak in prod. Role-based, club-scoped. See `docs/AUTHORIZATION.md`. |
 
 ## Repo layout
 
@@ -70,7 +70,7 @@ When you add a new feature, add or update ArchUnit rules so the new package is c
 ## Frontend architecture
 
 - Standalone components, signal-based state.
-- Per-feature folders under `src/app/features/` (`clubs/`, `teams/`, `persons/`, …).
+- Per-feature folders under `src/app/features/` (`clubs/`, `teams/`, `profile/`, …).
 - All design tokens live in `src/styles/_theme.scss` as CSS variables. Components consume variables only — **never hard-code colors, spacing, or radii**. Reskinning the app must mean editing one file.
 - API access goes through typed clients in `src/app/core/api/`. The Angular dev server proxies `/api/*` to the backend.
 
@@ -124,9 +124,24 @@ Each step leaves the build green.
 
 When in doubt, ask first. The cost of a 30-second clarification is nothing compared to a wrong-direction PR.
 
+## Authorization — read this before touching permissions
+
+The full authorization model (roles, screen-by-screen action matrix, cascade rules, confirmation dialog requirements) lives in **`docs/AUTHORIZATION.md`**. Always consult it before:
+
+- Adding or changing any permission check (`requireClubAdmin`, `requireClubMember`, etc.)
+- Deciding what buttons/actions to show in the UI
+- Implementing any delete, remove, or cascade operation
+
+Key facts to have top-of-mind:
+- Roles are **club-scoped** (`ADMIN` / `MEMBER`). No global roles.
+- Users can only see clubs they belong to — enforced at the API level.
+- There is **no global persons list**. Persons are always accessed through a club or team.
+- Every destructive action requires a confirmation dialog.
+- Only the user themselves can delete their own account (blocked if last admin of a club).
+
 ## What's intentionally out of scope right now
 
-- Authentication and real user accounts.
+- Invite links and self-join flows (member addition is admin-only for now).
 - Practice management, event planning, statistics, fun games (future "Swiss army knife" features).
 - CI pipeline and production deployment manifests.
 - i18n (DE / FR / IT will come — keep strings extractable, but don't wire i18n yet).

@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { AuthService, MockUser } from './auth.service';
 
 @Component({
@@ -95,6 +96,7 @@ import { AuthService, MockUser } from './auth.service';
 })
 export class UserSwitcherComponent implements OnInit {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly open = signal(false);
   protected readonly currentUser = this.auth.currentUser;
   protected readonly availableUsers = this.auth.availableUsers;
@@ -118,5 +120,6 @@ export class UserSwitcherComponent implements OnInit {
   protected select(user: MockUser): void {
     this.auth.selectUser(user);
     this.open.set(false);
+    this.router.navigate(['/clubs']);
   }
 }

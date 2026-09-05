@@ -21,18 +21,21 @@ The set of Players belonging to a Line.
 _Avoid_: squad, lineup
 
 **Skill** (German: *Skill*):
-A per-Line configurable attribute, seeded with defaults, that a Line self-rates.
+A configurable attribute, seeded with defaults, that a Line self-rates. Shared across Lines — a Line links to an existing Skill rather than owning its own copy.
 
 **Rating** (German: *Bewertung*):
-A Line's 0-5 self-assessment of a Skill, tracked over time (not tied to an individual Player).
+A Line's 0-100 self-assessment of a Skill it's linked to, held as a single current value with no history (not tied to an individual Player).
 _Avoid_: score, evaluation
 
 **Development goal** (German: *Ziel*):
-A per-Line development target.
+A development target. Shared across Lines — a Line links to existing Development goals.
 _Avoid_: Goal (reserved — would collide with a scored goal/Tor if that concept is ever modeled; out of scope for this MVP)
 
 **Focus** (German: *Fokus*):
-A reusable, per-Line item attached to one or more Trainings/Matches. Belongs to exactly one Line. History is preserved via soft-delete only — never hard-deleted.
+A reusable item attached to one or more Trainings/Matches (per Line, at each attachment). Shared across Lines — a Line links to existing Focuses. History is preserved via soft-delete only — never hard-deleted.
+
+**Iteration** (no German pairing — internal/technical concept, not floorball vocabulary):
+A named group of Events, ordered relative to other Iterations.
 
 **Training** (German: *Training*):
 A practice Event.
@@ -41,8 +44,8 @@ A practice Event.
 A game Event. Note: German-Swiss usage — not "Spiel".
 
 **Event** (German: *Ereignis*):
-Umbrella term covering both Training and Match. Forms a sequenced timeline via a mandatory predecessor/successor chain (dates optional).
+Umbrella term covering both Training and Match. Belongs to exactly one Iteration and holds a position within it.
 _Avoid_: appointment, item
 
 **Sequence** (no German pairing — internal/technical concept, not floorball vocabulary):
-The mandatory predecessor/successor chain ordering Events, independent of their (optional) dates.
+Ordering by position: each Iteration is positioned relative to other Iterations, each Event relative to the other Events in its Iteration.

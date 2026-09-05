@@ -1,0 +1,3 @@
+# UUID primary keys, application-generated
+
+All entity primary keys are UUIDs rather than bigserial/identity integers, generated in application code (`UUID.randomUUID()` via Hibernate/Panache) rather than by a Postgres extension like `gen_random_uuid()`. This is a schema-wide, hard-to-reverse choice made despite this being a single hardcoded team with no distributed-id requirement today: it avoids retrofitting IDs if multi-team support (already flagged as a future direction) ever needs globally-unique, pre-assignable IDs, and app-side generation avoids depending on `pgcrypto`/`uuid-ossp` being enabled in every environment, including Testcontainers.

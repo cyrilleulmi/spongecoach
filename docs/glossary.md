@@ -21,10 +21,10 @@ The set of Players belonging to a Line.
 _Avoid_: squad, lineup
 
 **Skill** (German: *Skill*):
-A per-Line configurable attribute, seeded with defaults, that Players self-rate.
+A per-Line configurable attribute, seeded with defaults, that a Line self-rates.
 
 **Rating** (German: *Bewertung*):
-A Player's 0-5 self-assessment of a Skill.
+A Line's 0-5 self-assessment of a Skill, tracked over time (not tied to an individual Player).
 _Avoid_: score, evaluation
 
 **Development goal** (German: *Ziel*):

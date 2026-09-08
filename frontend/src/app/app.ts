@@ -1,11 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
+import { LineOverview } from './lines/line-overview/line-overview';
 
 @Component({
-  imports: [],
+  imports: [LineOverview],
   selector: 'app-root',
-  styleUrl: './app.scss',
-  templateUrl: './app.html',
+  template: '<app-line-overview />',
 })
-export class App {
-  protected readonly title = signal('frontend');
-}
+export class App {}

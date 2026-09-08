@@ -1,0 +1,23 @@
+<div class="manage-list">
+  @for (item of items(); track item.id) {
+    <span
+      class="chip"
+      [class.on]="isAssociated(item.id)"
+      [style.background]="isAssociated(item.id) ? 'color-mix(in srgb, ' + item.color + ' 16%, var(--surface))' : ''"
+      [style.border-color]="isAssociated(item.id) ? item.color : ''"
+      [style.color]="isAssociated(item.id) ? 'color-mix(in srgb, ' + item.color + ' 65%, var(--ink))' : ''"
+      [title]="item.tooltip ?? ''"
+    >
+      <span class="dot" [style.background]="item.color"></span>
+      {{ item.name }}
+      <button
+        class="x"
+        type="button"
+        [attr.aria-label]="item.name + (isAssociated(item.id) ? ' entfernen' : ' hinzufügen')"
+        (click)="toggle.emit(item.id)"
+      >
+        {{ isAssociated(item.id) ? '×' : '+' }}
+      </button>
+    </span>
+  }
+</div>

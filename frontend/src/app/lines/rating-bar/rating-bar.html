@@ -1,0 +1,11 @@
+<div class="bar5">
+  @for (segment of segments; track segment) {
+    <button
+      class="seg"
+      type="button"
+      [style.background]="segment <= level() ? color() : 'var(--line-soft)'"
+      [attr.aria-label]="'Bewertung auf ' + segment + ' von 5 setzen'"
+      (click)="setLevel(segment)"
+    ></button>
+  }
+</div>

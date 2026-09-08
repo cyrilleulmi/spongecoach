@@ -1,0 +1,404 @@
+:host {
+  // Theme tokens (--ink, --paper, --surface, --shadow, …) are defined globally in
+  // src/styles.scss and switch with light/dark; this component only consumes them.
+  display: block;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Karla', ui-sans-serif, system-ui, sans-serif;
+  min-height: 100%;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.error-banner {
+  margin: 0;
+  padding: 0.75rem 2rem;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin: 0 0 0.2rem;
+}
+
+.empty,
+.empty-state {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.page-head {
+  padding: 1.5rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.page-head h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.line-switch {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.line-switch button {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.line-switch button.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.shell {
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.25rem;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.4rem;
+}
+
+.card.roster {
+  grid-column: span 4;
+}
+
+.card.skills {
+  grid-column: span 5;
+}
+
+.card.goals {
+  grid-column: span 3;
+}
+
+.card.focus {
+  grid-column: span 7;
+}
+
+@media (max-width: 900px) {
+  .card {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.section-title h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--ink-soft);
+}
+
+.tile-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.tile-stat .num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.roster-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.roster-row:last-child {
+  border-bottom: none;
+}
+
+.avatar {
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Barlow Condensed';
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex: none;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 0.98rem;
+  flex: 1;
+}
+
+.remove {
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.roster-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.roster-dialog::backdrop {
+  background: rgba(15, 20, 26, 0.45);
+}
+
+.roster-dialog-inner {
+  padding: 1.25rem 1.4rem;
+}
+
+.roster-dialog-inner .hint {
+  margin-top: 0;
+  margin-bottom: 0.9rem;
+}
+
+.skill-row {
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.skill-row:last-child {
+  border-bottom: none;
+}
+
+.skill-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.skill-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.skill-level {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: none;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  padding: 0;
+}
+
+.dot:hover {
+  transform: scale(1.15);
+}
+
+.hint {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  margin: 0.6rem 0 0;
+}
+
+.manage-box {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line);
+}
+
+.row-color-picker {
+  display: block;
+  margin: 0.1rem 0 0.6rem;
+}
+
+.create-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.create-row input,
+.create-row select {
+  flex: 1 1 8rem;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.create-row input::placeholder {
+  color: var(--ink-soft);
+}
+
+.create-row app-color-picker {
+  flex: 0 0 auto;
+}
+
+.create-row .btn {
+  flex: 0 0 auto;
+}
+
+.goal-item {
+  padding: 0.55rem 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.goal-item:last-child {
+  border-bottom: none;
+}
+
+.goal-name {
+  flex: 1;
+}
+
+.focus-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.focus-card {
+  flex: none;
+  width: 11.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--paper);
+}
+
+.focus-card h3 {
+  font-size: 0.85rem;
+  margin: 0 0 0.45rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.focus-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.focus-tag {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.3rem;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.create-focus {
+  margin-bottom: 0.9rem;
+}
+
+.create-focus input {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.create-focus input::placeholder {
+  color: var(--ink-soft);
+}
+
+.create-focus .hint {
+  margin: 0.5rem 0 0.4rem;
+}
+
+.create-focus .btn {
+  margin-top: 0.6rem;
+}

@@ -1,0 +1,11 @@
+@let dark = theme() === 'dark';
+<button
+  type="button"
+  class="theme-toggle"
+  [attr.aria-label]="dark ? 'Zu hellem Design wechseln' : 'Zu dunklem Design wechseln'"
+  [attr.aria-pressed]="dark"
+  (click)="toggle()"
+>
+  <span class="glyph" aria-hidden="true">{{ dark ? '☾' : '☀' }}</span>
+  <span class="label">{{ dark ? 'Dunkel' : 'Hell' }}</span>
+</button>

@@ -1,0 +1,14 @@
+<div class="swatches" role="radiogroup" aria-label="Farbe wählen">
+  @for (option of palette; track option) {
+    <button
+      type="button"
+      class="swatch"
+      role="radio"
+      [class.selected]="option === color()"
+      [attr.aria-checked]="option === color()"
+      [attr.aria-label]="'Farbe ' + option"
+      [style.background]="option"
+      (click)="pick(option)"
+    ></button>
+  }
+</div>

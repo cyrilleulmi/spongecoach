@@ -1,0 +1,232 @@
+@if (errorMessage(); as message) {
+  <p class="error-banner" role="alert">{{ message }}</p>
+}
+
+<header class="page-head">
+  <div>
+    <p class="eyebrow">Block-Übersicht</p>
+    <h1>{{ detail()?.name ?? '—' }}</h1>
+  </div>
+  <div class="head-actions">
+    <div class="line-switch">
+      @for (line of lines(); track line.id) {
+        <button
+          type="button"
+          [class.active]="line.id === selectedLineId()"
+          (click)="selectLine(line.id)"
+        >
+          {{ line.name }}
+        </button>
+      }
+    </div>
+    <app-theme-toggle />
+  </div>
+</header>
+
+@if (detail(); as line) {
+  <div class="shell">
+    <div class="card roster">
+      <div class="section-title">
+        <h2>Kader</h2>
+        <button class="btn" type="button" (click)="openRosterDialog()">Verwalten</button>
+      </div>
+      <div class="tile-stat">
+        <span class="num">{{ line.players.length }}</span>
+        <span class="eyebrow">Spieler</span>
+      </div>
+      @if (line.players.length === 0) {
+        <p class="empty">Noch keine Spieler im Kader.</p>
+      }
+      <div>
+        @for (player of line.players; track player.id) {
+          <div class="roster-row">
+            <div class="avatar">{{ initials(player.name) }}</div>
+            <div class="player-name">{{ player.name }}</div>
+            <button
+              class="remove"
+              type="button"
+              [attr.aria-label]="player.name + ' aus dem Kader entfernen'"
+              (click)="togglePlayer(player.id)"
+            >
+              ×
+            </button>
+          </div>
+        }
+      </div>
+
+      <dialog #rosterDialog class="roster-dialog" (click)="$event.target === rosterDialog ? closeRosterDialog() : null">
+        <div class="roster-dialog-inner">
+          <div class="section-title">
+            <h2>Kader verwalten</h2>
+            <button class="btn" type="button" (click)="closeRosterDialog()">Fertig</button>
+          </div>
+          <p class="hint">Spieler aus dem Team-Kader zu diesem Block hinzufügen oder entfernen.</p>
+          <app-manage-chips
+            [items]="playerChipItems()"
+            [associatedIds]="associatedPlayerIds()"
+            (toggle)="togglePlayer($event)"
+          />
+        </div>
+      </dialog>
+    </div>
+
+    <div class="card skills">
+      <div class="section-title">
+        <h2>Skills</h2>
+        <button class="btn" type="button" (click)="toggleManage('skills')">Verwalten</button>
+      </div>
+      @if (line.skills.length === 0) {
+        <p class="empty">Noch keine Skills verknüpft.</p>
+      }
+      @for (skill of line.skills; track skill.skillId) {
+        <div class="skill-row">
+          <div class="skill-top">
+            <button
+              class="dot"
+              type="button"
+              [style.background]="skill.color"
+              [attr.aria-label]="'Farbe für ' + skill.name + ' wählen'"
+              (click)="toggleColorEdit(skill.skillId)"
+            ></button>
+            <span class="skill-name">{{ skill.name }}</span>
+            <span class="skill-level num">{{ levelOf(skill.rating) }}/5</span>
+          </div>
+          @if (editingColorId() === skill.skillId) {
+            <app-color-picker
+              class="row-color-picker"
+              [color]="skill.color"
+              (colorChange)="changeSkillColor(skill.skillId, $event)"
+            />
+          }
+          <app-rating-bar
+            [rating]="skill.rating"
+            [color]="skill.color"
+            (levelChange)="setRating(skill.skillId, $event)"
+          />
+        </div>
+      }
+      <p class="hint">Auf den Farbpunkt klicken, um eine Farbe zu wählen.</p>
+      @if (openSection() === 'skills') {
+        <div class="manage-box">
+          <form class="create-row" (submit)="$event.preventDefault(); createSkill()">
+            <input
+              type="text"
+              placeholder="Neuer Skill"
+              [value]="newSkillName()"
+              (input)="newSkillName.set($any($event.target).value)"
+            />
+            <app-color-picker [color]="newSkillColor()" (colorChange)="newSkillColor.set($event)" />
+            <button type="submit" class="btn">Anlegen</button>
+          </form>
+          <app-manage-chips
+            [items]="skillChipItems()"
+            [associatedIds]="associatedSkillIds()"
+            (toggle)="toggleSkill($event)"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="card goals">
+      <div class="section-title">
+        <h2>Ziele</h2>
+        <button class="btn" type="button" (click)="toggleManage('goals')">Verwalten</button>
+      </div>
+      @if (line.developmentGoals.length === 0) {
+        <p class="empty">Noch keine Ziele.</p>
+      }
+      @for (goal of line.developmentGoals; track goal.id) {
+        <div class="goal-item">
+          <button
+            class="dot"
+            type="button"
+            [style.background]="goal.color"
+            [attr.aria-label]="'Farbe für ' + goal.name + ' wählen'"
+            (click)="toggleColorEdit(goal.id)"
+          ></button>
+          <span class="goal-name">{{ goal.name }}</span>
+        </div>
+        @if (editingColorId() === goal.id) {
+          <app-color-picker
+            class="row-color-picker"
+            [color]="goal.color"
+            (colorChange)="changeGoalColor(goal.id, $event)"
+          />
+        }
+      }
+      @if (openSection() === 'goals') {
+        <div class="manage-box">
+          <form class="create-row" (submit)="$event.preventDefault(); createGoal()">
+            <input
+              type="text"
+              placeholder="Neues Ziel"
+              [value]="newGoalName()"
+              (input)="newGoalName.set($any($event.target).value)"
+            />
+            <app-color-picker [color]="newGoalColor()" (colorChange)="newGoalColor.set($event)" />
+            <button type="submit" class="btn">Anlegen</button>
+          </form>
+          <app-manage-chips
+            [items]="goalChipItems()"
+            [associatedIds]="associatedGoalIds()"
+            (toggle)="toggleGoal($event)"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="card focus">
+      <div class="section-title">
+        <h2>Fokusse</h2>
+        <button class="btn" type="button" (click)="toggleManage('focuses')">Verwalten</button>
+      </div>
+      @if (line.focuses.length === 0) {
+        <p class="empty">Keine Fokusse zugewiesen.</p>
+      }
+      <div class="focus-strip">
+        @for (focus of line.focuses; track focus.id) {
+          <div class="focus-card">
+            <h3>{{ focus.name }}</h3>
+            <div class="focus-tags">
+              @for (tag of goalTagsFor(focus); track tag.id) {
+                <span
+                  class="focus-tag"
+                  [style.background]="'color-mix(in srgb, ' + tag.color + ' 16%, var(--surface))'"
+                  [style.color]="'color-mix(in srgb, ' + tag.color + ' 65%, var(--ink))'"
+                >
+                  {{ tag.name }}
+                </span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      @if (openSection() === 'focuses') {
+        <div class="manage-box">
+          <div class="create-focus">
+            <input
+              type="text"
+              placeholder="Neuer Fokus"
+              [value]="newFocusName()"
+              (input)="newFocusName.set($any($event.target).value)"
+            />
+            <p class="hint">Aus welchen Zielen leitet sich der Fokus ab? (mindestens eines)</p>
+            <app-manage-chips
+              [items]="goalChipItems()"
+              [associatedIds]="newFocusGoalIdSet()"
+              (toggle)="toggleNewFocusGoal($event)"
+            />
+            <button type="button" class="btn" (click)="createFocus()">Anlegen</button>
+          </div>
+          <app-manage-chips
+            [items]="focusChipItems()"
+            [associatedIds]="associatedFocusIds()"
+            (toggle)="toggleFocus($event)"
+          />
+        </div>
+      }
+    </div>
+  </div>
+} @else if (lines().length === 0 && !errorMessage()) {
+  <p class="empty-state">Noch keine Blöcke – keine Beispieldaten geladen.</p>
+}

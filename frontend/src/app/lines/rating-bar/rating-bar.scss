@@ -1,0 +1,22 @@
+.bar5 {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.seg {
+  flex: 1;
+  height: 0.65rem;
+  border-radius: 0.2rem;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.seg:hover {
+  filter: brightness(0.92);
+}
+
+.seg:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}

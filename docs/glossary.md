@@ -7,17 +7,17 @@ Referenced from `CONTEXT.md` once that file exists.
 ## Language
 
 **Line** (German: *Block*):
-A group of players who train and play together; a Player belongs to exactly one Line.
+A group of players who train and play together; a Line's roster is a selection from the Team's Players, and the same Player can be on several Lines (ADR-0008).
 _Avoid_: Block (in code/API), squad
 
 **Player** (German: *Spieler*):
-A member of a Line's roster.
+A member of the Team, associated with zero or more Lines. Created by seed only in v1.
 
 **Team** (German: *Team* / *Mannschaft*):
 The single club team this MVP serves. No multi-team support.
 
 **Roster** (German: *Kader*):
-The set of Players belonging to a Line.
+The set of Players associated with a Line (`line_player` n:n — a selection, not ownership).
 _Avoid_: squad, lineup
 
 **Skill** (German: *Skill*):

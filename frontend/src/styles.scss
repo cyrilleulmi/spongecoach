@@ -1,1 +1,66 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global theme tokens. Three states:
+ *  - bare :root                     → light palette (also the SSR/first-paint default)
+ *  - @media (prefers-color-scheme)  → follow the OS when the user hasn't chosen
+ *  - :root[data-theme="..."]        → explicit choice from the in-app toggle, wins both ways
+ */
+
+:root {
+  --ink: #1b2430;
+  --ink-soft: #4d5566;
+  --paper: #f6f4ee;
+  --surface: #ffffff;
+  --line: #dbd6c8;
+  --line-soft: #eae7db;
+  --accent: #2c7a68;
+  --accent-ink: #0f3d33;
+  --accent-soft: #e2efe9;
+  --danger-bg: #fbeaea;
+  --danger-ink: #7a1f1f;
+  --shadow:
+    0 1px 2px rgba(27, 36, 48, 0.06),
+    0 8px 24px -12px rgba(27, 36, 48, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ink: #eceae2;
+    --ink-soft: #a9a495;
+    --paper: #171a1c;
+    --surface: #1f2326;
+    --line: #33383b;
+    --line-soft: #282c2f;
+    --accent: #4fa590;
+    --accent-ink: #bfe6da;
+    --accent-soft: #1c322c;
+    --danger-bg: #3a1f1f;
+    --danger-ink: #f0b4b4;
+    --shadow:
+      0 1px 2px rgba(0, 0, 0, 0.4),
+      0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme='dark'] {
+  --ink: #eceae2;
+  --ink-soft: #a9a495;
+  --paper: #171a1c;
+  --surface: #1f2326;
+  --line: #33383b;
+  --line-soft: #282c2f;
+  --accent: #4fa590;
+  --accent-ink: #bfe6da;
+  --accent-soft: #1c322c;
+  --danger-bg: #3a1f1f;
+  --danger-ink: #f0b4b4;
+  --shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 8px 24px -12px rgba(0, 0, 0, 0.6);
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+}

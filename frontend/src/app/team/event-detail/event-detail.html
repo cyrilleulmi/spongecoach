@@ -1,0 +1,63 @@
+@if (event(); as ev) {
+  <div class="detail-card">
+    <div class="detail-badge" [class.match]="!isTraining()">
+      {{ isTraining() ? 'Training' : ev.type }}
+    </div>
+
+    @if (isTraining()) {
+      <h2 class="detail-title">{{ title() }}</h2>
+    } @else {
+      <input
+        class="detail-title-input"
+        type="text"
+        [value]="ev.name ?? ''"
+        placeholder="Gegner"
+        aria-label="Name des Matches"
+        (change)="rename.emit($any($event.target).value)"
+      />
+    }
+
+    <label class="detail-date">
+      <span>Datum</span>
+      <input
+        type="date"
+        [value]="ev.scheduledOn ?? ''"
+        (change)="onDateInput($any($event.target).value)"
+      />
+    </label>
+
+    @if (isNext()) {
+      <p class="detail-hint">
+        <strong>Das ist das nächste Ereignis, das noch offen ist.</strong> Der Fokus-Stand unten
+        zeigt, was der Coach vorher noch klären muss.
+      </p>
+    }
+
+    <ul class="focus-rows">
+      @for (line of lines(); track line.id) {
+        <li>
+          <span class="focus-line-tag" [style.background]="line.color">{{ line.name }}</span>
+          <select
+            class="focus-select"
+            [attr.aria-label]="'Fokus für ' + line.name + ' setzen'"
+            [value]="selectedFocusId(line.id)"
+            (change)="onFocusSelect(line.id, $any($event.target).value)"
+          >
+            <option value="">— nicht gesetzt —</option>
+            @for (focus of focusesFor(line.id); track focus.id) {
+              <option [value]="focus.id" [selected]="focus.id === selectedFocusId(line.id)">
+                {{ focus.name }}
+              </option>
+            }
+          </select>
+        </li>
+      }
+    </ul>
+
+    <button type="button" class="delete-btn" (click)="deleteEvent.emit(ev.id)">
+      {{ isTraining() ? 'Training löschen' : 'Match löschen' }}
+    </button>
+  </div>
+} @else {
+  <div class="detail-card empty">Kein Ereignis ausgewählt.</div>
+}

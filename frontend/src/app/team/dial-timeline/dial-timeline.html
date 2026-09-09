@@ -1,0 +1,24 @@
+<div class="iteration-nodes">
+  @for (event of events(); track event.id) {
+    <button
+      type="button"
+      class="d-node"
+      [class.match]="isMatch(event)"
+      [class.current]="event.id === nextEventId()"
+      [class.selected]="event.id === selectedEventId()"
+      [attr.aria-pressed]="event.id === selectedEventId()"
+      (click)="select.emit(event.id)"
+    >
+      @if (event.id === nextEventId()) {
+        <span class="next-tag">NÄCHSTES</span>
+      }
+      <span class="dial" [style.background]="gradient(event)">
+        <span class="dial-glyph">{{ glyph(event) }}</span>
+      </span>
+      <span class="d-type">{{ isTraining(event) ? 'Training' : event.type }}</span>
+      <span class="d-label">{{ label(event) }}</span>
+    </button>
+  } @empty {
+    <p class="empty">Noch keine Trainings oder Matches in dieser Iteration.</p>
+  }
+</div>

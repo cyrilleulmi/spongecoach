@@ -1,0 +1,95 @@
+@if (errorMessage(); as message) {
+  <p class="error-banner" role="alert">{{ message }}</p>
+}
+
+<header class="page-head">
+  <div>
+    <p class="eyebrow">Team-Übersicht</p>
+    <h1>Saison-Timeline</h1>
+  </div>
+  <app-theme-toggle />
+</header>
+
+<div class="shell">
+  <p class="intro">
+    Eine Iteration nach der anderen. Die Trainings laufen von oben nach unten und enden auf einem
+    Match. Jedes Ereignis ist ein Rad mit einem Viertel pro Block — leuchtet es, hat dieser Block
+    einen Fokus gesetzt. Der grüne Ring markiert das nächste offene Ereignis.
+  </p>
+
+  @if (iterations().length > 0) {
+    <div class="control-row">
+      @if (renaming()) {
+        <input
+          class="rename-input"
+          type="text"
+          [value]="currentIteration()?.name ?? ''"
+          aria-label="Iteration umbenennen"
+          (keydown.enter)="renameIteration($any($event.target).value)"
+          (blur)="renameIteration($any($event.target).value)"
+        />
+      } @else {
+        <app-iteration-selector
+          [iterations]="iterations()"
+          [index]="iterationIndex()"
+          (indexChange)="onIndexChange($event)"
+        />
+      }
+
+      <div class="iteration-tools">
+        <button type="button" class="btn" (click)="renaming.set(!renaming())">Umbenennen</button>
+        <button type="button" class="btn danger" (click)="deleteIteration()">Iteration löschen</button>
+      </div>
+    </div>
+
+    <div class="legend">
+      @for (line of dialLines(); track line.id) {
+        <span class="legend-item">
+          <span class="legend-dot" [style.background]="line.color"></span>{{ line.name }}
+        </span>
+      }
+      <span class="legend-note">leuchtendes Viertel = Fokus gesetzt</span>
+    </div>
+
+    <div class="stage">
+      <div class="timeline-col">
+        <app-dial-timeline
+          [events]="currentEvents()"
+          [lines]="dialLines()"
+          [selectedEventId]="selectedEvent()?.id ?? null"
+          [nextEventId]="nextEventId()"
+          (select)="onSelectEvent($event)"
+        />
+        <div class="add-event-row">
+          <button type="button" class="btn" (click)="addEventOfType('Training')">＋ Training</button>
+          <button type="button" class="btn" (click)="addEventOfType('Match')">＋ Match</button>
+        </div>
+      </div>
+
+      <aside class="detail-pane">
+        <app-event-detail
+          [event]="selectedEvent()"
+          [lines]="dialLines()"
+          [focusesByLine]="focusesByLine()"
+          [isNext]="selectedIsNext()"
+          (focusChange)="onFocusChange($event)"
+          (dateChange)="onDateChange($event)"
+          (rename)="onRenameEvent($event)"
+          (deleteEvent)="onDeleteEvent($event)"
+        />
+      </aside>
+    </div>
+  } @else if (!loading()) {
+    <p class="empty-state">Noch keine Iterationen angelegt.</p>
+  }
+
+  <form class="add-iteration" (submit)="$event.preventDefault(); addIteration()">
+    <input
+      type="text"
+      placeholder="Neue Iteration"
+      [value]="newIterationName()"
+      (input)="newIterationName.set($any($event.target).value)"
+    />
+    <button type="submit" class="btn">Iteration anlegen</button>
+  </form>
+</div>

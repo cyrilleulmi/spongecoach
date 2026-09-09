@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
-import { LineOverview } from './lines/line-overview/line-overview';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 @Component({
-  imports: [LineOverview],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   selector: 'app-root',
-  template: '<app-line-overview />',
+  templateUrl: './app.html',
+  styleUrl: './app.scss',
 })
 export class App {}

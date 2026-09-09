@@ -1,0 +1,167 @@
+:host {
+  display: block;
+  --dial-track: color-mix(in srgb, var(--ink) 14%, var(--surface));
+}
+
+.iteration-nodes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.15rem;
+  position: relative;
+  padding: 0.6rem 0 1.4rem;
+}
+
+.iteration-nodes::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 3rem;
+  bottom: 3rem;
+  width: 3px;
+  background: var(--dial-track);
+}
+
+.empty {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.d-node {
+  position: relative;
+  width: 9.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  padding: 0;
+  flex: none;
+}
+
+.dial {
+  width: 5.2rem;
+  height: 5.2rem;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.d-node:hover .dial {
+  transform: scale(1.05);
+}
+
+.dial-glyph {
+  position: absolute;
+  inset: 0.85rem;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink-soft);
+}
+
+.d-type {
+  position: relative;
+  z-index: 2;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+  background: var(--surface);
+  padding: 0 0.3rem;
+  border-radius: 999px;
+}
+
+.d-node.match .d-type {
+  color: var(--danger-ink);
+}
+
+.d-label {
+  position: relative;
+  z-index: 2;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+  background: var(--surface);
+  padding: 0 0.3rem;
+  border-radius: 0.4rem;
+  transition:
+    font-size 0.15s ease,
+    color 0.15s ease;
+}
+
+.next-tag {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  background: var(--accent);
+  color: var(--surface);
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+/* "next" — a persistent accent ring, independent of selection */
+.d-node.current .dial {
+  box-shadow:
+    0 0 0 4px var(--accent-soft),
+    0 0 0 5px var(--accent),
+    var(--shadow);
+}
+
+.d-node.current .d-type {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* selection — bigger, distinctly amber, independent of "next" */
+.d-node.selected {
+  z-index: 2;
+}
+
+.d-node.selected .dial,
+.d-node.selected:hover .dial {
+  transform: scale(1.22);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, #b8790f 22%, var(--surface)),
+    0 0 0 6px #b8790f,
+    0 10px 22px -8px rgba(0, 0, 0, 0.28);
+}
+
+.d-node.selected .d-label {
+  color: #b8790f;
+  font-weight: 700;
+}
+
+/* both at once: keep the bigger selected sizing, layer the accent ring outside */
+.d-node.current.selected .dial {
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, #b8790f 22%, var(--surface)),
+    0 0 0 6px #b8790f,
+    0 0 0 10px var(--accent-soft),
+    0 0 0 11px var(--accent),
+    0 10px 22px -8px rgba(0, 0, 0, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dial {
+    transition: none;
+  }
+}

@@ -1,0 +1,41 @@
+:host {
+  display: block;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100%;
+}
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.75rem 2rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+}
+
+.app-nav .brand {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-right: 0.5rem;
+}
+
+.app-nav a {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ink-soft);
+  padding: 0.3rem 0;
+  border-bottom: 2px solid transparent;
+}
+
+.app-nav a.active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}

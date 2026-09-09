@@ -1,8 +1,13 @@
 package com.spongecoach.support;
 
 import com.spongecoach.domain.DevelopmentGoal;
+import com.spongecoach.domain.Event;
+import com.spongecoach.domain.EventType;
 import com.spongecoach.domain.Focus;
+import com.spongecoach.domain.Iteration;
 import com.spongecoach.domain.Line;
+import com.spongecoach.domain.LineFocusEvent;
+import com.spongecoach.domain.LineFocusEventId;
 import com.spongecoach.domain.LineSkill;
 import com.spongecoach.domain.LineSkillId;
 import com.spongecoach.domain.Player;
@@ -14,6 +19,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -118,6 +124,9 @@ public class TestData {
         if (line == null) {
             return;
         }
+        entityManager.createNativeQuery("delete from line_focus_event where line_id = ?1")
+                .setParameter(1, lineId)
+                .executeUpdate();
         LineSkill.delete("line.id", lineId);
         entityManager.createNativeQuery("delete from line_player where line_id = ?1")
                 .setParameter(1, lineId)
@@ -158,6 +167,9 @@ public class TestData {
 
     @Transactional
     public void deleteFocus(UUID focusId) {
+        entityManager.createNativeQuery("delete from line_focus_event where focus_id = ?1")
+                .setParameter(1, focusId)
+                .executeUpdate();
         entityManager.createNativeQuery("delete from line_focus where focus_id = ?1")
                 .setParameter(1, focusId)
                 .executeUpdate();
@@ -165,5 +177,72 @@ public class TestData {
                 .setParameter(1, focusId)
                 .executeUpdate();
         Focus.deleteById(focusId);
+    }
+
+    // --- Iteration timeline (issue #12) ----------------------------------------
+
+    /** The seeded Event type with the given name ("Training" / "Match"). */
+    public EventType eventType(String name) {
+        return EventType.find("name", name).firstResult();
+    }
+
+    @Transactional
+    public Iteration createIteration(String name, int position) {
+        Iteration iteration = new Iteration();
+        iteration.id = UUID.randomUUID();
+        iteration.team = Team.theTeam();
+        iteration.name = name;
+        iteration.position = position;
+        iteration.persist();
+        return iteration;
+    }
+
+    @Transactional
+    public Event createEvent(UUID iterationId, UUID eventTypeId, String name, int position, LocalDate scheduledOn) {
+        Event event = new Event();
+        event.id = UUID.randomUUID();
+        event.iteration = Iteration.findById(iterationId);
+        event.eventType = EventType.findById(eventTypeId);
+        event.name = name;
+        event.position = position;
+        event.scheduledOn = scheduledOn;
+        event.persist();
+        return event;
+    }
+
+    /** Convenience: a Training on the given Iteration, numbered by position, with no date. */
+    @Transactional
+    public Event addTraining(UUID iterationId, int position) {
+        return createEvent(iterationId, eventType("Training").id, null, position, null);
+    }
+
+    @Transactional
+    public void attachFocus(UUID eventId, UUID lineId, UUID focusId) {
+        LineFocusEvent attachment = new LineFocusEvent();
+        attachment.id = new LineFocusEventId(eventId, lineId);
+        attachment.event = Event.findById(eventId);
+        attachment.line = Line.findById(lineId);
+        attachment.focus = Focus.findById(focusId);
+        attachment.persist();
+    }
+
+    @Transactional
+    public void deleteEvent(UUID eventId) {
+        entityManager.createNativeQuery("delete from line_focus_event where event_id = ?1")
+                .setParameter(1, eventId)
+                .executeUpdate();
+        Event.deleteById(eventId);
+    }
+
+    @Transactional
+    public void deleteIteration(UUID iterationId) {
+        entityManager.createNativeQuery(
+                        "delete from line_focus_event where event_id in (select id from event where iteration_id = ?1)")
+                .setParameter(1, iterationId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from event where iteration_id = ?1")
+                .setParameter(1, iterationId)
+                .executeUpdate();
+        Iteration.deleteById(iterationId);
     }
 }

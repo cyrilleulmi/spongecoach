@@ -1,0 +1,92 @@
+:host {
+  display: block;
+}
+
+.selector-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.5rem 0.75rem;
+  box-shadow: var(--shadow);
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.selector-info {
+  min-width: 12rem;
+}
+
+.selector-name {
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.selector-pos {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 0.15rem;
+}
+
+.dots {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dot-btn {
+  appearance: none;
+  border: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line);
+  cursor: pointer;
+  padding: 0;
+}
+
+.dot-btn.active {
+  background: var(--accent);
+  width: 20px;
+  border-radius: 5px;
+}
+
+@media (max-width: 480px) {
+  .selector-info {
+    min-width: 0;
+  }
+}

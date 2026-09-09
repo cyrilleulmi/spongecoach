@@ -1,0 +1,41 @@
+@if (current(); as iteration) {
+  <div class="selector-bar">
+    <button
+      type="button"
+      class="nav-btn"
+      aria-label="Vorherige Iteration"
+      [disabled]="index() === 0"
+      (click)="go(index() - 1)"
+    >
+      ‹
+    </button>
+
+    <div class="selector-info">
+      <div class="selector-name">{{ iteration.name }}</div>
+      <div class="selector-pos">Iteration {{ index() + 1 }} von {{ count() }}</div>
+    </div>
+
+    <button
+      type="button"
+      class="nav-btn"
+      aria-label="Nächste Iteration"
+      [disabled]="index() === count() - 1"
+      (click)="go(index() + 1)"
+    >
+      ›
+    </button>
+
+    <div class="dots">
+      @for (it of iterations(); track it.id; let i = $index) {
+        <button
+          type="button"
+          class="dot-btn"
+          [class.active]="i === index()"
+          [attr.aria-label]="it.name + ' anzeigen'"
+          [attr.aria-current]="i === index() ? 'true' : null"
+          (click)="go(i)"
+        ></button>
+      }
+    </div>
+  </div>
+}

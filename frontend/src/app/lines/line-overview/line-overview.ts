@@ -43,6 +43,8 @@ export class LineOverview implements OnInit {
   protected readonly newLineName = signal('');
   protected readonly menuOpen = signal(false);
   protected readonly deletedLines = signal<LineSummary[]>([]);
+  /** Roster dialog draft — player toggles land here and are only sent as one request on "Fertig". */
+  protected readonly stagedPlayerIds = signal<Set<string>>(new Set());
 
   /** Skill or goal id whose color swatches are currently open (their UUIDs never collide). */
   protected readonly editingColorId = signal<string | null>(null);
@@ -252,13 +254,29 @@ export class LineOverview implements OnInit {
   }
 
   protected openRosterDialog(): void {
+    this.stagedPlayerIds.set(new Set(this.associatedPlayerIds()));
     this.rosterDialog()?.nativeElement.showModal();
   }
 
+  /** "Fertig": sends the accumulated roster edits as a single request, if anything changed. */
   protected closeRosterDialog(): void {
+    const lineId = this.selectedLineId();
+    const staged = this.stagedPlayerIds();
     this.rosterDialog()?.nativeElement.close();
+    if (!lineId || this.setsEqual(staged, this.associatedPlayerIds())) {
+      return;
+    }
+    this.api.updateLineAssociations(lineId, { playerIds: [...staged] }).subscribe({
+      next: () => this.selectLine(lineId),
+      error: () => this.errorMessage.set('Kader konnte nicht aktualisiert werden.'),
+    });
   }
 
+  protected toggleStagedPlayer(playerId: string): void {
+    this.stagedPlayerIds.set(new Set(this.toggledIds(this.stagedPlayerIds(), playerId)));
+  }
+
+  /** Roster row "x": a single removal outside the dialog, so it stays a one-off immediate request. */
   protected togglePlayer(playerId: string): void {
     const lineId = this.selectedLineId();
     if (!lineId) {
@@ -269,6 +287,10 @@ export class LineOverview implements OnInit {
       next: () => this.selectLine(lineId),
       error: () => this.errorMessage.set('Kader konnte nicht aktualisiert werden.'),
     });
+  }
+
+  private setsEqual(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+    return a.size === b.size && [...a].every((id) => b.has(id));
   }
 
   /**

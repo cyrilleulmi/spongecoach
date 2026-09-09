@@ -153,8 +153,8 @@
           <p class="hint">Spieler aus dem Team-Kader zu diesem Block hinzufügen oder entfernen.</p>
           <app-manage-chips
             [items]="playerChipItems()"
-            [associatedIds]="associatedPlayerIds()"
-            (toggle)="togglePlayer($event)"
+            [associatedIds]="stagedPlayerIds()"
+            (toggle)="toggleStagedPlayer($event)"
           />
         </div>
       </dialog>

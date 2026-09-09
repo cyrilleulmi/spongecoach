@@ -146,6 +146,18 @@ public class TestData {
         goal.deletedAt = Instant.now();
     }
 
+    /** Row-level check that bypasses the {@code deletedAt is null} filter, for asserting a soft-deleted Line's row (and its history) survives. */
+    public boolean lineRowExists(UUID lineId) {
+        return Line.findById(lineId) != null;
+    }
+
+    /** Bypasses the {@code deletedAt is null} filter, for asserting a soft-deleted Line's roster survives. */
+    @Transactional
+    public int lineRosterSize(UUID lineId) {
+        Line line = Line.findById(lineId);
+        return line == null ? -1 : line.players.size();
+    }
+
     @Transactional
     public void deleteSkill(UUID skillId) {
         entityManager.createNativeQuery("delete from line_skill where skill_id = ?1")

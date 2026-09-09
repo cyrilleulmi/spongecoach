@@ -15,6 +15,22 @@ export class LineApiService {
     return this.http.get<LineDetail>(`/api/lines/${lineId}`);
   }
 
+  createLine(name: string): Observable<LineSummary> {
+    return this.http.post<LineSummary>('/api/lines', { name });
+  }
+
+  deleteLine(lineId: string): Observable<void> {
+    return this.http.delete<void>(`/api/lines/${lineId}`);
+  }
+
+  listDeletedLines(): Observable<LineSummary[]> {
+    return this.http.get<LineSummary[]>('/api/lines/deleted');
+  }
+
+  restoreLine(lineId: string): Observable<LineSummary> {
+    return this.http.post<LineSummary>(`/api/lines/${lineId}/restore`, null);
+  }
+
   updateLineAssociations(
     lineId: string,
     body: { playerIds?: string[]; developmentGoalIds?: string[]; focusIds?: string[] },

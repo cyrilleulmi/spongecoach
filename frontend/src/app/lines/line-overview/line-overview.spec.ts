@@ -75,20 +75,41 @@ describe('LineOverview', () => {
     expect((fixture.nativeElement.textContent as string)).toContain('Bäri');
   });
 
-  it('when a rating segment is clicked, PUTs the new rating and refreshes the line', async () => {
+  it('when a rating segment is clicked, applies it immediately and PUTs in the background with no refetch', async () => {
     const fixture = await render();
     fixture.detectChanges();
 
     const segment: HTMLButtonElement = fixture.nativeElement.querySelector('app-rating-bar .seg:nth-child(5)');
     segment.click();
+    fixture.detectChanges();
+
+    // Rating reflects the click before the PUT resolves — no round trip to wait on.
+    expect((fixture.nativeElement.textContent as string)).toContain('5/5');
 
     const req = httpMock.expectOne('/api/lines/line-a/skills/skill-1');
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({ rating: 100 });
     req.flush({ ...SKILL, skillId: SKILL.id, rating: 100 });
 
-    httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
+    // Happy path: no follow-up GET of the line — the optimistic state already matches the server.
+    httpMock.expectNone('/api/lines/line-a');
+  });
+
+  it('when the rating PUT fails, rolls back to the previous rating', async () => {
+    const fixture = await render();
+    fixture.detectChanges();
+
+    const segment: HTMLButtonElement = fixture.nativeElement.querySelector('app-rating-bar .seg:nth-child(5)');
+    segment.click();
+    fixture.detectChanges();
+    expect((fixture.nativeElement.textContent as string)).toContain('5/5');
+
+    const req = httpMock.expectOne('/api/lines/line-a/skills/skill-1');
+    req.flush('boom', { status: 500, statusText: 'Server Error' });
     await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement.textContent as string)).toContain('3/5'); // back to the seeded 60 rating
   });
 
   it('when associating a team player via the roster dialog, PUTs the full player id array', async () => {
@@ -155,13 +176,16 @@ describe('LineOverview', () => {
     expect(post.request.body).toEqual({ name: 'Bully-Kontrolle', color: '#2c7a68' });
     post.flush({ id: 'skill-new', name: 'Bully-Kontrolle', color: '#2c7a68' });
 
+    fixture.detectChanges();
+    expect((fixture.nativeElement.textContent as string)).toContain('Bully-Kontrolle');
+
     const assoc = httpMock.expectOne('/api/lines/line-a/skills/skill-new');
     expect(assoc.request.method).toBe('PUT');
     expect(assoc.request.body).toEqual({ rating: 50 });
     assoc.flush({ skillId: 'skill-new', name: 'Bully-Kontrolle', color: '#2c7a68', rating: 50 });
 
-    httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
-    await fixture.whenStable();
+    // No follow-up GET — the optimistically-added skill already matches the server response.
+    httpMock.expectNone('/api/lines/line-a');
   });
 
   it('when creating a focus, POSTs it with every chosen goal id and auto-associates it', async () => {
@@ -196,6 +220,127 @@ describe('LineOverview', () => {
 
     httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
     await fixture.whenStable();
+  });
+
+  function openMenu(fixture: { nativeElement: HTMLElement }): void {
+    (fixture.nativeElement.querySelector('.line-menu .icon-btn') as HTMLButtonElement).click();
+  }
+
+  it('when creating a line via the "..." menu, POSTs the name and selects the new line', async () => {
+    const fixture = await render();
+
+    openMenu(fixture);
+    fixture.detectChanges();
+    (
+      Array.from(fixture.nativeElement.querySelectorAll('.menu button')).find((b) =>
+        (b.textContent ?? '').includes('Neuen Block anlegen'),
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('.small-dialog input');
+    input.value = 'Lama';
+    input.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+
+    (fixture.nativeElement.querySelector('.small-dialog button[type="submit"]') as HTMLButtonElement).click();
+
+    const post = httpMock.expectOne('/api/lines');
+    expect(post.request.method).toBe('POST');
+    expect(post.request.body).toEqual({ name: 'Lama' });
+    const LINE_C = { id: 'line-c', name: 'Lama', playerCount: 0 };
+    post.flush(LINE_C);
+
+    httpMock.expectOne('/api/lines/line-c').flush(detailFor(LINE_C));
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement.textContent as string)).toContain('Lama');
+  });
+
+  it('when deleting the selected line via the "..." menu, asks for confirmation before DELETEing', async () => {
+    const fixture = await render();
+
+    openMenu(fixture);
+    fixture.detectChanges();
+    (
+      Array.from(fixture.nativeElement.querySelectorAll('.menu button')).find((b) =>
+        (b.textContent ?? '').includes('löschen'),
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    // Confirmation dialog is open; deleting must not fire until confirmed.
+    httpMock.expectNone('/api/lines/line-a');
+
+    (
+      Array.from(fixture.nativeElement.querySelectorAll('.small-dialog .dialog-actions button')).find((b) =>
+        (b.textContent ?? '').trim() === 'Löschen',
+      ) as HTMLButtonElement
+    ).click();
+
+    const del = httpMock.expectOne('/api/lines/line-a');
+    expect(del.request.method).toBe('DELETE');
+    del.flush(null);
+
+    httpMock.expectOne('/api/lines/line-b').flush(detailFor(LINE_B));
+    await fixture.whenStable();
+
+    const remainingTabs: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('.line-switch button'),
+    );
+    expect(remainingTabs.map((b) => b.textContent?.trim())).toEqual(['Bäri']);
+    expect((fixture.nativeElement.textContent as string)).toContain('Bäri');
+  });
+
+  it('when cancelling the delete confirmation, no DELETE is sent', async () => {
+    const fixture = await render();
+
+    openMenu(fixture);
+    fixture.detectChanges();
+    (
+      Array.from(fixture.nativeElement.querySelectorAll('.menu button')).find((b) =>
+        (b.textContent ?? '').includes('löschen'),
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    (
+      Array.from(fixture.nativeElement.querySelectorAll('.small-dialog .dialog-actions button')).find((b) =>
+        (b.textContent ?? '').trim() === 'Abbrechen',
+      ) as HTMLButtonElement
+    ).click();
+
+    httpMock.expectNone('/api/lines/line-a');
+  });
+
+  it('when opening "Gelöschte Blöcke verwalten", lists and restores a deleted line', async () => {
+    const fixture = await render();
+
+    openMenu(fixture);
+    fixture.detectChanges();
+    (
+      Array.from(fixture.nativeElement.querySelectorAll('.menu button')).find((b) =>
+        (b.textContent ?? '').includes('Gelöschte Blöcke'),
+      ) as HTMLButtonElement
+    ).click();
+
+    const DELETED_LINE = { id: 'line-deleted', name: 'Lama', playerCount: 4 };
+    httpMock.expectOne('/api/lines/deleted').flush([DELETED_LINE]);
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement.textContent as string)).toContain('Lama');
+
+    (fixture.nativeElement.querySelector('.small-dialog .roster-row .btn') as HTMLButtonElement).click();
+
+    const restore = httpMock.expectOne('/api/lines/line-deleted/restore');
+    expect(restore.request.method).toBe('POST');
+    restore.flush(DELETED_LINE);
+
+    httpMock.expectOne('/api/lines/line-deleted').flush(detailFor(DELETED_LINE));
+    await fixture.whenStable();
+
+    const tabs: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('.line-switch button'));
+    expect(tabs.map((b) => b.textContent?.trim())).toEqual(['Kiwi', 'Bäri', 'Lama']);
   });
 
   it('when a swatch is picked for a skill, PUTs the new color to the catalog', async () => {

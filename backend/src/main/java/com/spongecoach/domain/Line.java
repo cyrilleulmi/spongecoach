@@ -2,6 +2,7 @@ package com.spongecoach.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -13,6 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +31,9 @@ public class Line extends PanacheEntityBase {
     public Team team;
 
     public String name;
+
+    @Column(name = "deleted_at")
+    public Instant deletedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -56,6 +61,10 @@ public class Line extends PanacheEntityBase {
     public List<Focus> focuses = new ArrayList<>();
 
     public static List<Line> listAllOrderedByName() {
-        return list("order by name asc");
+        return list("deletedAt is null order by name asc");
+    }
+
+    public static List<Line> listDeletedOrderedByDeletedAt() {
+        return list("deletedAt is not null order by deletedAt desc");
     }
 }

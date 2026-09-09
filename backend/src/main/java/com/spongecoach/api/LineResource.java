@@ -1,5 +1,6 @@
 package com.spongecoach.api;
 
+import com.spongecoach.api.dto.LineCreateRequest;
 import com.spongecoach.api.dto.LineDetailDto;
 import com.spongecoach.api.dto.LineSkillDto;
 import com.spongecoach.api.dto.LineSummaryDto;
@@ -12,11 +13,13 @@ import com.spongecoach.domain.LineSkill;
 import com.spongecoach.domain.LineSkillId;
 import com.spongecoach.domain.Player;
 import com.spongecoach.domain.Skill;
+import com.spongecoach.domain.Team;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -24,6 +27,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +46,45 @@ public class LineResource {
     public LineDetailDto get(@PathParam("lineId") UUID lineId) {
         Line line = findLineOrThrow(lineId);
         return LineDetailDto.from(line, LineSkill.listForLine(lineId));
+    }
+
+    @POST
+    @Transactional
+    public Response create(LineCreateRequest request) {
+        if (request == null || request.name() == null || request.name().isBlank()) {
+            throw new BadRequestException("name must not be blank");
+        }
+        Line line = new Line();
+        line.id = UUID.randomUUID();
+        line.team = Team.theTeam();
+        line.name = request.name().trim();
+        line.persist();
+        return Response.status(Response.Status.CREATED).entity(LineSummaryDto.from(line)).build();
+    }
+
+    @DELETE
+    @Path("/{lineId}")
+    @Transactional
+    public Response delete(@PathParam("lineId") UUID lineId) {
+        Line line = findLineOrThrow(lineId);
+        line.deletedAt = Instant.now();
+        return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/deleted")
+    public List<LineSummaryDto> listDeleted() {
+        return Line.listDeletedOrderedByDeletedAt().stream().map(LineSummaryDto::from).toList();
+    }
+
+    @POST
+    @Path("/{lineId}/restore")
+    @Consumes(MediaType.WILDCARD)
+    @Transactional
+    public LineSummaryDto restore(@PathParam("lineId") UUID lineId) {
+        Line line = findDeletedLineOrThrow(lineId);
+        line.deletedAt = null;
+        return LineSummaryDto.from(line);
     }
 
     @PUT
@@ -111,8 +154,16 @@ public class LineResource {
 
     private Line findLineOrThrow(UUID lineId) {
         Line line = Line.findById(lineId);
-        if (line == null) {
+        if (line == null || line.deletedAt != null) {
             throw new NotFoundException("Line " + lineId + " not found");
+        }
+        return line;
+    }
+
+    private Line findDeletedLineOrThrow(UUID lineId) {
+        Line line = Line.findById(lineId);
+        if (line == null || line.deletedAt == null) {
+            throw new NotFoundException("Deleted line " + lineId + " not found");
         }
         return line;
     }

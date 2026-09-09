@@ -19,9 +19,99 @@
         </button>
       }
     </div>
+    <div class="line-menu">
+      <button
+        type="button"
+        class="btn icon-btn"
+        aria-haspopup="menu"
+        aria-label="Block-Aktionen"
+        [attr.aria-expanded]="menuOpen()"
+        (click)="toggleMenu($event)"
+      >
+        &hellip;
+      </button>
+      @if (menuOpen()) {
+        <div class="menu" role="menu" (click)="$event.stopPropagation()">
+          <button type="button" role="menuitem" (click)="openCreateLineDialog()">Neuen Block anlegen</button>
+          @if (detail(); as line) {
+            <button type="button" role="menuitem" (click)="openDeleteLineDialog()">
+              "{{ line.name }}" löschen
+            </button>
+          }
+          <button type="button" role="menuitem" (click)="openRestoreLineDialog()">
+            Gelöschte Blöcke verwalten
+          </button>
+        </div>
+      }
+    </div>
     <app-theme-toggle />
   </div>
 </header>
+
+<dialog
+  #createLineDialog
+  class="small-dialog"
+  (click)="$event.target === createLineDialog ? closeCreateLineDialog() : null"
+>
+  <div class="small-dialog-inner">
+    <div class="section-title">
+      <h2>Neuer Block</h2>
+      <button class="btn" type="button" (click)="closeCreateLineDialog()">Abbrechen</button>
+    </div>
+    <form class="create-row" (submit)="$event.preventDefault(); addLine()">
+      <input
+        type="text"
+        placeholder="Name"
+        [value]="newLineName()"
+        (input)="newLineName.set($any($event.target).value)"
+      />
+      <button type="submit" class="btn">Anlegen</button>
+    </form>
+  </div>
+</dialog>
+
+<dialog
+  #deleteLineDialog
+  class="small-dialog"
+  (click)="$event.target === deleteLineDialog ? closeDeleteLineDialog() : null"
+>
+  <div class="small-dialog-inner">
+    <div class="section-title">
+      <h2>Block löschen</h2>
+    </div>
+    <p class="hint">
+      "{{ detail()?.name }}" wirklich löschen? Der Verlauf (Kader, Skills, Ziele, Fokusse) bleibt
+      erhalten, der Block verschwindet aber aus der Übersicht — über "Gelöschte Blöcke verwalten"
+      lässt er sich wiederherstellen.
+    </p>
+    <div class="dialog-actions">
+      <button class="btn" type="button" (click)="closeDeleteLineDialog()">Abbrechen</button>
+      <button class="btn danger" type="button" (click)="confirmDeleteLine()">Löschen</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog
+  #restoreLineDialog
+  class="small-dialog"
+  (click)="$event.target === restoreLineDialog ? closeRestoreLineDialog() : null"
+>
+  <div class="small-dialog-inner">
+    <div class="section-title">
+      <h2>Gelöschte Blöcke</h2>
+      <button class="btn" type="button" (click)="closeRestoreLineDialog()">Fertig</button>
+    </div>
+    @if (deletedLines().length === 0) {
+      <p class="empty">Keine gelöschten Blöcke.</p>
+    }
+    @for (line of deletedLines(); track line.id) {
+      <div class="roster-row">
+        <div class="player-name">{{ line.name }}</div>
+        <button class="btn" type="button" (click)="restoreLine(line.id)">Wiederherstellen</button>
+      </div>
+    }
+  </div>
+</dialog>
 
 @if (detail(); as line) {
   <div class="shell">

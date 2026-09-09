@@ -1,4 +1,13 @@
-import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { ChipItem, ManageChips } from '../manage-chips/manage-chips';
 import { RatingBar } from '../rating-bar/rating-bar';
@@ -31,6 +40,9 @@ export class LineOverview implements OnInit {
   protected readonly focusCatalog = signal<FocusRef[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly openSection = signal<ManageSection | null>(null);
+  protected readonly newLineName = signal('');
+  protected readonly menuOpen = signal(false);
+  protected readonly deletedLines = signal<LineSummary[]>([]);
 
   /** Skill or goal id whose color swatches are currently open (their UUIDs never collide). */
   protected readonly editingColorId = signal<string | null>(null);
@@ -45,6 +57,9 @@ export class LineOverview implements OnInit {
   protected readonly newFocusGoalIdSet = computed(() => new Set(this.newFocusGoalIds()));
 
   private readonly rosterDialog = viewChild<ElementRef<HTMLDialogElement>>('rosterDialog');
+  private readonly createLineDialog = viewChild<ElementRef<HTMLDialogElement>>('createLineDialog');
+  private readonly deleteLineDialog = viewChild<ElementRef<HTMLDialogElement>>('deleteLineDialog');
+  private readonly restoreLineDialog = viewChild<ElementRef<HTMLDialogElement>>('restoreLineDialog');
 
   protected readonly associatedPlayerIds = computed(
     () => new Set((this.detail()?.players ?? []).map((p) => p.id)),
@@ -113,6 +128,100 @@ export class LineOverview implements OnInit {
     });
   }
 
+  @HostListener('document:click')
+  protected closeMenu(): void {
+    this.menuOpen.set(false);
+  }
+
+  protected toggleMenu(event: Event): void {
+    event.stopPropagation();
+    this.menuOpen.set(!this.menuOpen());
+  }
+
+  protected openCreateLineDialog(): void {
+    this.menuOpen.set(false);
+    this.newLineName.set('');
+    this.createLineDialog()?.nativeElement.showModal();
+  }
+
+  protected closeCreateLineDialog(): void {
+    this.createLineDialog()?.nativeElement.close();
+  }
+
+  protected addLine(): void {
+    const name = this.newLineName().trim();
+    if (!name) {
+      return;
+    }
+    this.api.createLine(name).subscribe({
+      next: (created) => {
+        this.lines.set([...this.lines(), created]);
+        this.newLineName.set('');
+        this.closeCreateLineDialog();
+        this.selectLine(created.id);
+      },
+      error: () => this.errorMessage.set('Block konnte nicht angelegt werden.'),
+    });
+  }
+
+  protected openDeleteLineDialog(): void {
+    if (!this.selectedLineId()) {
+      return;
+    }
+    this.menuOpen.set(false);
+    this.deleteLineDialog()?.nativeElement.showModal();
+  }
+
+  protected closeDeleteLineDialog(): void {
+    this.deleteLineDialog()?.nativeElement.close();
+  }
+
+  protected confirmDeleteLine(): void {
+    const lineId = this.selectedLineId();
+    if (!lineId) {
+      return;
+    }
+    this.api.deleteLine(lineId).subscribe({
+      next: () => {
+        this.closeDeleteLineDialog();
+        const remaining = this.lines().filter((l) => l.id !== lineId);
+        this.lines.set(remaining);
+        this.detail.set(null);
+        this.selectedLineId.set(null);
+        if (remaining.length > 0) {
+          this.selectLine(remaining[0].id);
+        }
+      },
+      error: () => this.errorMessage.set('Block konnte nicht gelöscht werden.'),
+    });
+  }
+
+  protected openRestoreLineDialog(): void {
+    this.menuOpen.set(false);
+    this.api.listDeletedLines().subscribe({
+      next: (lines) => {
+        this.deletedLines.set(lines);
+        this.restoreLineDialog()?.nativeElement.showModal();
+      },
+      error: () => this.errorMessage.set('Gelöschte Blöcke konnten nicht geladen werden.'),
+    });
+  }
+
+  protected closeRestoreLineDialog(): void {
+    this.restoreLineDialog()?.nativeElement.close();
+  }
+
+  protected restoreLine(lineId: string): void {
+    this.api.restoreLine(lineId).subscribe({
+      next: (restored) => {
+        this.deletedLines.set(this.deletedLines().filter((l) => l.id !== lineId));
+        this.lines.set([...this.lines(), restored]);
+        this.selectLine(restored.id);
+      },
+      error: () => this.errorMessage.set('Block konnte nicht wiederhergestellt werden.'),
+    });
+  }
+
   protected toggleManage(section: ManageSection): void {
     this.openSection.set(this.openSection() === section ? null : section);
   }
@@ -162,32 +271,78 @@ export class LineOverview implements OnInit {
     });
   }
 
+  /**
+   * Optimistic: applies the rating to `detail` immediately so the bar reacts on click rather than
+   * after a round trip, then fires the PUT in the background and only rolls back on error — no
+   * `selectLine()` refetch on the happy path.
+   */
   protected setRating(skillId: string, rating: number): void {
     const lineId = this.selectedLineId();
-    if (!lineId) {
+    const current = this.detail();
+    if (!lineId || !current) {
       return;
     }
+    const previousRating = current.skills.find((s) => s.skillId === skillId)?.rating;
+    this.patchDetailSkills(current.skills.map((s) => (s.skillId === skillId ? { ...s, rating } : s)));
+
     this.api.setSkillRating(lineId, skillId, rating).subscribe({
-      next: () => this.selectLine(lineId),
-      error: () => this.errorMessage.set('Bewertung konnte nicht aktualisiert werden.'),
+      error: () => {
+        this.errorMessage.set('Bewertung konnte nicht aktualisiert werden.');
+        if (previousRating !== undefined) {
+          this.revertDetailSkills((skills) =>
+            skills.map((s) => (s.skillId === skillId ? { ...s, rating: previousRating } : s)),
+          );
+        }
+      },
     });
   }
 
   protected toggleSkill(skillId: string): void {
     const lineId = this.selectedLineId();
-    if (!lineId) {
+    const current = this.detail();
+    if (!lineId || !current) {
       return;
     }
     if (this.associatedSkillIds().has(skillId)) {
+      const removed = current.skills.find((s) => s.skillId === skillId);
+      this.patchDetailSkills(current.skills.filter((s) => s.skillId !== skillId));
+
       this.api.removeSkill(lineId, skillId).subscribe({
-        next: () => this.selectLine(lineId),
-        error: () => this.errorMessage.set('Skill konnte nicht entfernt werden.'),
+        error: () => {
+          this.errorMessage.set('Skill konnte nicht entfernt werden.');
+          if (removed) {
+            this.revertDetailSkills((skills) => [...skills, removed]);
+          }
+        },
       });
     } else {
+      const catalogSkill = this.skillCatalog().find((s) => s.id === skillId);
+      this.patchDetailSkills([
+        ...current.skills,
+        { skillId, name: catalogSkill?.name ?? '', color: catalogSkill?.color ?? '#888888', rating: 50 },
+      ]);
+
       this.api.setSkillRating(lineId, skillId, 50).subscribe({
-        next: () => this.selectLine(lineId),
-        error: () => this.errorMessage.set('Skill konnte nicht hinzugefügt werden.'),
+        error: () => {
+          this.errorMessage.set('Skill konnte nicht hinzugefügt werden.');
+          this.revertDetailSkills((skills) => skills.filter((s) => s.skillId !== skillId));
+        },
       });
+    }
+  }
+
+  private patchDetailSkills(skills: LineDetail['skills']): void {
+    const current = this.detail();
+    if (current) {
+      this.detail.set({ ...current, skills });
+    }
+  }
+
+  /** Re-reads `detail` at rollback time, since further optimistic edits may have landed since. */
+  private revertDetailSkills(rollback: (skills: LineDetail['skills']) => LineDetail['skills']): void {
+    const current = this.detail();
+    if (current) {
+      this.detail.set({ ...current, skills: rollback(current.skills) });
     }
   }
 

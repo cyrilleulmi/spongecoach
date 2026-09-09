@@ -22,6 +22,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 class LineResourceTest {
@@ -247,6 +249,136 @@ class LineResourceTest {
         given().contentType(ContentType.JSON).body(Map.of("rating", 101))
                 .when().put("/api/lines/" + line.id + "/skills/" + skill.id)
                 .then().statusCode(400).body("error", equalTo("bad_request"));
+    }
+
+    @Test
+    void whenCreatingALine_thenItAppearsInTheList() {
+        String name = "Neue Linie " + UUID.randomUUID();
+
+        String lineId = given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", name))
+                .when().post("/api/lines")
+                .then()
+                .statusCode(201)
+                .body("name", equalTo(name))
+                .body("playerCount", equalTo(0))
+                .extract().path("id");
+
+        cleanups.add(() -> testData.deleteLine(UUID.fromString(lineId)));
+
+        given()
+                .when().get("/api/lines")
+                .then()
+                .statusCode(200)
+                .body("id", hasItem(lineId));
+    }
+
+    @Test
+    void whenCreatingALineWithoutAName_thenReturnsBadRequest() {
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("name", "  "))
+                .when().post("/api/lines")
+                .then()
+                .statusCode(400)
+                .body("error", equalTo("bad_request"));
+    }
+
+    @Test
+    void whenDeletingALine_thenItDisappearsButItsHistorySurvives() {
+        Line line = testData.createLine("Verschwindet " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+        Player player = testData.addPlayer(line.id, "Sabrina " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(player.id));
+
+        given()
+                .when().delete("/api/lines/" + line.id)
+                .then()
+                .statusCode(204);
+
+        given()
+                .when().get("/api/lines")
+                .then()
+                .statusCode(200)
+                .body("id", not(hasItem(line.id.toString())));
+        given()
+                .when().get("/api/lines/" + line.id)
+                .then()
+                .statusCode(404)
+                .body("error", equalTo("not_found"));
+
+        assertTrue(testData.lineRowExists(line.id));
+        assertEquals(1, testData.lineRosterSize(line.id));
+    }
+
+    @Test
+    void whenDeletingAnAlreadyDeletedLine_thenReturnsNotFound() {
+        Line line = testData.createLine("Doppelt " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+
+        given().when().delete("/api/lines/" + line.id).then().statusCode(204);
+
+        given()
+                .when().delete("/api/lines/" + line.id)
+                .then()
+                .statusCode(404)
+                .body("error", equalTo("not_found"));
+    }
+
+    @Test
+    void whenListingDeletedLines_thenItAppearsWithNameAndPlayerCount() {
+        Line line = testData.createLine("Gelöscht " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+        Player player = testData.addPlayer(line.id, "Nives " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(player.id));
+
+        given().when().delete("/api/lines/" + line.id).then().statusCode(204);
+
+        given()
+                .when().get("/api/lines/deleted")
+                .then()
+                .statusCode(200)
+                .body("find { it.id == '" + line.id + "' }.name", equalTo(line.name))
+                .body("find { it.id == '" + line.id + "' }.playerCount", equalTo(1));
+    }
+
+    @Test
+    void whenRestoringADeletedLine_thenItReappearsInTheActiveList() {
+        Line line = testData.createLine("Comeback " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+
+        given().when().delete("/api/lines/" + line.id).then().statusCode(204);
+
+        given()
+                .when().post("/api/lines/" + line.id + "/restore")
+                .then()
+                .statusCode(200)
+                .body("id", equalTo(line.id.toString()))
+                .body("name", equalTo(line.name));
+
+        given()
+                .when().get("/api/lines")
+                .then()
+                .statusCode(200)
+                .body("id", hasItem(line.id.toString()));
+        given()
+                .when().get("/api/lines/deleted")
+                .then()
+                .statusCode(200)
+                .body("id", not(hasItem(line.id.toString())));
+    }
+
+    @Test
+    void whenRestoringALineThatIsNotDeleted_thenReturnsNotFound() {
+        Line line = testData.createLine("Aktiv " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+
+        given()
+                .when().post("/api/lines/" + line.id + "/restore")
+                .then()
+                .statusCode(404)
+                .body("error", equalTo("not_found"));
     }
 
     @Test

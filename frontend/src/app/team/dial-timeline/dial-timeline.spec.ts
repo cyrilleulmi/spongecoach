@@ -14,8 +14,7 @@ const EVENTS: TimelineEvent[] = [
     typeId: 'tt',
     type: 'Training',
     name: null,
-    position: 1,
-    scheduledOn: null,
+    scheduledOn: '2026-09-08T18:00',
     focusAttachments: [
       { lineId: 'line-a', lineName: 'Kiwi', focusId: 'f-1', focusName: 'Fokus A' },
     ],
@@ -25,8 +24,7 @@ const EVENTS: TimelineEvent[] = [
     typeId: 'mt',
     type: 'Match',
     name: 'Testspiel gegen Rotweiss',
-    position: 2,
-    scheduledOn: '2026-09-12',
+    scheduledOn: '2026-09-12T15:00',
     focusAttachments: [],
   },
 ];

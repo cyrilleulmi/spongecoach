@@ -44,11 +44,11 @@ export class IterationApiService {
     return this.http.post<TimelineEvent>(`/api/iterations/${iterationId}/events`, body);
   }
 
-  /** Iteration-scoped: reorder / rename / retype one event. */
+  /** Iteration-scoped: reschedule / rename / retype one event. A colliding scheduledOn is a 409. */
   updateEvent(
     iterationId: string,
     eventId: string,
-    body: { eventTypeId?: string; name?: string; position?: number; scheduledOn?: string },
+    body: { eventTypeId?: string; name?: string; scheduledOn?: string },
   ): Observable<TimelineEvent> {
     return this.http.put<TimelineEvent>(`/api/iterations/${iterationId}/events/${eventId}`, body);
   }

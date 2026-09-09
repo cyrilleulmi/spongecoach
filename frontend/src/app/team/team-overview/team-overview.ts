@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { LineApiService } from '../../lines/line-api.service';
@@ -7,7 +8,7 @@ import { DialLine, LINE_DIAL_COLORS } from '../dial-palette';
 import { DialTimeline } from '../dial-timeline/dial-timeline';
 import { EventDetail, FocusChange } from '../event-detail/event-detail';
 import { IterationSelector } from '../iteration-selector/iteration-selector';
-import { EventType, Iteration } from '../iteration.model';
+import { EventType, Iteration, TimelineEvent } from '../iteration.model';
 import { IterationApiService } from '../iteration-api.service';
 
 /**
@@ -51,9 +52,9 @@ export class TeamOverview implements OnInit {
   protected readonly currentEvents = computed(() => this.currentIteration()?.events ?? []);
 
   /**
-   * The next event still needing attention: the first event, in Iteration then position order,
-   * where at least one Line has no Focus set. Dates are optional, so "incomplete" is the signal
-   * the page carries rather than a schedule.
+   * The next event still needing attention: the first event, in Iteration then scheduledOn order,
+   * where at least one Line has no Focus set. This is a Focus-completeness signal, not a "what's
+   * upcoming" one — it can point at a past event that was never fully planned.
    */
   protected readonly nextEventId = computed<string | null>(() => {
     const lineCount = this.lineList().length;
@@ -160,15 +161,21 @@ export class TeamOverview implements OnInit {
     });
   }
 
-  protected onDateChange(date: string | null): void {
+  protected onDateChange(date: string): void {
     const event = this.selectedEvent();
     const iteration = this.currentIteration();
-    if (!event || !iteration || !date) {
+    if (!event || !iteration) {
       return;
     }
     this.api.updateEvent(iteration.id, event.id, { scheduledOn: date }).subscribe({
       next: () => this.reload(event.id),
-      error: () => this.errorMessage.set('Datum konnte nicht gesetzt werden.'),
+      error: (err: HttpErrorResponse) => {
+        this.errorMessage.set(
+          err.status === 409
+            ? 'Diese Zeit ist in dieser Iteration schon vergeben.'
+            : 'Datum konnte nicht gesetzt werden.',
+        );
+      },
     });
   }
 
@@ -201,11 +208,33 @@ export class TeamOverview implements OnInit {
     if (!iteration || !type) {
       return;
     }
-    const body = typeName === 'Match' ? { eventTypeId: type.id, name: 'Neues Match' } : { eventTypeId: type.id };
+    const scheduledOn = this.nextFreeSlot(iteration.events);
+    const body =
+      typeName === 'Match'
+        ? { eventTypeId: type.id, name: 'Neues Match', scheduledOn }
+        : { eventTypeId: type.id, scheduledOn };
     this.api.addEvent(iteration.id, body).subscribe({
       next: (event) => this.reload(event.id),
       error: () => this.errorMessage.set('Ereignis konnte nicht hinzugefügt werden.'),
     });
+  }
+
+  /** One hour after the Iteration's latest event, or the next full hour if it has none. */
+  private nextFreeSlot(events: TimelineEvent[]): string {
+    const latest = events.reduce<Date | null>((max, e) => {
+      const date = new Date(e.scheduledOn);
+      return !max || date > max ? date : max;
+    }, null);
+    const base = latest ? new Date(latest.getTime() + 60 * 60 * 1000) : new Date();
+    if (!latest) {
+      base.setMinutes(0, 0, 0);
+      base.setHours(base.getHours() + 1);
+    }
+    const pad = (n: number) => `${n}`.padStart(2, '0');
+    return (
+      `${base.getFullYear()}-${pad(base.getMonth() + 1)}-${pad(base.getDate())}` +
+      `T${pad(base.getHours())}:${pad(base.getMinutes())}`
+    );
   }
 
   protected addIteration(): void {

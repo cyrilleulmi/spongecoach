@@ -27,8 +27,7 @@ function iterations(): Iteration[] {
           typeId: 'tt',
           type: 'Training',
           name: null,
-          position: 1,
-          scheduledOn: null,
+          scheduledOn: '2026-08-05T18:00',
           focusAttachments: [
             { lineId: 'line-a', lineName: 'Kiwi', focusId: 'f-1', focusName: 'Fokus A' },
           ],
@@ -38,8 +37,7 @@ function iterations(): Iteration[] {
           typeId: 'mt',
           type: 'Match',
           name: 'Testspiel',
-          position: 2,
-          scheduledOn: '2026-09-12',
+          scheduledOn: '2026-08-12T19:00',
           focusAttachments: [],
         },
       ],
@@ -127,14 +125,14 @@ describe('TeamOverview', () => {
 
     const post = httpMock.expectOne('/api/iterations/it-1/events');
     expect(post.request.method).toBe('POST');
-    expect(post.request.body).toEqual({ eventTypeId: 'tt' });
+    // one hour after the iteration's latest event (ev-2 at 2026-08-12T19:00)
+    expect(post.request.body).toEqual({ eventTypeId: 'tt', scheduledOn: '2026-08-12T20:00' });
     post.flush({
       id: 'ev-new',
       typeId: 'tt',
       type: 'Training',
       name: null,
-      position: 3,
-      scheduledOn: null,
+      scheduledOn: '2026-08-12T20:00',
       focusAttachments: [],
     });
 

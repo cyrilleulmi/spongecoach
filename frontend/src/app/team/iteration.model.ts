@@ -16,11 +16,10 @@ export interface TimelineEvent {
   typeId: string;
   /** Event type name — "Training" or "Match" (an open list). */
   type: string;
-  /** null for Trainings (numbered by position); the opponent for Matches. */
+  /** null for Trainings (numbered by scheduled order); the opponent for Matches. */
   name: string | null;
-  position: number;
-  /** ISO date (yyyy-mm-dd) or null when no date is set. */
-  scheduledOn: string | null;
+  /** ISO datetime (yyyy-MM-ddTHH:mm:ss) — mandatory and unique within the Iteration; drives order. */
+  scheduledOn: string;
   focusAttachments: FocusAttachment[];
 }
 
@@ -28,12 +27,12 @@ export interface Iteration {
   id: string;
   name: string;
   position: number;
+  /** Always returned sorted by scheduledOn ascending. */
   events: TimelineEvent[];
 }
 
 export interface EventDraft {
   eventTypeId: string;
   name?: string;
-  position?: number;
-  scheduledOn?: string;
+  scheduledOn: string;
 }

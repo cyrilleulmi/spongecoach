@@ -19,7 +19,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -210,22 +210,21 @@ public class TestData {
     }
 
     @Transactional
-    public Event createEvent(UUID iterationId, UUID eventTypeId, String name, int position, LocalDate scheduledOn) {
+    public Event createEvent(UUID iterationId, UUID eventTypeId, String name, LocalDateTime scheduledOn) {
         Event event = new Event();
         event.id = UUID.randomUUID();
         event.iteration = Iteration.findById(iterationId);
         event.eventType = EventType.findById(eventTypeId);
         event.name = name;
-        event.position = position;
         event.scheduledOn = scheduledOn;
         event.persist();
         return event;
     }
 
-    /** Convenience: a Training on the given Iteration, numbered by position, with no date. */
+    /** Convenience: a Training on the given Iteration at the given datetime. */
     @Transactional
-    public Event addTraining(UUID iterationId, int position) {
-        return createEvent(iterationId, eventType("Training").id, null, position, null);
+    public Event addTraining(UUID iterationId, LocalDateTime scheduledOn) {
+        return createEvent(iterationId, eventType("Training").id, null, scheduledOn);
     }
 
     @Transactional

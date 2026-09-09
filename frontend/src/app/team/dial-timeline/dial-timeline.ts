@@ -28,15 +28,28 @@ export class DialTimeline {
     return event.type === 'Match';
   }
 
+  /**
+   * A Training's display number: its 1-based rank among Trainings in {@link events}, which the
+   * backend always returns sorted by scheduledOn — so this is the scheduled order, not an
+   * arbitrary index.
+   */
+  protected trainingNumber(event: TimelineEvent): number {
+    return this.events()
+      .filter((e) => this.isTraining(e))
+      .findIndex((e) => e.id === event.id) + 1;
+  }
+
   protected glyph(event: TimelineEvent): string {
     if (this.isTraining(event)) {
-      return `T${event.position}`;
+      return `T${this.trainingNumber(event)}`;
     }
     return this.isMatch(event) ? 'M' : (event.type[0] ?? '•');
   }
 
   protected label(event: TimelineEvent): string {
-    return this.isTraining(event) ? `Training ${event.position}` : (event.name || event.type);
+    return this.isTraining(event)
+      ? `Training ${this.trainingNumber(event)}`
+      : (event.name || event.type);
   }
 
   /** CSS `conic-gradient` stops: one equal slice per Line, lit or pale. */

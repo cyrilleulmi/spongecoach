@@ -11,7 +11,8 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +22,12 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 
 @QuarkusTest
 class IterationResourceTest {
+
+    /** The API always echoes scheduledOn with seconds, unlike LocalDateTime#toString(). */
+    private static final DateTimeFormatter ISO = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     @Inject
     TestData testData;
@@ -40,20 +43,23 @@ class IterationResourceTest {
     }
 
     @Test
-    void givenAnIterationWithEvents_whenListing_thenItsEventsAreNestedInPositionOrder() {
+    void givenAnIterationWithEvents_whenListing_thenItsEventsAreNestedInScheduledOnOrder() {
         Iteration iteration = testData.createIteration("Vorbereitung " + UUID.randomUUID(), 500);
         cleanups.add(() -> testData.deleteIteration(iteration.id));
-        testData.addTraining(iteration.id, 2);
-        testData.addTraining(iteration.id, 1);
-        testData.createEvent(iteration.id, testData.eventType("Match").id, "Testspiel", 3, null);
+        LocalDateTime earliest = LocalDateTime.of(2026, 8, 5, 18, 0);
+        testData.addTraining(iteration.id, LocalDateTime.of(2026, 8, 12, 18, 0));
+        testData.addTraining(iteration.id, earliest);
+        testData.createEvent(
+                iteration.id, testData.eventType("Match").id, "Testspiel", LocalDateTime.of(2026, 8, 19, 19, 0));
 
         given()
                 .when().get("/api/iterations")
                 .then()
                 .statusCode(200)
                 .body("find { it.id == '" + iteration.id + "' }.events.size()", equalTo(3))
-                .body("find { it.id == '" + iteration.id + "' }.events[0].position", equalTo(1))
                 .body("find { it.id == '" + iteration.id + "' }.events[0].type", equalTo("Training"))
+                .body("find { it.id == '" + iteration.id + "' }.events[0].scheduledOn",
+                        equalTo(earliest.format(ISO)))
                 .body("find { it.id == '" + iteration.id + "' }.events[2].type", equalTo("Match"))
                 .body("find { it.id == '" + iteration.id + "' }.events[2].name", equalTo("Testspiel"));
     }
@@ -78,9 +84,12 @@ class IterationResourceTest {
                         "name", "Rückrunde " + UUID.randomUUID(),
                         "position", 900,
                         "events", List.of(
-                                Map.of("eventTypeId", trainingType.toString(), "position", 1),
-                                Map.of("eventTypeId", trainingType.toString(), "position", 2),
-                                Map.of("eventTypeId", matchType.toString(), "name", "Derby", "position", 3))))
+                                Map.of("eventTypeId", trainingType.toString(), "scheduledOn", "2026-09-01T18:00:00"),
+                                Map.of("eventTypeId", trainingType.toString(), "scheduledOn", "2026-09-08T18:00:00"),
+                                Map.of(
+                                        "eventTypeId", matchType.toString(),
+                                        "name", "Derby",
+                                        "scheduledOn", "2026-09-15T19:00:00"))))
                 .when().post("/api/iterations")
                 .then()
                 .statusCode(201)
@@ -126,7 +135,7 @@ class IterationResourceTest {
     @Test
     void whenDeletingAnIteration_thenItAndItsEventsDisappear() {
         Iteration iteration = testData.createIteration("Weg " + UUID.randomUUID(), 500);
-        testData.addTraining(iteration.id, 1);
+        testData.addTraining(iteration.id, LocalDateTime.of(2026, 8, 5, 18, 0));
 
         given()
                 .when().delete("/api/iterations/" + iteration.id)
@@ -145,43 +154,111 @@ class IterationResourceTest {
     }
 
     @Test
-    void whenAddingAnEventWithNoPosition_thenItIsAppendedAfterTheLast() {
-        Iteration iteration = testData.createIteration("Anhängen " + UUID.randomUUID(), 500);
+    void whenAddingAnEventWithoutScheduledOn_thenReturnsBadRequest() {
+        Iteration iteration = testData.createIteration("Ohne Datum " + UUID.randomUUID(), 500);
         cleanups.add(() -> testData.deleteIteration(iteration.id));
-        testData.addTraining(iteration.id, 1);
-        testData.addTraining(iteration.id, 2);
 
         given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("eventTypeId", testData.eventType("Match").id.toString(), "name", "Schluss"))
                 .when().post("/api/iterations/" + iteration.id + "/events")
                 .then()
-                .statusCode(201)
-                .body("position", equalTo(3))
-                .body("type", equalTo("Match"));
+                .statusCode(400)
+                .body("error", equalTo("bad_request"));
     }
 
     @Test
-    void whenReorderingAnEventViaIterationScopedPut_thenItsPositionChanges() {
-        Iteration iteration = testData.createIteration("Sortieren " + UUID.randomUUID(), 500);
+    void whenAddingAnEventAtAnAlreadyUsedSlot_thenReturnsConflict() {
+        Iteration iteration = testData.createIteration("Kollision " + UUID.randomUUID(), 500);
         cleanups.add(() -> testData.deleteIteration(iteration.id));
-        Event training = testData.addTraining(iteration.id, 1);
+        LocalDateTime slot = LocalDateTime.of(2026, 8, 5, 18, 0);
+        testData.addTraining(iteration.id, slot);
 
         given()
                 .contentType(ContentType.JSON)
-                .body(Map.of("position", 9))
+                .body(Map.of(
+                        "eventTypeId", testData.eventType("Training").id.toString(),
+                        "scheduledOn", slot.toString()))
+                .when().post("/api/iterations/" + iteration.id + "/events")
+                .then()
+                .statusCode(409)
+                .body("error", equalTo("scheduling_conflict"));
+    }
+
+    @Test
+    void givenTwoIterations_whenAddingEventsAtTheSameSlotInEach_thenBothSucceed() {
+        Iteration first = testData.createIteration("Erste " + UUID.randomUUID(), 500);
+        Iteration second = testData.createIteration("Zweite " + UUID.randomUUID(), 501);
+        cleanups.add(() -> testData.deleteIteration(first.id));
+        cleanups.add(() -> testData.deleteIteration(second.id));
+        LocalDateTime slot = LocalDateTime.of(2026, 8, 5, 18, 0);
+        testData.addTraining(first.id, slot);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of(
+                        "eventTypeId", testData.eventType("Training").id.toString(),
+                        "scheduledOn", slot.toString()))
+                .when().post("/api/iterations/" + second.id + "/events")
+                .then()
+                .statusCode(201);
+    }
+
+    @Test
+    void whenReschedulingAnEventViaIterationScopedPut_thenItsScheduledOnChanges() {
+        Iteration iteration = testData.createIteration("Umplanen " + UUID.randomUUID(), 500);
+        cleanups.add(() -> testData.deleteIteration(iteration.id));
+        Event training = testData.addTraining(iteration.id, LocalDateTime.of(2026, 8, 5, 18, 0));
+        LocalDateTime rescheduled = LocalDateTime.of(2026, 8, 12, 18, 0);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("scheduledOn", rescheduled.toString()))
                 .when().put("/api/iterations/" + iteration.id + "/events/" + training.id)
                 .then()
                 .statusCode(200)
-                .body("position", equalTo(9));
+                .body("scheduledOn", equalTo(rescheduled.format(ISO)));
+    }
+
+    @Test
+    void whenReschedulingAnEventToItsOwnCurrentSlot_thenItIsAccepted() {
+        Iteration iteration = testData.createIteration("Selbst " + UUID.randomUUID(), 500);
+        cleanups.add(() -> testData.deleteIteration(iteration.id));
+        LocalDateTime slot = LocalDateTime.of(2026, 8, 5, 18, 0);
+        Event training = testData.addTraining(iteration.id, slot);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("scheduledOn", slot.toString()))
+                .when().put("/api/iterations/" + iteration.id + "/events/" + training.id)
+                .then()
+                .statusCode(200)
+                .body("scheduledOn", equalTo(slot.format(ISO)));
+    }
+
+    @Test
+    void whenReschedulingAnEventOntoASiblingsSlot_thenReturnsConflict() {
+        Iteration iteration = testData.createIteration("Doppelt " + UUID.randomUUID(), 500);
+        cleanups.add(() -> testData.deleteIteration(iteration.id));
+        LocalDateTime takenSlot = LocalDateTime.of(2026, 8, 12, 18, 0);
+        testData.addTraining(iteration.id, takenSlot);
+        Event toMove = testData.addTraining(iteration.id, LocalDateTime.of(2026, 8, 5, 18, 0));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("scheduledOn", takenSlot.toString()))
+                .when().put("/api/iterations/" + iteration.id + "/events/" + toMove.id)
+                .then()
+                .statusCode(409)
+                .body("error", equalTo("scheduling_conflict"));
     }
 
     @Test
     void whenDeletingASingleEvent_thenOnlyThatEventIsRemoved() {
         Iteration iteration = testData.createIteration("Einzeln " + UUID.randomUUID(), 500);
         cleanups.add(() -> testData.deleteIteration(iteration.id));
-        Event kept = testData.addTraining(iteration.id, 1);
-        Event dropped = testData.addTraining(iteration.id, 2);
+        Event kept = testData.addTraining(iteration.id, LocalDateTime.of(2026, 8, 5, 18, 0));
+        Event dropped = testData.addTraining(iteration.id, LocalDateTime.of(2026, 8, 12, 18, 0));
 
         given()
                 .when().delete("/api/iterations/" + iteration.id + "/events/" + dropped.id)
@@ -203,7 +280,9 @@ class IterationResourceTest {
 
         given()
                 .contentType(ContentType.JSON)
-                .body(Map.of("eventTypeId", UUID.randomUUID().toString()))
+                .body(Map.of(
+                        "eventTypeId", UUID.randomUUID().toString(),
+                        "scheduledOn", "2026-08-05T18:00:00"))
                 .when().post("/api/iterations/" + iteration.id + "/events")
                 .then()
                 .statusCode(404)
@@ -214,7 +293,8 @@ class IterationResourceTest {
     void givenEventsWithFocusAttachments_whenListing_thenAttachmentsAreInlineWithLineAndFocusNames() {
         Iteration iteration = testData.createIteration("Fokusse " + UUID.randomUUID(), 500);
         cleanups.add(() -> testData.deleteIteration(iteration.id));
-        Event training = testData.addTraining(iteration.id, 1);
+        LocalDateTime slot = LocalDateTime.of(2026, 8, 5, 18, 0);
+        Event training = testData.addTraining(iteration.id, slot);
 
         Line line = testData.createLine("Kiwi " + UUID.randomUUID());
         cleanups.add(() -> testData.deleteLine(line.id));
@@ -232,23 +312,23 @@ class IterationResourceTest {
                         equalTo(focus.name))
                 .body("events[0].focusAttachments.find { it.lineId == '" + line.id + "' }.lineName",
                         equalTo(line.name))
-                .body("events[0].scheduledOn", nullValue());
+                .body("events[0].scheduledOn", equalTo(slot.format(ISO)));
     }
 
     @Test
-    void whenAddingAnEventWithADate_thenItIsReturnedOnTheEvent() {
+    void whenAddingAnEventWithADatetime_thenItIsReturnedOnTheEvent() {
         Iteration iteration = testData.createIteration("Datum " + UUID.randomUUID(), 500);
         cleanups.add(() -> testData.deleteIteration(iteration.id));
+        LocalDateTime slot = LocalDateTime.of(2026, 10, 5, 18, 0);
 
         given()
                 .contentType(ContentType.JSON)
                 .body(Map.of(
                         "eventTypeId", testData.eventType("Training").id.toString(),
-                        "position", 1,
-                        "scheduledOn", LocalDate.of(2026, 10, 5).toString()))
+                        "scheduledOn", slot.toString()))
                 .when().post("/api/iterations/" + iteration.id + "/events")
                 .then()
                 .statusCode(201)
-                .body("scheduledOn", equalTo("2026-10-05"));
+                .body("scheduledOn", equalTo(slot.format(ISO)));
     }
 }

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ class EventResourceTest {
     void setUp() {
         iteration = testData.createIteration("Iteration " + UUID.randomUUID(), 500);
         cleanups.add(() -> testData.deleteIteration(iteration.id));
-        event = testData.addTraining(iteration.id, 1);
+        event = testData.addTraining(iteration.id, LocalDateTime.of(2026, 8, 5, 18, 0));
 
         kiwi = testData.createLine("Kiwi " + UUID.randomUUID());
         baeri = testData.createLine("Bäri " + UUID.randomUUID());
@@ -135,6 +136,20 @@ class EventResourceTest {
                 .when().put("/api/events/" + event.id)
                 .then()
                 .statusCode(404);
+    }
+
+    @Test
+    void whenReschedulingOntoASiblingsSlot_thenReturnsConflict() {
+        LocalDateTime takenSlot = LocalDateTime.of(2026, 9, 12, 19, 0);
+        testData.addTraining(iteration.id, takenSlot);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("scheduledOn", takenSlot.toString()))
+                .when().put("/api/events/" + event.id)
+                .then()
+                .statusCode(409)
+                .body("error", equalTo("scheduling_conflict"));
     }
 
     @Test

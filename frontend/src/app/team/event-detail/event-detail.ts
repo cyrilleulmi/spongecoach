@@ -19,13 +19,15 @@ export interface FocusChange {
 })
 export class EventDetail {
   readonly event = input.required<TimelineEvent | null>();
+  /** All events in the current Iteration, scheduledOn-sorted — used to number Trainings. */
+  readonly events = input.required<TimelineEvent[]>();
   readonly lines = input.required<DialLine[]>();
   /** Each Line's associated Focuses (from the per-line overview), keyed by line id. */
   readonly focusesByLine = input.required<Map<string, FocusRef[]>>();
   readonly isNext = input<boolean>(false);
 
   readonly focusChange = output<FocusChange>();
-  readonly dateChange = output<string | null>();
+  readonly dateChange = output<string>();
   readonly rename = output<string>();
   readonly deleteEvent = output<string>();
 
@@ -36,7 +38,14 @@ export class EventDetail {
     if (!event) {
       return '';
     }
-    return this.isTraining() ? `Training ${event.position}` : (event.name || event.type);
+    if (!this.isTraining()) {
+      return event.name || event.type;
+    }
+    const trainingNumber =
+      this.events()
+        .filter((e) => e.type === 'Training')
+        .findIndex((e) => e.id === event.id) + 1;
+    return `Training ${trainingNumber}`;
   });
 
   protected focusesFor(lineId: string): FocusRef[] {
@@ -52,6 +61,9 @@ export class EventDetail {
   }
 
   protected onDateInput(value: string): void {
-    this.dateChange.emit(value ? value : null);
+    if (!value) {
+      return;
+    }
+    this.dateChange.emit(value);
   }
 }

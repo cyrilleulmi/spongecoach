@@ -35,7 +35,7 @@ public class Iteration extends PanacheEntityBase {
     public int position;
 
     @OneToMany(mappedBy = "iteration", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @OrderBy("position asc")
+    @OrderBy("scheduledOn asc")
     public List<Event> events = new ArrayList<>();
 
     public static List<Iteration> listAllOrderedByPosition() {

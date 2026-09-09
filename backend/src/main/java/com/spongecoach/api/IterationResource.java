@@ -29,8 +29,9 @@ import java.util.UUID;
 /**
  * The team-overview timeline: Iterations in order, each with its ordered Events and their per-Line
  * Focus attachments. {@code GET /api/iterations} is the one aggregate call the timeline page needs
- * (no N+1). Iterations and Events are user-creatable and deletable; ordering is by plain integer
- * position with nothing enforcing gapless or unique values (ADR-0007).
+ * (no N+1). Iterations are user-creatable and deletable, ordered by a plain integer position
+ * (ADR-0007). Events are ordered by their mandatory {@code scheduledOn}, unique within the
+ * Iteration (ADR-0011) — a collision on create or update is rejected with 409.
  */
 @Path("/api/iterations")
 @Produces(MediaType.APPLICATION_JSON)
@@ -62,9 +63,8 @@ public class IterationResource {
         iteration.persist();
 
         List<EventCreateRequest> events = request.events() != null ? request.events() : List.of();
-        for (int i = 0; i < events.size(); i++) {
-            EventCreateRequest draft = events.get(i);
-            persistEvent(iteration, draft, i + 1);
+        for (EventCreateRequest draft : events) {
+            persistEvent(iteration, draft);
         }
         return Response.status(Response.Status.CREATED).entity(IterationDto.from(iteration)).build();
     }
@@ -99,8 +99,7 @@ public class IterationResource {
     public Response addEvent(
             @PathParam("iterationId") UUID iterationId, EventCreateRequest request) {
         Iteration iteration = findIterationOrThrow(iterationId);
-        int position = request.position() != null ? request.position() : nextEventPosition(iterationId);
-        Event event = persistEvent(iteration, request, position);
+        Event event = persistEvent(iteration, request);
         return Response.status(Response.Status.CREATED).entity(EventDto.from(event)).build();
     }
 
@@ -119,10 +118,12 @@ public class IterationResource {
         if (request.name() != null) {
             event.name = request.name().isBlank() ? null : request.name().trim();
         }
-        if (request.position() != null) {
-            event.position = request.position();
-        }
         if (request.scheduledOn() != null) {
+            if (Event.existsAtSlot(iterationId, request.scheduledOn(), event.id)) {
+                throw new ConflictException(
+                        "Event " + eventId + " cannot be scheduled at " + request.scheduledOn()
+                                + ": another event in this iteration already uses that slot");
+            }
             event.scheduledOn = request.scheduledOn();
         }
         return EventDto.from(event);
@@ -140,16 +141,23 @@ public class IterationResource {
         return Response.noContent().build();
     }
 
-    private Event persistEvent(Iteration iteration, EventCreateRequest draft, int fallbackPosition) {
+    private Event persistEvent(Iteration iteration, EventCreateRequest draft) {
         if (draft == null || draft.eventTypeId() == null) {
             throw new BadRequestException("eventTypeId must not be null");
+        }
+        if (draft.scheduledOn() == null) {
+            throw new BadRequestException("scheduledOn must not be null");
+        }
+        if (Event.existsAtSlot(iteration.id, draft.scheduledOn(), null)) {
+            throw new ConflictException(
+                    "Cannot schedule at " + draft.scheduledOn()
+                            + ": another event in this iteration already uses that slot");
         }
         Event event = new Event();
         event.id = UUID.randomUUID();
         event.iteration = iteration;
         event.eventType = findEventTypeOrThrow(draft.eventTypeId());
         event.name = draft.name() != null && !draft.name().isBlank() ? draft.name().trim() : null;
-        event.position = draft.position() != null ? draft.position() : fallbackPosition;
         event.scheduledOn = draft.scheduledOn();
         event.persist();
         iteration.events.add(event);
@@ -158,10 +166,6 @@ public class IterationResource {
 
     private int nextIterationPosition() {
         return Iteration.<Iteration>listAll().stream().mapToInt(it -> it.position).max().orElse(0) + 1;
-    }
-
-    private int nextEventPosition(UUID iterationId) {
-        return Event.listForIteration(iterationId).stream().mapToInt(e -> e.position).max().orElse(0) + 1;
     }
 
     private Iteration findIterationOrThrow(UUID iterationId) {

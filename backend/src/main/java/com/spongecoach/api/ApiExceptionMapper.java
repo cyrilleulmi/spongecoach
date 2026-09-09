@@ -19,6 +19,9 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
         if (exception instanceof BadRequestException badRequest) {
             return error(Response.Status.BAD_REQUEST, "bad_request", badRequest.getMessage());
         }
+        if (exception instanceof ConflictException conflict) {
+            return error(Response.Status.CONFLICT, "scheduling_conflict", conflict.getMessage());
+        }
         if (exception instanceof WebApplicationException webApplicationException) {
             Response response = webApplicationException.getResponse();
             return error(

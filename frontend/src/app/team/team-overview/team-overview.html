@@ -69,6 +69,7 @@
       <aside class="detail-pane">
         <app-event-detail
           [event]="selectedEvent()"
+          [events]="currentEvents()"
           [lines]="dialLines()"
           [focusesByLine]="focusesByLine()"
           [isNext]="selectedIsNext()"

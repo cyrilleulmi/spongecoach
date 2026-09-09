@@ -18,10 +18,10 @@
     }
 
     <label class="detail-date">
-      <span>Datum</span>
+      <span>Datum &amp; Zeit</span>
       <input
-        type="date"
-        [value]="ev.scheduledOn ?? ''"
+        type="datetime-local"
+        [value]="ev.scheduledOn.slice(0, 16)"
         (change)="onDateInput($any($event.target).value)"
       />
     </label>

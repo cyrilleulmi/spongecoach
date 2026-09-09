@@ -20,13 +20,21 @@ const FOCUSES = new Map<string, FocusRef[]>([
   ['line-b', [{ id: 'f-3', name: 'Fokus C', goalIds: [] }]],
 ]);
 
+const OTHER_TRAINING: TimelineEvent = {
+  id: 'ev-0',
+  typeId: 'tt',
+  type: 'Training',
+  name: null,
+  scheduledOn: '2026-09-01T18:00',
+  focusAttachments: [],
+};
+
 const TRAINING: TimelineEvent = {
   id: 'ev-1',
   typeId: 'tt',
   type: 'Training',
   name: null,
-  position: 2,
-  scheduledOn: null,
+  scheduledOn: '2026-09-08T18:00',
   focusAttachments: [{ lineId: 'line-a', lineName: 'Kiwi', focusId: 'f-1', focusName: 'Fokus A' }],
 };
 
@@ -35,16 +43,18 @@ const MATCH: TimelineEvent = {
   typeId: 'mt',
   type: 'Match',
   name: 'Testspiel',
-  position: 3,
-  scheduledOn: '2026-09-12',
+  scheduledOn: '2026-09-12T15:00',
   focusAttachments: [],
 };
+
+const ALL_EVENTS: TimelineEvent[] = [OTHER_TRAINING, TRAINING, MATCH];
 
 describe('EventDetail', () => {
   async function render(event: TimelineEvent, isNext = false) {
     await TestBed.configureTestingModule({ imports: [EventDetail] }).compileComponents();
     const fixture = TestBed.createComponent(EventDetail);
     fixture.componentRef.setInput('event', event);
+    fixture.componentRef.setInput('events', ALL_EVENTS);
     fixture.componentRef.setInput('lines', LINES);
     fixture.componentRef.setInput('focusesByLine', FOCUSES);
     fixture.componentRef.setInput('isNext', isNext);
@@ -52,7 +62,7 @@ describe('EventDetail', () => {
     return fixture;
   }
 
-  it('shows the training number and a focus dropdown per line, preselecting the set focus', async () => {
+  it('shows the training number (its rank among Trainings) and a focus dropdown per line, preselecting the set focus', async () => {
     const fixture = await render(TRAINING);
     expect((fixture.nativeElement.textContent as string)).toContain('Training 2');
 

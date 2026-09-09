@@ -26,7 +26,9 @@ import java.util.UUID;
 /**
  * Editing a single Event by id. The team-overview timeline attaches/clears a Line's Focus for an
  * Event here via {@code focusAttachments} — a full replacement of the event's set, one Focus per
- * Line (an empty list clears them all). Event fields (type/name/position/date) may also be set.
+ * Line (an empty list clears them all). Event fields (type/name/date) may also be set. A
+ * {@code scheduledOn} change must land on a datetime not already used by another Event in the same
+ * Iteration (ADR-0011); a collision is rejected with 409.
  */
 @Path("/api/events")
 @Produces(MediaType.APPLICATION_JSON)
@@ -48,10 +50,12 @@ public class EventResource {
         if (request.name() != null) {
             event.name = request.name().isBlank() ? null : request.name().trim();
         }
-        if (request.position() != null) {
-            event.position = request.position();
-        }
         if (request.scheduledOn() != null) {
+            if (Event.existsAtSlot(event.iteration.id, request.scheduledOn(), event.id)) {
+                throw new ConflictException(
+                        "Event " + eventId + " cannot be scheduled at " + request.scheduledOn()
+                                + ": another event in this iteration already uses that slot");
+            }
             event.scheduledOn = request.scheduledOn();
         }
         if (request.focusAttachments() != null) {

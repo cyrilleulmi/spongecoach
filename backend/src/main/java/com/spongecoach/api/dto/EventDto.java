@@ -2,7 +2,7 @@ package com.spongecoach.api.dto;
 
 import com.spongecoach.domain.Event;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -12,8 +12,7 @@ public record EventDto(
         UUID typeId,
         String type,
         String name,
-        int position,
-        LocalDate scheduledOn,
+        LocalDateTime scheduledOn,
         List<FocusAttachmentDto> focusAttachments) {
 
     public static EventDto from(Event event) {
@@ -22,7 +21,6 @@ public record EventDto(
                 event.eventType.id,
                 event.eventType.name,
                 event.name,
-                event.position,
                 event.scheduledOn,
                 event.focusAttachments.stream()
                         .map(FocusAttachmentDto::from)

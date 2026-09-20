@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { EventDraft, EventType, Iteration, TimelineEvent } from './iteration.model';
+import { AttendanceStatus, EventDraft, EventType, Iteration, TimelineEvent } from './iteration.model';
 
 interface FocusAttachmentInput {
   lineId: string;
@@ -63,5 +63,19 @@ export class IterationApiService {
     focusAttachments: FocusAttachmentInput[],
   ): Observable<TimelineEvent> {
     return this.http.put<TimelineEvent>(`/api/events/${eventId}`, { focusAttachments });
+  }
+
+  /** Sets one Player's attendance answer for an Event. A non-DECLINED status clears any decline
+   * message server-side, so it's not sent unless declining. */
+  setAttendance(
+    eventId: string,
+    playerId: string,
+    status: AttendanceStatus,
+    declineMessage?: string | null,
+  ): Observable<TimelineEvent> {
+    return this.http.put<TimelineEvent>(`/api/events/${eventId}/attendance/${playerId}`, {
+      status,
+      declineMessage: status === 'DECLINED' ? (declineMessage ?? null) : null,
+    });
   }
 }

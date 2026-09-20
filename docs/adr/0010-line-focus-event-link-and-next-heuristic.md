@@ -22,3 +22,8 @@ there is no schedule to drive this. The page instead marks as "next" the **first
 Iteration-position then Event-position order, where at least one Line has no Focus set** — i.e. the
 first one still needing attention. This makes the marker a real "what to chase" signal with the
 data we have. If real scheduling arrives later, this heuristic is the obvious thing it replaces.
+
+> **Superseded (ADR-0012):** `scheduledOn` became mandatory in ADR-0011, and events now become
+> read-only once done. "Next" is now simply the first event, in the same iteration/event order,
+> whose `scheduledOn` hasn't passed — not a Focus-completeness signal. A done event that was never
+> fully planned no longer steals the marker.

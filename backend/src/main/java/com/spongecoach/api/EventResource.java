@@ -1,14 +1,20 @@
 package com.spongecoach.api;
 
+import com.spongecoach.api.dto.AttendanceUpdateRequest;
 import com.spongecoach.api.dto.EventDto;
 import com.spongecoach.api.dto.EventUpdateRequest;
 import com.spongecoach.api.dto.FocusAttachmentRequest;
+import com.spongecoach.domain.AttendanceStatus;
 import com.spongecoach.domain.Event;
+import com.spongecoach.domain.EventAttendance;
+import com.spongecoach.domain.EventAttendanceId;
+import com.spongecoach.domain.EventLinePlayer;
 import com.spongecoach.domain.EventType;
 import com.spongecoach.domain.Focus;
 import com.spongecoach.domain.Line;
 import com.spongecoach.domain.LineFocusEvent;
 import com.spongecoach.domain.LineFocusEventId;
+import com.spongecoach.domain.Player;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.NotFoundException;
@@ -39,10 +45,7 @@ public class EventResource {
     @Path("/{eventId}")
     @Transactional
     public EventDto update(@PathParam("eventId") UUID eventId, EventUpdateRequest request) {
-        Event event = Event.findById(eventId);
-        if (event == null) {
-            throw new NotFoundException("Event " + eventId + " not found");
-        }
+        Event event = findEventOrThrow(eventId);
 
         if (request.eventTypeId() != null) {
             event.eventType = findEventTypeOrThrow(request.eventTypeId());
@@ -64,6 +67,64 @@ public class EventResource {
         return EventDto.from(event);
     }
 
+    /**
+     * Sets one Player's attendance answer for the Event. The Player must already be on the
+     * Event's snapshot ({@code event_line_player}) — attendance can't be set for someone who
+     * isn't on any attending Line for it. A non-{@code DECLINED} status always clears any
+     * decline message, even if one was set previously.
+     */
+    @PUT
+    @Path("/{eventId}/attendance/{playerId}")
+    @Transactional
+    public EventDto setAttendance(
+            @PathParam("eventId") UUID eventId,
+            @PathParam("playerId") UUID playerId,
+            AttendanceUpdateRequest request) {
+        Event event = findEventOrThrow(eventId);
+        if (EventLinePlayer.countForEventAndPlayer(eventId, playerId) == 0) {
+            throw new NotFoundException(
+                    "Player " + playerId + " is not on event " + eventId + "'s attendance list");
+        }
+        if (request == null || request.status() == null) {
+            throw new BadRequestException("status must not be null");
+        }
+        AttendanceStatus status;
+        try {
+            status = AttendanceStatus.valueOf(request.status());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("unknown attendance status " + request.status());
+        }
+
+        EventAttendance attendance = EventAttendance.find(eventId, playerId);
+        if (attendance == null) {
+            attendance = new EventAttendance();
+            attendance.id = new EventAttendanceId(eventId, playerId);
+            attendance.event = event;
+            attendance.player = Player.findById(playerId);
+        }
+        attendance.status = status;
+        attendance.declineMessage = status == AttendanceStatus.DECLINED
+                ? blankToNull(request.declineMessage())
+                : null;
+        attendance.persist();
+        return EventDto.from(event);
+    }
+
+    private String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private Event findEventOrThrow(UUID eventId) {
+        Event event = Event.findById(eventId);
+        if (event == null) {
+            throw new NotFoundException("Event " + eventId + " not found");
+        }
+        return event;
+    }
+
     private void replaceFocusAttachments(Event event, List<FocusAttachmentRequest> requested) {
         Set<UUID> keepLineIds = new HashSet<>();
         for (FocusAttachmentRequest item : requested) {
@@ -73,6 +134,11 @@ public class EventResource {
             Line line = Line.findById(item.lineId());
             if (line == null) {
                 throw new NotFoundException("Line " + item.lineId() + " not found");
+            }
+            boolean attending = event.lines.stream().anyMatch(l -> l.id.equals(line.id));
+            if (!attending) {
+                throw new BadRequestException(
+                        "Line " + item.lineId() + " is not attending event " + event.id);
             }
             Focus focus = Focus.findById(item.focusId());
             if (focus == null || focus.deletedAt != null) {

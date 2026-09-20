@@ -7,8 +7,14 @@ import com.spongecoach.api.dto.IterationCreateRequest;
 import com.spongecoach.api.dto.IterationDto;
 import com.spongecoach.api.dto.IterationUpdateRequest;
 import com.spongecoach.domain.Event;
+import com.spongecoach.domain.EventAttendance;
+import com.spongecoach.domain.EventAttendanceId;
+import com.spongecoach.domain.EventLinePlayer;
+import com.spongecoach.domain.EventLinePlayerId;
 import com.spongecoach.domain.EventType;
 import com.spongecoach.domain.Iteration;
+import com.spongecoach.domain.Line;
+import com.spongecoach.domain.Player;
 import com.spongecoach.domain.Team;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -23,7 +29,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -159,9 +168,35 @@ public class IterationResource {
         event.eventType = findEventTypeOrThrow(draft.eventTypeId());
         event.name = draft.name() != null && !draft.name().isBlank() ? draft.name().trim() : null;
         event.scheduledOn = draft.scheduledOn();
+        event.lines = new ArrayList<>(Line.listAllOrderedByName());
         event.persist();
         iteration.events.add(event);
+        snapshotAttendance(event);
         return event;
+    }
+
+    /** Freezes attendance for a newly created Event: every attending Line's current roster,
+     * defaulted to {@code PENDING} (ADR-0012's Line snapshot, one level deeper). */
+    private void snapshotAttendance(Event event) {
+        Set<UUID> seenPlayers = new HashSet<>();
+        for (Line line : event.lines) {
+            for (Player player : line.players) {
+                EventLinePlayer link = new EventLinePlayer();
+                link.id = new EventLinePlayerId(event.id, line.id, player.id);
+                link.event = event;
+                link.line = line;
+                link.player = player;
+                link.persist();
+
+                if (seenPlayers.add(player.id)) {
+                    EventAttendance attendance = new EventAttendance();
+                    attendance.id = new EventAttendanceId(event.id, player.id);
+                    attendance.event = event;
+                    attendance.player = player;
+                    attendance.persist();
+                }
+            }
+        }
     }
 
     private int nextIterationPosition() {

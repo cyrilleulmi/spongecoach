@@ -160,6 +160,69 @@
     0 10px 22px -8px rgba(0, 0, 0, 0.28);
 }
 
+/* past — over and done, faded back so the eye lands on what's still ahead */
+.d-node.past .dial {
+  filter: saturate(0.35) opacity(0.7);
+}
+
+.d-node.past .d-type,
+.d-node.past .d-label {
+  color: var(--ink-soft);
+  opacity: 0.7;
+}
+
+.d-node.past.selected .dial {
+  filter: saturate(0.55) opacity(0.85);
+}
+
+.dial-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.roster {
+  position: absolute;
+  z-index: 2;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.roster-line {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.15rem;
+}
+
+.roster-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: none;
+  opacity: 0.95;
+}
+
+.roster-icon.pending {
+  opacity: 0.55;
+}
+
+.roster-icon.declined {
+  opacity: 0.85;
+}
+
+.decline-slash {
+  stroke: var(--danger-ink);
+  stroke-width: 2.4;
+}
+
+.d-node.past .roster {
+  opacity: 0.7;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dial {
     transition: none;

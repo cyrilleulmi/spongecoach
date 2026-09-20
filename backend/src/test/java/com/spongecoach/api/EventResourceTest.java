@@ -5,6 +5,7 @@ import com.spongecoach.domain.Event;
 import com.spongecoach.domain.Focus;
 import com.spongecoach.domain.Iteration;
 import com.spongecoach.domain.Line;
+import com.spongecoach.domain.Player;
 import com.spongecoach.support.TestData;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 
 @QuarkusTest
@@ -48,6 +50,8 @@ class EventResourceTest {
         baeri = testData.createLine("Bäri " + UUID.randomUUID());
         cleanups.add(() -> testData.deleteLine(kiwi.id));
         cleanups.add(() -> testData.deleteLine(baeri.id));
+        testData.attendEvent(event.id, kiwi.id);
+        testData.attendEvent(event.id, baeri.id);
 
         DevelopmentGoal goal = testData.createGoal("Ziel " + UUID.randomUUID(), "#c0392b");
         cleanups.add(() -> testData.deleteGoal(goal.id));
@@ -200,5 +204,124 @@ class EventResourceTest {
                         equalTo(focusB.id.toString()))
                 .body("focusAttachments.find { it.lineId == '" + kiwi.id + "' }.focusId",
                         equalTo(focusA.id.toString()));
+    }
+
+    @Test
+    void whenAnEventIsCreated_thenEveryAttendingLinesPlayersDefaultToPending() {
+        Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(carmela.id));
+        testData.attendEvent(event.id, kiwi.id);
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].attendance.find { it.playerId == '" + carmela.id + "' }.status",
+                        equalTo("PENDING"))
+                .body("events[0].attendance.find { it.playerId == '" + carmela.id + "' }.lineIds",
+                        hasItem(kiwi.id.toString()));
+    }
+
+    @Test
+    void whenSettingAPlayerToAttending_thenTheStatusIsUpdatedAndNoDeclineMessageIsKept() {
+        Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(carmela.id));
+        testData.attendEvent(event.id, kiwi.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("status", "ATTENDING"))
+                .when().put("/api/events/" + event.id + "/attendance/" + carmela.id)
+                .then()
+                .statusCode(200)
+                .body("attendance.find { it.playerId == '" + carmela.id + "' }.status", equalTo("ATTENDING"))
+                .body("attendance.find { it.playerId == '" + carmela.id + "' }.declineMessage", equalTo(null));
+    }
+
+    @Test
+    void whenDecliningWithAMessage_thenTheMessageIsStored() {
+        Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(carmela.id));
+        testData.attendEvent(event.id, kiwi.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("status", "DECLINED", "declineMessage", "Verletzt"))
+                .when().put("/api/events/" + event.id + "/attendance/" + carmela.id)
+                .then()
+                .statusCode(200)
+                .body("attendance.find { it.playerId == '" + carmela.id + "' }.status", equalTo("DECLINED"))
+                .body("attendance.find { it.playerId == '" + carmela.id + "' }.declineMessage", equalTo("Verletzt"));
+    }
+
+    @Test
+    void whenSwitchingFromDeclinedBackToAttending_thenTheDeclineMessageIsCleared() {
+        Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(carmela.id));
+        testData.attendEvent(event.id, kiwi.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("status", "DECLINED", "declineMessage", "Verletzt"))
+                .when().put("/api/events/" + event.id + "/attendance/" + carmela.id)
+                .then().statusCode(200);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("status", "ATTENDING"))
+                .when().put("/api/events/" + event.id + "/attendance/" + carmela.id)
+                .then()
+                .statusCode(200)
+                .body("attendance.find { it.playerId == '" + carmela.id + "' }.status", equalTo("ATTENDING"))
+                .body("attendance.find { it.playerId == '" + carmela.id + "' }.declineMessage", equalTo(null));
+    }
+
+    @Test
+    void whenSettingAttendanceForAPlayerNotOnTheEvent_thenReturnsNotFound() {
+        Player benched = testData.createPlayer("Nicht dabei " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(benched.id));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("status", "ATTENDING"))
+                .when().put("/api/events/" + event.id + "/attendance/" + benched.id)
+                .then()
+                .statusCode(404)
+                .body("error", equalTo("not_found"));
+    }
+
+    @Test
+    void whenSettingAnUnknownAttendanceStatus_thenReturnsBadRequest() {
+        Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(carmela.id));
+        testData.attendEvent(event.id, kiwi.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("status", "MAYBE"))
+                .when().put("/api/events/" + event.id + "/attendance/" + carmela.id)
+                .then()
+                .statusCode(400)
+                .body("error", equalTo("bad_request"));
+    }
+
+    @Test
+    void whenAPlayerIsOnTwoAttendingLines_thenBothLineIdsAppearOnTheirSingleAttendanceEntry() {
+        Player allrounder = testData.createPlayer("Sophie " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(allrounder.id));
+        testData.linkPlayer(kiwi.id, allrounder.id);
+        testData.linkPlayer(baeri.id, allrounder.id);
+        testData.attendEvent(event.id, kiwi.id);
+        testData.attendEvent(event.id, baeri.id);
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].attendance.findAll { it.playerId == '" + allrounder.id + "' }", hasSize(1))
+                .body("events[0].attendance.find { it.playerId == '" + allrounder.id + "' }.lineIds",
+                        hasItem(kiwi.id.toString()))
+                .body("events[0].attendance.find { it.playerId == '" + allrounder.id + "' }.lineIds",
+                        hasItem(baeri.id.toString()));
     }
 }

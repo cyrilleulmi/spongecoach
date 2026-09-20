@@ -1,3 +1,5 @@
+import { CatalogRef } from '../lines/line.model';
+
 export interface EventType {
   id: string;
   name: string;
@@ -11,6 +13,18 @@ export interface FocusAttachment {
   focusName: string;
 }
 
+export type AttendanceStatus = 'PENDING' | 'ATTENDING' | 'DECLINED';
+
+/** One Player's attendance answer for an Event, with every attending Line they belong to for it
+ * (a Player on two attending Lines still gets exactly one entry here, with both line ids). */
+export interface PlayerAttendance {
+  playerId: string;
+  playerName: string;
+  lineIds: string[];
+  status: AttendanceStatus;
+  declineMessage: string | null;
+}
+
 export interface TimelineEvent {
   id: string;
   typeId: string;
@@ -21,6 +35,10 @@ export interface TimelineEvent {
   /** ISO datetime (yyyy-MM-ddTHH:mm:ss) — mandatory and unique within the Iteration; drives order. */
   scheduledOn: string;
   focusAttachments: FocusAttachment[];
+  /** Lines attending this Event, snapshotted at creation — not the live Line list (ADR-0012). */
+  lines: CatalogRef[];
+  /** Every Player on this Event's attendance list, snapshotted the same way as `lines`. */
+  attendance: PlayerAttendance[];
 }
 
 export interface Iteration {

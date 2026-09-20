@@ -55,7 +55,6 @@
       <div class="timeline-col">
         <app-dial-timeline
           [events]="currentEvents()"
-          [lines]="dialLines()"
           [selectedEventId]="selectedEvent()?.id ?? null"
           [nextEventId]="nextEventId()"
           (select)="onSelectEvent($event)"
@@ -70,10 +69,10 @@
         <app-event-detail
           [event]="selectedEvent()"
           [events]="currentEvents()"
-          [lines]="dialLines()"
           [focusesByLine]="focusesByLine()"
           [isNext]="selectedIsNext()"
           (focusChange)="onFocusChange($event)"
+          (attendanceChange)="onAttendanceChange($event)"
           (dateChange)="onDateChange($event)"
           (rename)="onRenameEvent($event)"
           (deleteEvent)="onDeleteEvent($event)"

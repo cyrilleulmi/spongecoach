@@ -4,6 +4,7 @@
       type="button"
       class="d-node"
       [class.match]="isMatch(event)"
+      [class.past]="isPast(event)"
       [class.current]="event.id === nextEventId()"
       [class.selected]="event.id === selectedEventId()"
       [attr.aria-pressed]="event.id === selectedEventId()"
@@ -12,8 +13,44 @@
       @if (event.id === nextEventId()) {
         <span class="next-tag">NÄCHSTES</span>
       }
-      <span class="dial" [style.background]="gradient(event)">
-        <span class="dial-glyph">{{ glyph(event) }}</span>
+      <span class="dial-wrap">
+        <span class="dial" [style.background]="gradient(event)">
+          <span class="dial-glyph">{{ glyph(event) }}</span>
+        </span>
+        <span class="roster">
+          @for (group of rosterByLine(event); track group.lineId) {
+            <span class="roster-line">
+              @for (icon of group.icons; track icon.key) {
+                <svg
+                  class="roster-icon"
+                  [class.pending]="icon.status === 'PENDING'"
+                  [class.declined]="icon.status === 'DECLINED'"
+                  viewBox="0 0 24 24"
+                  [attr.aria-label]="icon.name + ': ' + statusLabel(icon.status)"
+                >
+                  <title>{{ icon.name }}: {{ statusLabel(icon.status) }}</title>
+                  <circle
+                    cx="12"
+                    cy="7.5"
+                    r="4"
+                    [attr.fill]="icon.status === 'PENDING' ? 'none' : icon.color"
+                    [attr.stroke]="icon.color"
+                    stroke-width="1.6"
+                  />
+                  <path
+                    d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"
+                    [attr.fill]="icon.status === 'PENDING' ? 'none' : icon.color"
+                    [attr.stroke]="icon.color"
+                    stroke-width="1.6"
+                  />
+                  @if (icon.status === 'DECLINED') {
+                    <line x1="3" y1="3" x2="21" y2="21" class="decline-slash" />
+                  }
+                </svg>
+              }
+            </span>
+          }
+        </span>
       </span>
       <span class="d-type">{{ isTraining(event) ? 'Training' : event.type }}</span>
       <span class="d-label">{{ label(event) }}</span>

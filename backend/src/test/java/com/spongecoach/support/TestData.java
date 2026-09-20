@@ -1,7 +1,12 @@
 package com.spongecoach.support;
 
+import com.spongecoach.domain.AttendanceStatus;
 import com.spongecoach.domain.DevelopmentGoal;
 import com.spongecoach.domain.Event;
+import com.spongecoach.domain.EventAttendance;
+import com.spongecoach.domain.EventAttendanceId;
+import com.spongecoach.domain.EventLinePlayer;
+import com.spongecoach.domain.EventLinePlayerId;
 import com.spongecoach.domain.EventType;
 import com.spongecoach.domain.Focus;
 import com.spongecoach.domain.Iteration;
@@ -40,6 +45,7 @@ public class TestData {
         line.id = UUID.randomUUID();
         line.team = team;
         line.name = name;
+        line.color = "#3b6ea5";
         line.persist();
         return line;
     }
@@ -73,6 +79,12 @@ public class TestData {
     @Transactional
     public void deletePlayer(UUID playerId) {
         entityManager.createNativeQuery("delete from line_player where player_id = ?1")
+                .setParameter(1, playerId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from event_line_player where player_id = ?1")
+                .setParameter(1, playerId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from event_attendance where player_id = ?1")
                 .setParameter(1, playerId)
                 .executeUpdate();
         Player.deleteById(playerId);
@@ -125,6 +137,12 @@ public class TestData {
             return;
         }
         entityManager.createNativeQuery("delete from line_focus_event where line_id = ?1")
+                .setParameter(1, lineId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from event_line where line_id = ?1")
+                .setParameter(1, lineId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from event_line_player where line_id = ?1")
                 .setParameter(1, lineId)
                 .executeUpdate();
         LineSkill.delete("line.id", lineId);
@@ -217,8 +235,53 @@ public class TestData {
         event.eventType = EventType.findById(eventTypeId);
         event.name = name;
         event.scheduledOn = scheduledOn;
+        event.lines = new java.util.ArrayList<>(Line.listAllOrderedByName());
         event.persist();
+        for (Line line : event.lines) {
+            snapshotAttendanceForLine(event, line);
+        }
         return event;
+    }
+
+    /** Snapshots the given Line onto an already-created Event's attendance, mirroring what
+     * production does at creation time — for tests that create the Line after the Event. */
+    @Transactional
+    public void attendEvent(UUID eventId, UUID lineId) {
+        Event event = Event.findById(eventId);
+        Line line = Line.findById(lineId);
+        if (event.lines.stream().noneMatch(l -> l.id.equals(lineId))) {
+            event.lines.add(line);
+        }
+        snapshotAttendanceForLine(event, line);
+    }
+
+    private void snapshotAttendanceForLine(Event event, Line line) {
+        for (Player player : line.players) {
+            if (EventLinePlayer.find(event.id, line.id, player.id) == null) {
+                EventLinePlayer link = new EventLinePlayer();
+                link.id = new EventLinePlayerId(event.id, line.id, player.id);
+                link.event = event;
+                link.line = line;
+                link.player = player;
+                link.persist();
+            }
+            if (EventAttendance.find(event.id, player.id) == null) {
+                EventAttendance attendance = new EventAttendance();
+                attendance.id = new EventAttendanceId(event.id, player.id);
+                attendance.event = event;
+                attendance.player = player;
+                attendance.persist();
+            }
+        }
+    }
+
+    /** Sets a Player's attendance answer directly, bypassing the REST layer — for tests that need
+     * a non-default (attending/declined) starting state. */
+    @Transactional
+    public void setAttendance(UUID eventId, UUID playerId, AttendanceStatus status, String declineMessage) {
+        EventAttendance attendance = EventAttendance.find(eventId, playerId);
+        attendance.status = status;
+        attendance.declineMessage = declineMessage;
     }
 
     /** Convenience: a Training on the given Iteration at the given datetime. */
@@ -242,6 +305,15 @@ public class TestData {
         entityManager.createNativeQuery("delete from line_focus_event where event_id = ?1")
                 .setParameter(1, eventId)
                 .executeUpdate();
+        entityManager.createNativeQuery("delete from event_line where event_id = ?1")
+                .setParameter(1, eventId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from event_line_player where event_id = ?1")
+                .setParameter(1, eventId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from event_attendance where event_id = ?1")
+                .setParameter(1, eventId)
+                .executeUpdate();
         Event.deleteById(eventId);
     }
 
@@ -249,6 +321,18 @@ public class TestData {
     public void deleteIteration(UUID iterationId) {
         entityManager.createNativeQuery(
                         "delete from line_focus_event where event_id in (select id from event where iteration_id = ?1)")
+                .setParameter(1, iterationId)
+                .executeUpdate();
+        entityManager.createNativeQuery(
+                        "delete from event_line where event_id in (select id from event where iteration_id = ?1)")
+                .setParameter(1, iterationId)
+                .executeUpdate();
+        entityManager.createNativeQuery(
+                        "delete from event_line_player where event_id in (select id from event where iteration_id = ?1)")
+                .setParameter(1, iterationId)
+                .executeUpdate();
+        entityManager.createNativeQuery(
+                        "delete from event_attendance where event_id in (select id from event where iteration_id = ?1)")
                 .setParameter(1, iterationId)
                 .executeUpdate();
         entityManager.createNativeQuery("delete from event where iteration_id = ?1")

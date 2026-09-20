@@ -32,6 +32,8 @@ public class Line extends PanacheEntityBase {
 
     public String name;
 
+    public String color;
+
     @Column(name = "deleted_at")
     public Instant deletedAt;
 

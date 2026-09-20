@@ -4,9 +4,9 @@ import { forkJoin } from 'rxjs';
 import { LineApiService } from '../../lines/line-api.service';
 import { FocusRef, LineSummary } from '../../lines/line.model';
 import { ThemeToggle } from '../../theme/theme-toggle/theme-toggle';
-import { DialLine, LINE_DIAL_COLORS } from '../dial-palette';
+import { DialLine } from '../dial-palette';
 import { DialTimeline } from '../dial-timeline/dial-timeline';
-import { EventDetail, FocusChange } from '../event-detail/event-detail';
+import { AttendanceChange, EventDetail, FocusChange } from '../event-detail/event-detail';
 import { IterationSelector } from '../iteration-selector/iteration-selector';
 import { EventType, Iteration, TimelineEvent } from '../iteration.model';
 import { IterationApiService } from '../iteration-api.service';
@@ -37,13 +37,10 @@ export class TeamOverview implements OnInit {
   protected readonly renaming = signal(false);
   protected readonly newIterationName = signal('');
 
-  /** Lines in listing order, each with its fixed dial color. */
+  /** The current Line list, for the legend — each event's own dial uses its attendance snapshot
+   * instead (see TimelineEvent.lines), not this live list. */
   protected readonly dialLines = computed<DialLine[]>(() =>
-    this.lineList().map((line, i) => ({
-      id: line.id,
-      name: line.name,
-      color: LINE_DIAL_COLORS[i % LINE_DIAL_COLORS.length],
-    })),
+    this.lineList().map((line) => ({ id: line.id, name: line.name, color: line.color })),
   );
 
   protected readonly currentIteration = computed(
@@ -52,15 +49,15 @@ export class TeamOverview implements OnInit {
   protected readonly currentEvents = computed(() => this.currentIteration()?.events ?? []);
 
   /**
-   * The next event still needing attention: the first event, in Iteration then scheduledOn order,
-   * where at least one Line has no Focus set. This is a Focus-completeness signal, not a "what's
-   * upcoming" one — it can point at a past event that was never fully planned.
+   * The next event still to come: the first event, in Iteration then scheduledOn order, whose
+   * date hasn't passed yet. Once an event is done it's read-only (see EventDetail) and drops out
+   * of consideration here regardless of whether every Line has a Focus set.
    */
   protected readonly nextEventId = computed<string | null>(() => {
-    const lineCount = this.lineList().length;
+    const now = new Date();
     for (const iteration of this.iterations()) {
       for (const event of iteration.events) {
-        if (event.focusAttachments.length < lineCount) {
+        if (new Date(event.scheduledOn) >= now) {
           return event.id;
         }
       }
@@ -159,6 +156,19 @@ export class TeamOverview implements OnInit {
       next: () => this.reload(event.id),
       error: () => this.errorMessage.set('Fokus konnte nicht gesetzt werden.'),
     });
+  }
+
+  protected onAttendanceChange(change: AttendanceChange): void {
+    const event = this.selectedEvent();
+    if (!event) {
+      return;
+    }
+    this.api
+      .setAttendance(event.id, change.playerId, change.status, change.declineMessage)
+      .subscribe({
+        next: () => this.reload(event.id),
+        error: () => this.errorMessage.set('Anwesenheit konnte nicht gespeichert werden.'),
+      });
   }
 
   protected onDateChange(date: string): void {

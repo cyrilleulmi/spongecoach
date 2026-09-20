@@ -2,6 +2,7 @@ export interface LineSummary {
   id: string;
   name: string;
   playerCount: number;
+  color: string;
 }
 
 export interface Player {

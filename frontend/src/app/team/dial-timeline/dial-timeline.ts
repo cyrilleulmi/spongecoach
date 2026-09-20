@@ -1,11 +1,22 @@
 import { Component, input, output } from '@angular/core';
-import { DialLine } from '../dial-palette';
-import { TimelineEvent } from '../iteration.model';
+import { AttendanceStatus, TimelineEvent } from '../iteration.model';
+
+/** One (Player, Line) roster icon to a dial's right — a Player on two attending Lines gets one of
+ * these per Line, per CONTEXT.md's Player/Roster model. */
+export interface RosterIcon {
+  key: string;
+  name: string;
+  color: string;
+  status: AttendanceStatus;
+}
 
 /**
  * The vertical dial timeline for one Iteration: numbered Trainings running top to bottom on a
- * connected line, closing on a Match. Each event is a 4-quadrant dial (one quadrant per Line);
- * a quadrant lit in the Line's color means that Line has a Focus set for the event.
+ * connected line, closing on a Match. Each event is a dial with one quadrant per Line attending
+ * that event (its own attendance snapshot, not the live Line list — ADR-0012); a quadrant lit in
+ * the Line's color means that Line has a Focus set for the event. To the dial's right, small
+ * person icons show each attending Player in their Line's color, grouped one row per Line —
+ * filled for confirmed, hollow for no response yet, and crossed out for declined.
  */
 @Component({
   selector: 'app-dial-timeline',
@@ -14,7 +25,6 @@ import { TimelineEvent } from '../iteration.model';
 })
 export class DialTimeline {
   readonly events = input.required<TimelineEvent[]>();
-  readonly lines = input.required<DialLine[]>();
   readonly selectedEventId = input<string | null>(null);
   /** The next event that still needs attention — carries the persistent "NEXT" marker. */
   readonly nextEventId = input<string | null>(null);
@@ -26,6 +36,10 @@ export class DialTimeline {
 
   protected isMatch(event: TimelineEvent): boolean {
     return event.type === 'Match';
+  }
+
+  protected isPast(event: TimelineEvent): boolean {
+    return new Date(event.scheduledOn) < new Date();
   }
 
   /**
@@ -52,9 +66,9 @@ export class DialTimeline {
       : (event.name || event.type);
   }
 
-  /** CSS `conic-gradient` stops: one equal slice per Line, lit or pale. */
+  /** CSS `conic-gradient` stops: one equal slice per attending Line, lit or pale. */
   protected gradient(event: TimelineEvent): string {
-    const lines = this.lines();
+    const lines = event.lines;
     if (lines.length === 0) {
       return 'var(--dial-track)';
     }
@@ -67,5 +81,35 @@ export class DialTimeline {
       return `${color} ${from}deg ${to}deg`;
     });
     return `conic-gradient(${stops.join(', ')})`;
+  }
+
+  /** One roster icon per (Line, Player) — a Player on two attending Lines appears once per Line —
+   * grouped by Line (event.lines' order, the same as the focus quadrants) so each Line's Players
+   * form their own row to the dial's right. */
+  protected rosterByLine(event: TimelineEvent): { lineId: string; icons: RosterIcon[] }[] {
+    return event.lines
+      .map((line) => ({
+        lineId: line.id,
+        icons: event.attendance
+          .filter((player) => player.lineIds.includes(line.id))
+          .map((player) => ({
+            key: `${player.playerId}-${line.id}`,
+            name: player.playerName,
+            color: line.color,
+            status: player.status,
+          })),
+      }))
+      .filter((group) => group.icons.length > 0);
+  }
+
+  protected statusLabel(status: AttendanceStatus): string {
+    switch (status) {
+      case 'ATTENDING':
+        return 'Zugesagt';
+      case 'DECLINED':
+        return 'Abgesagt';
+      default:
+        return 'Keine Antwort';
+    }
   }
 }

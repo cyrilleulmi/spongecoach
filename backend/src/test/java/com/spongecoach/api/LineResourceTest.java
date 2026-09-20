@@ -1,7 +1,9 @@
 package com.spongecoach.api;
 
 import com.spongecoach.domain.DevelopmentGoal;
+import com.spongecoach.domain.Event;
 import com.spongecoach.domain.Focus;
+import com.spongecoach.domain.Iteration;
 import com.spongecoach.domain.Line;
 import com.spongecoach.domain.Player;
 import com.spongecoach.domain.Skill;
@@ -12,6 +14,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -399,5 +402,115 @@ class LineResourceTest {
                 .then()
                 .statusCode(200)
                 .body("skillId", not(hasItem(skill.id.toString())));
+    }
+
+    @Test
+    void whenAddingAPlayerToALineThatAttendsAnUpcomingEvent_thenThePlayerJoinsItsAttendanceList() {
+        Line line = testData.createLine("Kiwi " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+        Iteration iteration = testData.createIteration("Sync " + UUID.randomUUID(), 500);
+        cleanups.add(() -> testData.deleteIteration(iteration.id));
+        Event event = testData.addTraining(iteration.id, LocalDateTime.now().plusDays(7));
+        testData.attendEvent(event.id, line.id);
+
+        Player newcomer = testData.createPlayer("Neu " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(newcomer.id));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("playerIds", List.of(newcomer.id.toString())))
+                .when().put("/api/lines/" + line.id)
+                .then().statusCode(200);
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].attendance.find { it.playerId == '" + newcomer.id + "' }.status",
+                        equalTo("PENDING"))
+                .body("events[0].attendance.find { it.playerId == '" + newcomer.id + "' }.lineIds",
+                        hasItem(line.id.toString()));
+    }
+
+    @Test
+    void whenRemovingAPlayerFromALineThatAttendsAnUpcomingEvent_thenTheyLeaveItsAttendanceList() {
+        Line line = testData.createLine("Bäri " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+        Player player = testData.addPlayer(line.id, "Weg " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(player.id));
+        Iteration iteration = testData.createIteration("Sync " + UUID.randomUUID(), 501);
+        cleanups.add(() -> testData.deleteIteration(iteration.id));
+        Event event = testData.addTraining(iteration.id, LocalDateTime.now().plusDays(7));
+        testData.attendEvent(event.id, line.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("playerIds", List.of()))
+                .when().put("/api/lines/" + line.id)
+                .then().statusCode(200);
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].attendance.playerId", not(hasItem(player.id.toString())));
+    }
+
+    @Test
+    void whenAPlayerIsRemovedFromOneOfTwoAttendingLines_thenTheyStayOnTheOthersAttendanceList() {
+        Line kiwi = testData.createLine("Kiwi " + UUID.randomUUID());
+        Line bari = testData.createLine("Bäri " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(kiwi.id));
+        cleanups.add(() -> testData.deleteLine(bari.id));
+        Player allrounder = testData.createPlayer("Sophie " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(allrounder.id));
+        testData.linkPlayer(kiwi.id, allrounder.id);
+        testData.linkPlayer(bari.id, allrounder.id);
+
+        Iteration iteration = testData.createIteration("Sync " + UUID.randomUUID(), 502);
+        cleanups.add(() -> testData.deleteIteration(iteration.id));
+        Event event = testData.addTraining(iteration.id, LocalDateTime.now().plusDays(7));
+        testData.attendEvent(event.id, kiwi.id);
+        testData.attendEvent(event.id, bari.id);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("playerIds", List.of()))
+                .when().put("/api/lines/" + kiwi.id)
+                .then().statusCode(200);
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].attendance.find { it.playerId == '" + allrounder.id + "' }.lineIds",
+                        hasItem(bari.id.toString()))
+                .body("events[0].attendance.find { it.playerId == '" + allrounder.id + "' }.lineIds",
+                        not(hasItem(kiwi.id.toString())));
+    }
+
+    @Test
+    void whenRosterChangesForADoneEvent_thenItsAttendanceSnapshotIsUntouched() {
+        Line line = testData.createLine("Lama " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(line.id));
+        Iteration iteration = testData.createIteration("Vergangen " + UUID.randomUUID(), 503);
+        cleanups.add(() -> testData.deleteIteration(iteration.id));
+        Event event = testData.addTraining(iteration.id, LocalDateTime.now().minusDays(1));
+        testData.attendEvent(event.id, line.id);
+
+        Player latecomer = testData.createPlayer("Zu spät " + UUID.randomUUID());
+        cleanups.add(() -> testData.deletePlayer(latecomer.id));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("playerIds", List.of(latecomer.id.toString())))
+                .when().put("/api/lines/" + line.id)
+                .then().statusCode(200);
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].attendance.playerId", not(hasItem(latecomer.id.toString())));
     }
 }

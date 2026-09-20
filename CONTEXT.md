@@ -38,7 +38,7 @@ A reusable item derived from one or more Development goals, attached to one or m
 A named group of Events, ordered relative to other Iterations. The unit a coach plans around (e.g. a training block or phase).
 
 **Event**:
-Umbrella term covering both Training and Match — a single kind of thing, distinguished by its Event type rather than by being separate concepts. Belongs to exactly one Iteration and holds a position within it (see Sequence). A Line attaches a Focus to an Event via a three-way Line-Focus-Event link, since a Focus is no longer implicitly one Line's — at most one Focus per Line per Event (ADR-0010).
+Umbrella term covering both Training and Match — a single kind of thing, distinguished by its Event type rather than by being separate concepts. Belongs to exactly one Iteration and holds a position within it (see Sequence). A Line attaches a Focus to an Event via a three-way Line-Focus-Event link, since a Focus is no longer implicitly one Line's — at most one Focus per Line per Event (ADR-0010). An Event has a fixed set of attending Lines, snapshotted once when the Event is created — every Line active at that moment, for now (ADR-0012); a likely future feature is letting a coach edit that set per Event, so not every Line has to be invited. An Event becomes read-only in the frontend once its `scheduledOn` has passed (ADR-0012) — a default the coach can lift per Event, not a backend restriction.
 _Avoid_: appointment, item
 
 **Event type**:

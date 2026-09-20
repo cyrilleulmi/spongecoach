@@ -81,6 +81,31 @@
   color: var(--ink);
 }
 
+.done-hint {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.link-btn {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+input:disabled,
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .focus-rows {
   list-style: none;
   margin: 0;
@@ -119,6 +144,119 @@
   color: var(--ink);
 }
 
+.attendance-count {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  flex: none;
+  min-width: 2.4rem;
+  text-align: center;
+}
+
+.attendance-title {
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 1.1rem 0 0.5rem;
+}
+
+.attendance-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.attendance-empty {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+/* Slim, single-line rows — everything about one Player fits on one row; a row that still
+ * overflows a narrow pane scrolls horizontally rather than wrapping. Status color-codes the row
+ * (border + tint) so attending/declined/pending reads at a glance without checking the select. */
+.attendance-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.35rem;
+  border-left: 3px solid var(--line);
+  overflow-x: auto;
+}
+
+.attendance-row.status-attending {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.attendance-row.status-declined {
+  border-left-color: var(--danger-ink);
+  background: var(--danger-bg);
+}
+
+.attendance-row.status-pending {
+  border-left-color: var(--line);
+  background: transparent;
+}
+
+.player-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  flex: 0 0 4.4rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-badges {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  flex: none;
+}
+
+.line-badge {
+  color: #fff;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.56rem;
+  border-radius: 4px;
+  padding: 0.08rem 0.3rem;
+  white-space: nowrap;
+}
+
+.attendance-select {
+  flex: none;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 0.16rem 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.decline-message-input {
+  flex: 1 1 4rem;
+  min-width: 2.5rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.18rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--ink);
+}
+
 .delete-btn {
   margin-top: 1rem;
   font-family: inherit;
@@ -130,4 +268,9 @@
   background: var(--danger-bg);
   color: var(--danger-ink);
   cursor: pointer;
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

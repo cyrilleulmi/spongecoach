@@ -6,8 +6,13 @@ import { Iteration } from '../iteration.model';
 import { LineDetail } from '../../lines/line.model';
 
 const LINES = [
-  { id: 'line-a', name: 'Kiwi', playerCount: 4 },
-  { id: 'line-b', name: 'Bäri', playerCount: 4 },
+  { id: 'line-a', name: 'Kiwi', playerCount: 4, color: '#4c8c3d' },
+  { id: 'line-b', name: 'Bäri', playerCount: 4, color: '#8b5e34' },
+];
+
+const LINE_REFS = [
+  { id: 'line-a', name: 'Kiwi', color: '#4c8c3d' },
+  { id: 'line-b', name: 'Bäri', color: '#8b5e34' },
 ];
 
 const EVENT_TYPES = [
@@ -15,6 +20,7 @@ const EVENT_TYPES = [
   { id: 'mt', name: 'Match' },
 ];
 
+// Far-future dates keep both events "not done" for as long as this suite is maintained.
 function iterations(): Iteration[] {
   return [
     {
@@ -27,18 +33,22 @@ function iterations(): Iteration[] {
           typeId: 'tt',
           type: 'Training',
           name: null,
-          scheduledOn: '2026-08-05T18:00',
+          scheduledOn: '2099-08-05T18:00',
           focusAttachments: [
             { lineId: 'line-a', lineName: 'Kiwi', focusId: 'f-1', focusName: 'Fokus A' },
           ],
+          lines: LINE_REFS,
+          attendance: [],
         },
         {
           id: 'ev-2',
           typeId: 'mt',
           type: 'Match',
           name: 'Testspiel',
-          scheduledOn: '2026-08-12T19:00',
+          scheduledOn: '2099-08-12T19:00',
           focusAttachments: [],
+          lines: LINE_REFS,
+          attendance: [],
         },
       ],
     },
@@ -86,7 +96,7 @@ describe('TeamOverview', () => {
     expect(fixture.nativeElement.querySelectorAll('.d-node').length).toBe(2);
   });
 
-  it('marks the first incomplete event as the next one', async () => {
+  it('marks the first not-yet-past event as the next one', async () => {
     const fixture = await render();
     const first = fixture.nativeElement.querySelector('.d-node') as HTMLElement;
     expect(first.classList).toContain('current');
@@ -125,8 +135,8 @@ describe('TeamOverview', () => {
 
     const post = httpMock.expectOne('/api/iterations/it-1/events');
     expect(post.request.method).toBe('POST');
-    // one hour after the iteration's latest event (ev-2 at 2026-08-12T19:00)
-    expect(post.request.body).toEqual({ eventTypeId: 'tt', scheduledOn: '2026-08-12T20:00' });
+    // one hour after the iteration's latest event (ev-2 at 2099-08-12T19:00)
+    expect(post.request.body).toEqual({ eventTypeId: 'tt', scheduledOn: '2099-08-12T20:00' });
     post.flush({
       id: 'ev-new',
       typeId: 'tt',

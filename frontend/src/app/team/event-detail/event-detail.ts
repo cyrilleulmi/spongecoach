@@ -89,6 +89,12 @@ export class EventDetail {
     return this.event()?.focusAttachments.find((a) => a.lineId === lineId)?.focusId ?? '';
   }
 
+  /** Full name of the Focus currently set for a Line — read out below the dropdown so a long,
+   * multi-sentence Focus name isn't stuck truncated inside the closed `<select>`. */
+  protected selectedFocusName(lineId: string): string {
+    return this.event()?.focusAttachments.find((a) => a.lineId === lineId)?.focusName ?? '';
+  }
+
   protected onFocusSelect(lineId: string, value: string): void {
     this.focusChange.emit({ lineId, focusId: value ? value : null });
   }

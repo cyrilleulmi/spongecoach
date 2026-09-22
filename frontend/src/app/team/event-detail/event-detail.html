@@ -47,24 +47,29 @@
     <ul class="focus-rows">
       @for (line of attendingLines(); track line.id) {
         <li>
-          <span class="focus-line-tag" [style.background]="line.color">{{ line.name }}</span>
-          <span class="attendance-count" [attr.aria-label]="'Zusagen für ' + line.name">
-            {{ lineAttendanceCount(line.id).attending }}/{{ lineAttendanceCount(line.id).total }}
-          </span>
-          <select
-            class="focus-select"
-            [attr.aria-label]="'Fokus für ' + line.name + ' setzen'"
-            [value]="selectedFocusId(line.id)"
-            [disabled]="readonly()"
-            (change)="onFocusSelect(line.id, $any($event.target).value)"
-          >
-            <option value="">— nicht gesetzt —</option>
-            @for (focus of focusesFor(line.id); track focus.id) {
-              <option [value]="focus.id" [selected]="focus.id === selectedFocusId(line.id)">
-                {{ focus.name }}
-              </option>
-            }
-          </select>
+          <div class="focus-row-head">
+            <span class="focus-line-tag" [style.background]="line.color">{{ line.name }}</span>
+            <span class="attendance-count" [attr.aria-label]="'Zusagen für ' + line.name">
+              {{ lineAttendanceCount(line.id).attending }}/{{ lineAttendanceCount(line.id).total }}
+            </span>
+            <select
+              class="focus-select"
+              [attr.aria-label]="'Fokus für ' + line.name + ' setzen'"
+              [value]="selectedFocusId(line.id)"
+              [disabled]="readonly()"
+              (change)="onFocusSelect(line.id, $any($event.target).value)"
+            >
+              <option value="">— nicht gesetzt —</option>
+              @for (focus of focusesFor(line.id); track focus.id) {
+                <option [value]="focus.id" [selected]="focus.id === selectedFocusId(line.id)">
+                  {{ focus.name }}
+                </option>
+              }
+            </select>
+          </div>
+          @if (selectedFocusName(line.id); as focusName) {
+            <p class="focus-readout">{{ focusName }}</p>
+          }
         </li>
       }
     </ul>

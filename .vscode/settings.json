@@ -1,0 +1,12 @@
+{
+  // Cucumber extension (CucumberOpen.cucumber-official): ties docs/spec/*.feature to the step
+  // definitions that run them, for autocomplete and go-to-definition. See docs/spec/README.md.
+  //
+  // ui.feature is listed too, for syntax highlighting — it has no step definitions on purpose
+  // (it is proven by the frontend suites, ADR-0013), so its steps will show as undefined here.
+  "cucumber.features": ["docs/spec/*.feature"],
+  "cucumber.glue": ["backend/src/test/java/com/spongecoach/spec/steps/*.java"],
+  "files.associations": {
+    "*.feature": "feature"
+  }
+}

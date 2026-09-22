@@ -42,6 +42,7 @@ class IterationResourceTest {
         cleanups.clear();
     }
 
+    // spec: timeline.aggregate-read
     @Test
     void givenAnIterationWithEvents_whenListing_thenItsEventsAreNestedInScheduledOnOrder() {
         Iteration iteration = testData.createIteration("Vorbereitung " + UUID.randomUUID(), 500);
@@ -64,6 +65,7 @@ class IterationResourceTest {
                 .body("find { it.id == '" + iteration.id + "' }.events[2].name", equalTo("Testspiel"));
     }
 
+    // spec: timeline.iteration-unknown
     @Test
     void givenAnUnknownIteration_whenFetchingIt_thenReturnsNotFoundEnvelope() {
         given()
@@ -73,6 +75,7 @@ class IterationResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: timeline.create-iteration-with-events
     @Test
     void whenCreatingAnIterationWithNestedEvents_thenAllArePersistedInOrder() {
         UUID trainingType = testData.eventType("Training").id;
@@ -106,6 +109,7 @@ class IterationResourceTest {
                 .body("events.type", hasItem("Match"));
     }
 
+    // spec: timeline.iteration-needs-name
     @Test
     void whenCreatingAnIterationWithoutAName_thenReturnsBadRequest() {
         given()
@@ -117,6 +121,7 @@ class IterationResourceTest {
                 .body("error", equalTo("bad_request"));
     }
 
+    // spec: timeline.rename-iteration
     @Test
     void whenUpdatingAnIterationName_thenItIsChanged() {
         Iteration iteration = testData.createIteration("Alt " + UUID.randomUUID(), 500);
@@ -132,6 +137,7 @@ class IterationResourceTest {
                 .body("position", equalTo(7));
     }
 
+    // spec: timeline.delete-iteration
     @Test
     void whenDeletingAnIteration_thenItAndItsEventsDisappear() {
         Iteration iteration = testData.createIteration("Weg " + UUID.randomUUID(), 500);
@@ -153,6 +159,7 @@ class IterationResourceTest {
                 .statusCode(404);
     }
 
+    // spec: timeline.event-requires-datetime
     @Test
     void whenAddingAnEventWithoutScheduledOn_thenReturnsBadRequest() {
         Iteration iteration = testData.createIteration("Ohne Datum " + UUID.randomUUID(), 500);
@@ -167,6 +174,7 @@ class IterationResourceTest {
                 .body("error", equalTo("bad_request"));
     }
 
+    // spec: timeline.slot-collision-on-create
     @Test
     void whenAddingAnEventAtAnAlreadyUsedSlot_thenReturnsConflict() {
         Iteration iteration = testData.createIteration("Kollision " + UUID.randomUUID(), 500);
@@ -185,6 +193,7 @@ class IterationResourceTest {
                 .body("error", equalTo("scheduling_conflict"));
     }
 
+    // spec: timeline.slot-scoped-to-iteration
     @Test
     void givenTwoIterations_whenAddingEventsAtTheSameSlotInEach_thenBothSucceed() {
         Iteration first = testData.createIteration("Erste " + UUID.randomUUID(), 500);
@@ -204,6 +213,7 @@ class IterationResourceTest {
                 .statusCode(201);
     }
 
+    // spec: timeline.reschedule
     @Test
     void whenReschedulingAnEventViaIterationScopedPut_thenItsScheduledOnChanges() {
         Iteration iteration = testData.createIteration("Umplanen " + UUID.randomUUID(), 500);
@@ -220,6 +230,7 @@ class IterationResourceTest {
                 .body("scheduledOn", equalTo(rescheduled.format(ISO)));
     }
 
+    // spec: timeline.reschedule-to-own-slot
     @Test
     void whenReschedulingAnEventToItsOwnCurrentSlot_thenItIsAccepted() {
         Iteration iteration = testData.createIteration("Selbst " + UUID.randomUUID(), 500);
@@ -236,6 +247,7 @@ class IterationResourceTest {
                 .body("scheduledOn", equalTo(slot.format(ISO)));
     }
 
+    // spec: timeline.reschedule-collision
     @Test
     void whenReschedulingAnEventOntoASiblingsSlot_thenReturnsConflict() {
         Iteration iteration = testData.createIteration("Doppelt " + UUID.randomUUID(), 500);
@@ -253,6 +265,7 @@ class IterationResourceTest {
                 .body("error", equalTo("scheduling_conflict"));
     }
 
+    // spec: timeline.delete-event
     @Test
     void whenDeletingASingleEvent_thenOnlyThatEventIsRemoved() {
         Iteration iteration = testData.createIteration("Einzeln " + UUID.randomUUID(), 500);
@@ -273,6 +286,7 @@ class IterationResourceTest {
                 .body("events.id", not(hasItem(dropped.id.toString())));
     }
 
+    // spec: timeline.event-type-must-exist
     @Test
     void whenAddingAnEventWithUnknownType_thenReturnsNotFound() {
         Iteration iteration = testData.createIteration("Unbekannt " + UUID.randomUUID(), 500);
@@ -289,6 +303,7 @@ class IterationResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: focus.inline-names-on-timeline
     @Test
     void givenEventsWithFocusAttachments_whenListing_thenAttachmentsAreInlineWithLineAndFocusNames() {
         Iteration iteration = testData.createIteration("Fokusse " + UUID.randomUUID(), 500);
@@ -315,6 +330,7 @@ class IterationResourceTest {
                 .body("events[0].scheduledOn", equalTo(slot.format(ISO)));
     }
 
+    // spec: timeline.event-carries-datetime
     @Test
     void whenAddingAnEventWithADatetime_thenItIsReturnedOnTheEvent() {
         Iteration iteration = testData.createIteration("Datum " + UUID.randomUUID(), 500);

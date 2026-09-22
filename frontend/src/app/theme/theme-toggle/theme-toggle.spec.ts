@@ -22,6 +22,7 @@ describe('ThemeToggle', () => {
     expect(button.getAttribute('aria-label')).toBe('Zu dunklem Design wechseln');
   });
 
+  // spec: ui.theme-toggle
   it('toggles to dark on click, persisting the choice', async () => {
     const fixture = await render();
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('button');

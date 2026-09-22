@@ -20,6 +20,7 @@ describe('App shell', () => {
 
   afterEach(() => httpMock.verify());
 
+  // spec: ui.navigation
   it('renders the two top-level nav links', async () => {
     const fixture = TestBed.createComponent(App);
     await router.navigateByUrl('/team');

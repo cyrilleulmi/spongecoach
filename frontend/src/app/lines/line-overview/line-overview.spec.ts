@@ -52,6 +52,7 @@ describe('LineOverview', () => {
 
   afterEach(() => httpMock.verify());
 
+  // spec: ui.first-line-selected
   it('given lines exist, selects the first one and renders its roster/skills/goals/focuses', async () => {
     const fixture = await render();
     const text = fixture.nativeElement.textContent as string;
@@ -63,6 +64,7 @@ describe('LineOverview', () => {
     expect(text).toContain('Cross-Pässe unter Druck');
   });
 
+  // spec: ui.switch-line-refetches
   it('when switching to another line, fetches and renders that line’s detail', async () => {
     const fixture = await render();
 
@@ -75,6 +77,7 @@ describe('LineOverview', () => {
     expect((fixture.nativeElement.textContent as string)).toContain('Bäri');
   });
 
+  // spec: ui.rating-is-optimistic
   it('when a rating segment is clicked, applies it immediately and PUTs in the background with no refetch', async () => {
     const fixture = await render();
     fixture.detectChanges();
@@ -95,6 +98,7 @@ describe('LineOverview', () => {
     httpMock.expectNone('/api/lines/line-a');
   });
 
+  // spec: ui.rating-rolls-back
   it('when the rating PUT fails, rolls back to the previous rating', async () => {
     const fixture = await render();
     fixture.detectChanges();
@@ -112,8 +116,14 @@ describe('LineOverview', () => {
     expect((fixture.nativeElement.textContent as string)).toContain('3/5'); // back to the seeded 60 rating
   });
 
+  // spec: ui.roster-dialog-commits-once
   it('when associating a team player via the roster dialog, PUTs the full player id array', async () => {
     const fixture = await render();
+
+    // "Verwalten" seeds the dialog's draft from the current roster; toggles only land on "Fertig".
+    const manage: HTMLButtonElement = fixture.nativeElement.querySelector('.card.roster .section-title .btn');
+    manage.click();
+    fixture.detectChanges();
 
     // player-1 is already on the roster; player-2 ("Debi") is in the team pool but not associated.
     const chipAddButtons: HTMLButtonElement[] = Array.from(
@@ -121,6 +131,12 @@ describe('LineOverview', () => {
     );
     const debiChip = chipAddButtons.find((b) => (b.getAttribute('aria-label') ?? '').startsWith('Debi'));
     debiChip!.click();
+    fixture.detectChanges();
+
+    httpMock.expectNone('/api/lines/line-a'); // staged only — nothing sent until "Fertig"
+
+    const done: HTMLButtonElement = fixture.nativeElement.querySelector('.roster-dialog .section-title .btn');
+    done.click();
 
     const req = httpMock.expectOne('/api/lines/line-a');
     expect(req.request.method).toBe('PUT');
@@ -131,6 +147,7 @@ describe('LineOverview', () => {
     await fixture.whenStable();
   });
 
+  // spec: ui.goal-toggle-saves-full-set
   it('when toggling an unassociated goal via manage, PUTs the full goal id array', async () => {
     const fixture = await render();
 
@@ -156,6 +173,7 @@ describe('LineOverview', () => {
     await fixture.whenStable();
   });
 
+  // spec: ui.create-skill-auto-associates
   it('when creating a skill, POSTs it with the chosen color and auto-associates it', async () => {
     const fixture = await render();
 
@@ -188,6 +206,7 @@ describe('LineOverview', () => {
     httpMock.expectNone('/api/lines/line-a');
   });
 
+  // spec: ui.create-focus-auto-associates
   it('when creating a focus, POSTs it with every chosen goal id and auto-associates it', async () => {
     const fixture = await render();
 
@@ -226,6 +245,7 @@ describe('LineOverview', () => {
     (fixture.nativeElement.querySelector('.line-menu .icon-btn') as HTMLButtonElement).click();
   }
 
+  // spec: ui.line-lifecycle-menu
   it('when creating a line via the "..." menu, POSTs the name and selects the new line', async () => {
     const fixture = await render();
 
@@ -343,6 +363,7 @@ describe('LineOverview', () => {
     expect(tabs.map((b) => b.textContent?.trim())).toEqual(['Kiwi', 'Bäri', 'Lama']);
   });
 
+  // spec: ui.recolor-from-line-screen
   it('when a swatch is picked for a skill, PUTs the new color to the catalog', async () => {
     const fixture = await render();
 

@@ -50,6 +50,7 @@ describe('DialTimeline', () => {
     return fixture;
   }
 
+  // spec: ui.timeline-renders-iteration
   it('renders one node per event, numbering trainings and naming matches', async () => {
     const fixture = await render(null, null);
     const nodes = fixture.nativeElement.querySelectorAll('.d-node');
@@ -58,6 +59,7 @@ describe('DialTimeline', () => {
     expect(nodes[1].textContent).toContain('Testspiel gegen Rotweiss');
   });
 
+  // spec: ui.next-event-marked
   it('marks the next event with the NÄCHSTES tag and the current class', async () => {
     const fixture = await render(null, 'ev-1');
     const first = fixture.nativeElement.querySelector('.d-node') as HTMLElement;
@@ -65,6 +67,7 @@ describe('DialTimeline', () => {
     expect(first.textContent).toContain('NÄCHSTES');
   });
 
+  // spec: ui.dial-shows-planning-progress
   it('lights a quadrant in the line color where that line has a focus set', async () => {
     const fixture = await render(null, null);
     const dial = fixture.nativeElement.querySelector('.d-node .dial') as HTMLElement;
@@ -75,6 +78,7 @@ describe('DialTimeline', () => {
     expect(bg).toContain('var(--dial-track)'); // line-b, unlit
   });
 
+  // spec: ui.roster-icons-show-answers
   it('renders one roster icon per attending (Line, Player) pair, grouped by line with pending/declined marked', async () => {
     const fixture = await render(null, null);
     const firstNode = fixture.nativeElement.querySelector('.d-node') as HTMLElement;

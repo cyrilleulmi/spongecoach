@@ -24,6 +24,7 @@ class CatalogResourceTest {
     @Inject
     TestData testData;
 
+    // spec: catalogs.list-active-skills
     @Test
     void whenListingSkills_thenOnlyActiveCatalogRowsAreReturned() {
         Skill active = testData.createSkill("Transition speed " + UUID.randomUUID(), "#4f7a3f");
@@ -38,6 +39,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.list-active-goals
     @Test
     void whenAGoalIsDeleted_thenItIsExcludedFromTheCatalogListing() {
         DevelopmentGoal goal = testData.createGoal("Build compact defensive shape " + UUID.randomUUID(), "#b1467a");
@@ -53,6 +55,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.recolor-skill
     @Test
     void whenChangingASkillsColor_thenTheNewColorIsPersisted() {
         Skill skill = testData.createSkill("Faceoff control " + UUID.randomUUID(), "#111111");
@@ -69,6 +72,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.recolor-goal
     @Test
     void whenChangingAGoalsColor_thenTheNewColorIsPersisted() {
         DevelopmentGoal goal = testData.createGoal("Improve power-play execution " + UUID.randomUUID(), "#111111");
@@ -85,6 +89,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.focus-carries-goal-ids
     @Test
     void whenListingFocuses_thenEachCarriesItsOriginatingGoalIds() {
         DevelopmentGoal goal = testData.createGoal("Increase shot volume " + UUID.randomUUID(), "#c8722e");
@@ -101,6 +106,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.create-skill
     @Test
     void whenCreatingASkill_thenItIsPersistedWithItsChosenColorAndListed() {
         String name = "Passgenauigkeit " + UUID.randomUUID();
@@ -120,6 +126,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.create-requires-name
     @Test
     void whenCreatingASkillWithABlankName_thenReturnsBadRequest() {
         given()
@@ -131,6 +138,7 @@ class CatalogResourceTest {
                 .body("error", equalTo("bad_request"));
     }
 
+    // spec: catalogs.create-goal
     @Test
     void whenCreatingADevelopmentGoal_thenItIsListed() {
         String name = "Überzahlspiel verbessern " + UUID.randomUUID();
@@ -149,6 +157,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.create-focus
     @Test
     void whenCreatingAFocus_thenItCarriesTheChosenGoalAndIsListed() {
         DevelopmentGoal goal = testData.createGoal("Build compact shape " + UUID.randomUUID(), "#16a085");
@@ -174,6 +183,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.focus-from-several-goals
     @Test
     void whenCreatingAFocusFromSeveralGoals_thenAllAreLinked() {
         DevelopmentGoal first = testData.createGoal("Reduce turnovers " + UUID.randomUUID(), "#c0392b");
@@ -201,6 +211,7 @@ class CatalogResourceTest {
         }
     }
 
+    // spec: catalogs.focus-needs-a-goal
     @Test
     void whenCreatingAFocusWithoutAGoal_thenReturnsBadRequest() {
         given()

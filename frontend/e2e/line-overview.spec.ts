@@ -18,7 +18,9 @@ async function mockApi(page: Page) {
   const skills = [{ id: SKILL_ID, name: 'Passgenauigkeit', color: '#2c7a68' }];
 
   await page.route('**/api/lines', (route) =>
-    route.fulfill({ json: [{ id: LINE_ID, name: 'Kiwi', playerCount: rosterIds.length }] }),
+    route.fulfill({
+      json: [{ id: LINE_ID, name: 'Kiwi', playerCount: rosterIds.length, color: '#4c8c3d' }],
+    }),
   );
   await page.route('**/api/players', (route) => route.fulfill({ json: TEAM_PLAYERS }));
 
@@ -102,6 +104,8 @@ test.describe('Per-line overview page', () => {
     // "Verwalten" on the Kader card is the first one on the page.
     await page.getByRole('button', { name: 'Verwalten' }).first().click();
     await page.getByRole('button', { name: 'Debi hinzufügen' }).click();
+    // Dialog edits are staged; "Fertig" commits them as one request.
+    await page.locator('.roster-dialog').getByRole('button', { name: 'Fertig' }).click();
 
     await expect(page.locator('.roster-row').getByText('Debi')).toBeVisible();
     await expect(page.locator('.roster-row')).toHaveCount(2);

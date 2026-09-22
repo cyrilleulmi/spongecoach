@@ -17,6 +17,7 @@ describe('IterationSelector', () => {
     return fixture;
   }
 
+  // spec: ui.iteration-navigation
   it('shows the current iteration name and position, with prev disabled on the first', async () => {
     const fixture = await render(0);
     const text = fixture.nativeElement.textContent as string;

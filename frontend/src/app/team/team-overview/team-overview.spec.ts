@@ -88,6 +88,7 @@ describe('TeamOverview', () => {
 
   afterEach(() => httpMock.verify());
 
+  // spec: ui.timeline-renders-iteration
   it('loads every iteration and renders the first one as a dial timeline', async () => {
     const fixture = await render();
     const text = fixture.nativeElement.textContent as string;
@@ -96,6 +97,7 @@ describe('TeamOverview', () => {
     expect(fixture.nativeElement.querySelectorAll('.d-node').length).toBe(2);
   });
 
+  // spec: ui.next-event-marked
   it('marks the first not-yet-past event as the next one', async () => {
     const fixture = await render();
     const first = fixture.nativeElement.querySelector('.d-node') as HTMLElement;
@@ -103,6 +105,7 @@ describe('TeamOverview', () => {
     expect(first.textContent).toContain('NÄCHSTES');
   });
 
+  // spec: ui.set-focus-from-detail
   it('when a line focus is changed, PUTs the merged attachment set and reloads', async () => {
     const fixture = await render();
 
@@ -125,6 +128,7 @@ describe('TeamOverview', () => {
     await fixture.whenStable();
   });
 
+  // spec: ui.add-training
   it('adds a training to the current iteration and reloads', async () => {
     const fixture = await render();
 
@@ -150,6 +154,7 @@ describe('TeamOverview', () => {
     await fixture.whenStable();
   });
 
+  // spec: ui.create-iteration
   it('creates a new iteration and jumps to it', async () => {
     const fixture = await render();
 

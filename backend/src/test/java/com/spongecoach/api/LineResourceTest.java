@@ -44,6 +44,7 @@ class LineResourceTest {
         cleanups.clear();
     }
 
+    // spec: lines.list-with-player-count
     @Test
     void givenALine_whenListingLines_thenItAppearsWithItsPlayerCount() {
         Line line = testData.createLine("Kiwi " + UUID.randomUUID());
@@ -61,6 +62,7 @@ class LineResourceTest {
                 .body("find { it.id == '" + line.id + "' }.name", equalTo(line.name));
     }
 
+    // spec: lines.unknown-is-not-found
     @Test
     void givenAnUnknownLine_whenFetchingIt_thenReturnsNotFoundEnvelope() {
         given()
@@ -70,6 +72,7 @@ class LineResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: lines.detail-embeds-associations
     @Test
     void givenALineWithRoster_whenFetchingDetail_thenRosterSkillsGoalsAndFocusesAreEmbedded() {
         Line line = testData.createLine("Bäri " + UUID.randomUUID());
@@ -106,6 +109,7 @@ class LineResourceTest {
                 .body("focuses.find { it.id == '" + focus.id + "' }.goalIds", hasItem(goal.id.toString()));
     }
 
+    // spec: lines.players-are-team-scoped
     @Test
     void whenListingTeamPlayers_thenTheyAreReturnedRegardlessOfLineMembership() {
         Player rostered = testData.createPlayer("Gina " + UUID.randomUUID());
@@ -121,6 +125,7 @@ class LineResourceTest {
                 .body("id", hasItem(benchWarmer.id.toString()));
     }
 
+    // spec: lines.roster-associates-existing-players
     @Test
     void whenAssociatingExistingTeamPlayers_thenTheyAppearInTheRoster() {
         Line line = testData.createLine("Lama " + UUID.randomUUID());
@@ -140,6 +145,7 @@ class LineResourceTest {
                 .body("players.id", hasItem(samira.id.toString()));
     }
 
+    // spec: lines.roster-replace
     @Test
     void whenReplacingThePlayerIdArray_thenDroppedPlayersLeaveTheRoster() {
         Line line = testData.createLine("Kiwi " + UUID.randomUUID());
@@ -159,6 +165,7 @@ class LineResourceTest {
                 .body("players.id", not(hasItem(dropped.id.toString())));
     }
 
+    // spec: lines.player-on-several-lines
     @Test
     void aPlayerCanBeRosteredOnMoreThanOneLine() {
         Line kiwi = testData.createLine("Kiwi " + UUID.randomUUID());
@@ -183,6 +190,7 @@ class LineResourceTest {
                 .statusCode(200).body("players.id", hasItem(allrounder.id.toString()));
     }
 
+    // spec: lines.roster-unknown-player
     @Test
     void whenAssociatingAnUnknownPlayer_thenReturnsNotFound() {
         Line line = testData.createLine("Kiwi " + UUID.randomUUID());
@@ -197,6 +205,7 @@ class LineResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: lines.rating-first-time
     @Test
     void whenSettingARatingForTheFirstTime_thenTheAssociationIsCreated() {
         Line line = testData.createLine("Bäri " + UUID.randomUUID());
@@ -220,6 +229,7 @@ class LineResourceTest {
                 .body("skillId", hasItem(skill.id.toString()));
     }
 
+    // spec: lines.rating-overwrites
     @Test
     void whenSettingARatingAgain_thenItOverwritesRatherThanAccumulatingHistory() {
         Line line = testData.createLine("Lama " + UUID.randomUUID());
@@ -242,6 +252,7 @@ class LineResourceTest {
                 .body("findAll { it.skillId == '" + skill.id + "' }", hasSize(1));
     }
 
+    // spec: lines.rating-range
     @Test
     void whenRatingIsOutOfRange_thenReturnsBadRequest() {
         Line line = testData.createLine("Kiwi " + UUID.randomUUID());
@@ -254,6 +265,7 @@ class LineResourceTest {
                 .then().statusCode(400).body("error", equalTo("bad_request"));
     }
 
+    // spec: lines.create
     @Test
     void whenCreatingALine_thenItAppearsInTheList() {
         String name = "Neue Linie " + UUID.randomUUID();
@@ -277,6 +289,7 @@ class LineResourceTest {
                 .body("id", hasItem(lineId));
     }
 
+    // spec: lines.create-requires-name
     @Test
     void whenCreatingALineWithoutAName_thenReturnsBadRequest() {
         given()
@@ -288,6 +301,7 @@ class LineResourceTest {
                 .body("error", equalTo("bad_request"));
     }
 
+    // spec: lines.delete-is-soft
     @Test
     void whenDeletingALine_thenItDisappearsButItsHistorySurvives() {
         Line line = testData.createLine("Verschwindet " + UUID.randomUUID());
@@ -315,6 +329,7 @@ class LineResourceTest {
         assertEquals(1, testData.lineRosterSize(line.id));
     }
 
+    // spec: lines.delete-twice
     @Test
     void whenDeletingAnAlreadyDeletedLine_thenReturnsNotFound() {
         Line line = testData.createLine("Doppelt " + UUID.randomUUID());
@@ -329,6 +344,7 @@ class LineResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: lines.list-deleted
     @Test
     void whenListingDeletedLines_thenItAppearsWithNameAndPlayerCount() {
         Line line = testData.createLine("Gelöscht " + UUID.randomUUID());
@@ -346,6 +362,7 @@ class LineResourceTest {
                 .body("find { it.id == '" + line.id + "' }.playerCount", equalTo(1));
     }
 
+    // spec: lines.restore
     @Test
     void whenRestoringADeletedLine_thenItReappearsInTheActiveList() {
         Line line = testData.createLine("Comeback " + UUID.randomUUID());
@@ -372,6 +389,7 @@ class LineResourceTest {
                 .body("id", not(hasItem(line.id.toString())));
     }
 
+    // spec: lines.restore-only-deleted
     @Test
     void whenRestoringALineThatIsNotDeleted_thenReturnsNotFound() {
         Line line = testData.createLine("Aktiv " + UUID.randomUUID());
@@ -384,6 +402,7 @@ class LineResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: lines.skill-disassociate
     @Test
     void whenRemovingASkillAssociation_thenItNoLongerAppearsOnTheLine() {
         Line line = testData.createLine("Bäri " + UUID.randomUUID());
@@ -404,6 +423,7 @@ class LineResourceTest {
                 .body("skillId", not(hasItem(skill.id.toString())));
     }
 
+    // spec: attendance.roster-add-joins-upcoming
     @Test
     void whenAddingAPlayerToALineThatAttendsAnUpcomingEvent_thenThePlayerJoinsItsAttendanceList() {
         Line line = testData.createLine("Kiwi " + UUID.randomUUID());
@@ -432,6 +452,7 @@ class LineResourceTest {
                         hasItem(line.id.toString()));
     }
 
+    // spec: attendance.roster-drop-leaves-upcoming
     @Test
     void whenRemovingAPlayerFromALineThatAttendsAnUpcomingEvent_thenTheyLeaveItsAttendanceList() {
         Line line = testData.createLine("Bäri " + UUID.randomUUID());
@@ -456,6 +477,7 @@ class LineResourceTest {
                 .body("events[0].attendance.playerId", not(hasItem(player.id.toString())));
     }
 
+    // spec: attendance.roster-drop-keeps-other-line
     @Test
     void whenAPlayerIsRemovedFromOneOfTwoAttendingLines_thenTheyStayOnTheOthersAttendanceList() {
         Line kiwi = testData.createLine("Kiwi " + UUID.randomUUID());
@@ -489,6 +511,7 @@ class LineResourceTest {
                         not(hasItem(kiwi.id.toString())));
     }
 
+    // spec: attendance.done-event-is-history
     @Test
     void whenRosterChangesForADoneEvent_thenItsAttendanceSnapshotIsUntouched() {
         Line line = testData.createLine("Lama " + UUID.randomUUID());

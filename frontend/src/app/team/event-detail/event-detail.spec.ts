@@ -95,6 +95,7 @@ describe('EventDetail', () => {
     expect(selects[1].value).toBe(''); // line-b, not set
   });
 
+  // spec: ui.set-focus-from-detail
   it('emits a focusChange with the chosen focus id when a dropdown changes', async () => {
     const fixture = await render(TRAINING);
     const changes: unknown[] = [];
@@ -107,6 +108,7 @@ describe('EventDetail', () => {
     expect(changes).toEqual([{ lineId: 'line-b', focusId: 'f-3' }]);
   });
 
+  // spec: ui.clear-focus-from-detail
   it('emits a focusChange with a null focus when "nicht gesetzt" is chosen', async () => {
     const fixture = await render(TRAINING);
     const changes: unknown[] = [];
@@ -129,6 +131,7 @@ describe('EventDetail', () => {
     expect(deleted).toEqual(['ev-1']);
   });
 
+  // spec: ui.event-readonly-when-done
   it('disables the focus selects, date, and delete button for a past event', async () => {
     const fixture = await render(PAST_TRAINING);
 
@@ -139,6 +142,7 @@ describe('EventDetail', () => {
     expect(fixture.nativeElement.textContent).toContain('liegt in der Vergangenheit');
   });
 
+  // spec: ui.edit-anyway
   it('lifts read-only for a past event via "trotzdem bearbeiten", and can re-lock it', async () => {
     const fixture = await render(PAST_TRAINING);
 
@@ -153,6 +157,7 @@ describe('EventDetail', () => {
     expect(selects[0].disabled).toBe(true);
   });
 
+  // spec: ui.future-event-editable
   it('does not disable controls for a future event', async () => {
     const fixture = await render(TRAINING);
 
@@ -161,6 +166,7 @@ describe('EventDetail', () => {
     expect(fixture.nativeElement.textContent).not.toContain('liegt in der Vergangenheit');
   });
 
+  // spec: ui.attending-counter
   it('shows an attending/total counter per line, and one row per player with their line badges', async () => {
     const fixture = await render(TRAINING);
 
@@ -186,6 +192,7 @@ describe('EventDetail', () => {
     expect(rows[2].classList).toContain('status-declined'); // Rahel
   });
 
+  // spec: ui.attendance-from-detail
   it('emits an attendanceChange when a status is set, and shows a decline message input only when declined', async () => {
     const fixture = await render(TRAINING);
     const changes: unknown[] = [];

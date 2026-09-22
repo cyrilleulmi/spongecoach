@@ -24,6 +24,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 
 @QuarkusTest
 class EventResourceTest {
@@ -69,6 +70,7 @@ class EventResourceTest {
         cleanups.clear();
     }
 
+    // spec: focus.attach-per-line
     @Test
     void whenSettingFocusAttachments_thenEachLineGetsItsFocusInline() {
         given()
@@ -84,6 +86,7 @@ class EventResourceTest {
                         equalTo(focusA.id.toString()));
     }
 
+    // spec: focus.replace-shorter-set
     @Test
     void whenReplacingFocusAttachmentsWithAShorterSet_thenDroppedLinesAreCleared() {
         given()
@@ -106,6 +109,7 @@ class EventResourceTest {
                 .body("focusAttachments[0].focusId", equalTo(focusB.id.toString()));
     }
 
+    // spec: focus.clear-all
     @Test
     void whenSettingAnEmptyAttachmentList_thenAllAreCleared() {
         testData.attachFocus(event.id, kiwi.id, focusA.id);
@@ -119,6 +123,7 @@ class EventResourceTest {
                 .body("focusAttachments", hasSize(0));
     }
 
+    // spec: focus.unknown-line
     @Test
     void whenAttachingAFocusForAnUnknownLine_thenReturnsNotFound() {
         given()
@@ -131,6 +136,7 @@ class EventResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: focus.unknown-focus
     @Test
     void whenAttachingAnUnknownFocus_thenReturnsNotFound() {
         given()
@@ -142,6 +148,7 @@ class EventResourceTest {
                 .statusCode(404);
     }
 
+    // spec: timeline.reschedule-collision-via-event-endpoint
     @Test
     void whenReschedulingOntoASiblingsSlot_thenReturnsConflict() {
         LocalDateTime takenSlot = LocalDateTime.of(2026, 9, 12, 19, 0);
@@ -156,6 +163,7 @@ class EventResourceTest {
                 .body("error", equalTo("scheduling_conflict"));
     }
 
+    // spec: timeline.event-unknown
     @Test
     void whenUpdatingAnUnknownEvent_thenReturnsNotFound() {
         given()
@@ -167,6 +175,7 @@ class EventResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: timeline.rename-event, focus.rename-leaves-attachments
     @Test
     void whenRenamingAnEventViaEventPut_thenTheNameIsUpdatedButAttachmentsAreUntouched() {
         testData.attachFocus(event.id, kiwi.id, focusA.id);
@@ -181,6 +190,7 @@ class EventResourceTest {
                 .body("focusAttachments", hasSize(1));
     }
 
+    // spec: focus.change-one-line-only
     @Test
     void givenAnAttachedFocus_whenChangingOnlyThatLinesFocus_thenTheOthersRemain() {
         given()
@@ -206,6 +216,7 @@ class EventResourceTest {
                         equalTo(focusA.id.toString()));
     }
 
+    // spec: attendance.snapshot-on-create
     @Test
     void whenAnEventIsCreated_thenEveryAttendingLinesPlayersDefaultToPending() {
         Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
@@ -222,6 +233,7 @@ class EventResourceTest {
                         hasItem(kiwi.id.toString()));
     }
 
+    // spec: attendance.set-attending
     @Test
     void whenSettingAPlayerToAttending_thenTheStatusIsUpdatedAndNoDeclineMessageIsKept() {
         Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
@@ -238,6 +250,7 @@ class EventResourceTest {
                 .body("attendance.find { it.playerId == '" + carmela.id + "' }.declineMessage", equalTo(null));
     }
 
+    // spec: attendance.decline-with-message
     @Test
     void whenDecliningWithAMessage_thenTheMessageIsStored() {
         Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
@@ -254,6 +267,7 @@ class EventResourceTest {
                 .body("attendance.find { it.playerId == '" + carmela.id + "' }.declineMessage", equalTo("Verletzt"));
     }
 
+    // spec: attendance.undecline-clears-message
     @Test
     void whenSwitchingFromDeclinedBackToAttending_thenTheDeclineMessageIsCleared() {
         Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
@@ -276,6 +290,7 @@ class EventResourceTest {
                 .body("attendance.find { it.playerId == '" + carmela.id + "' }.declineMessage", equalTo(null));
     }
 
+    // spec: attendance.player-not-on-event
     @Test
     void whenSettingAttendanceForAPlayerNotOnTheEvent_thenReturnsNotFound() {
         Player benched = testData.createPlayer("Nicht dabei " + UUID.randomUUID());
@@ -290,6 +305,7 @@ class EventResourceTest {
                 .body("error", equalTo("not_found"));
     }
 
+    // spec: attendance.unknown-status
     @Test
     void whenSettingAnUnknownAttendanceStatus_thenReturnsBadRequest() {
         Player carmela = testData.addPlayer(kiwi.id, "Carmela " + UUID.randomUUID());
@@ -305,6 +321,7 @@ class EventResourceTest {
                 .body("error", equalTo("bad_request"));
     }
 
+    // spec: attendance.one-answer-per-player
     @Test
     void whenAPlayerIsOnTwoAttendingLines_thenBothLineIdsAppearOnTheirSingleAttendanceEntry() {
         Player allrounder = testData.createPlayer("Sophie " + UUID.randomUUID());
@@ -323,5 +340,49 @@ class EventResourceTest {
                         hasItem(kiwi.id.toString()))
                 .body("events[0].attendance.find { it.playerId == '" + allrounder.id + "' }.lineIds",
                         hasItem(baeri.id.toString()));
+    }
+
+    // spec: focus.line-not-attending
+    @Test
+    void whenAttachingAFocusForALineThatIsNotAttending_thenReturnsBadRequest() {
+        Line lama = testData.createLine("Lama " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(lama.id));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("focusAttachments", List.of(
+                        Map.of("lineId", lama.id.toString(), "focusId", focusA.id.toString()))))
+                .when().put("/api/events/" + event.id)
+                .then()
+                .statusCode(400)
+                .body("error", equalTo("bad_request"));
+    }
+
+    // spec: attendance.line-added-later-does-not-join
+    @Test
+    void whenALineIsCreatedAfterTheEvent_thenItDoesNotJoinItRetroactively() {
+        Line lama = testData.createLine("Lama " + UUID.randomUUID());
+        cleanups.add(() -> testData.deleteLine(lama.id));
+        testData.addPlayer(lama.id, "Anita " + UUID.randomUUID());
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].lines.id", not(hasItem(lama.id.toString())));
+    }
+
+    // spec: attendance.deleted-line-still-shows
+    @Test
+    void whenAnAttendingLineIsDeleted_thenItStillShowsOnTheEventsItAttended() {
+        given()
+                .when().delete("/api/lines/" + kiwi.id)
+                .then().statusCode(204);
+
+        given()
+                .when().get("/api/iterations/" + iteration.id)
+                .then()
+                .statusCode(200)
+                .body("events[0].lines.id", hasItem(kiwi.id.toString()));
     }
 }

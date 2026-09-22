@@ -8,9 +8,24 @@ const EV_1 = 'aaaaaaaa-0000-0000-0000-000000000001';
 const EV_2 = 'aaaaaaaa-0000-0000-0000-000000000002';
 const FOCUS_A1 = 'ffffffff-0000-0000-0000-0000000000a1';
 const FOCUS_B1 = 'ffffffff-0000-0000-0000-0000000000b1';
+const PLAYER_1 = 'cccccccc-0000-0000-0000-000000000001';
+const PLAYER_2 = 'cccccccc-0000-0000-0000-000000000002';
+
+// Far enough out that both events stay upcoming — and so editable (ADR-0012).
+const EV_1_AT = '2099-03-10T18:00:00';
+const EV_2_AT = '2099-03-14T19:30:00';
+
+const ATTENDING_LINES = [
+  { id: LINE_A, name: 'Kiwi', color: '#4c8c3d' },
+  { id: LINE_B, name: 'Bäri', color: '#8b5e34' },
+];
+
+const ATTENDANCE = [
+  { playerId: PLAYER_1, playerName: 'Carmela', lineIds: [LINE_A], status: 'PENDING', declineMessage: null },
+  { playerId: PLAYER_2, playerName: 'Rahel', lineIds: [LINE_B], status: 'ATTENDING', declineMessage: null },
+];
 
 async function mockApi(page: Page) {
-  // ev-1 (Training 1): only Line A has a focus -> incomplete -> "next".
   let ev1Attachments: { lineId: string; lineName: string; focusId: string; focusName: string }[] = [
     { lineId: LINE_A, lineName: 'Kiwi', focusId: FOCUS_A1, focusName: 'Spielaufbau' },
   ];
@@ -26,18 +41,20 @@ async function mockApi(page: Page) {
           typeId: TRAINING_TYPE,
           type: 'Training',
           name: null,
-          position: 1,
-          scheduledOn: null,
+          scheduledOn: EV_1_AT,
           focusAttachments: ev1Attachments,
+          lines: ATTENDING_LINES,
+          attendance: ATTENDANCE,
         },
         {
           id: EV_2,
           typeId: MATCH_TYPE,
           type: 'Match',
           name: 'Testspiel gegen Rotweiss',
-          position: 2,
-          scheduledOn: '2026-09-12',
+          scheduledOn: EV_2_AT,
           focusAttachments: [],
+          lines: ATTENDING_LINES,
+          attendance: ATTENDANCE,
         },
       ],
     },
@@ -55,8 +72,8 @@ async function mockApi(page: Page) {
   await page.route('**/api/lines', (route) =>
     route.fulfill({
       json: [
-        { id: LINE_A, name: 'Kiwi', playerCount: 4 },
-        { id: LINE_B, name: 'Bäri', playerCount: 4 },
+        { id: LINE_A, name: 'Kiwi', playerCount: 4, color: '#4c8c3d' },
+        { id: LINE_B, name: 'Bäri', playerCount: 4, color: '#8b5e34' },
       ],
     }),
   );
@@ -109,7 +126,7 @@ test.describe('Team overview timeline', () => {
     await expect(page.locator('.d-node').nth(1)).toContainText('Testspiel gegen Rotweiss');
   });
 
-  test('flags the first incomplete event as the next one', async ({ page }) => {
+  test('flags the first not-yet-past event as the next one', async ({ page }) => {
     await mockApi(page);
     await page.goto('/team');
 

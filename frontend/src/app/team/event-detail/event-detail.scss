@@ -138,14 +138,34 @@ select:disabled {
   text-align: center;
 }
 
-.focus-input {
-  flex: 1;
-  min-width: 0;
+/* auto-growing textarea: an invisible ::after mirrors the value in the same grid cell, so the
+   cell (and with it, the textarea) grows to fit as the coach types — no JS height measuring. */
+.focus-input-wrap {
+  display: grid;
+  width: 100%;
+}
+
+.focus-input-wrap::after {
+  content: attr(data-replicated-value) ' ';
+  white-space: pre-wrap;
+  visibility: hidden;
+}
+
+.focus-input-wrap > .focus-input,
+.focus-input-wrap::after {
+  grid-area: 1 / 1 / 2 / 2;
   font-family: inherit;
   font-size: 0.92rem;
   padding: 0.45rem 0.55rem;
   border: 1px solid var(--line);
   border-radius: 0.4rem;
+}
+
+.focus-input {
+  width: 100%;
+  min-width: 0;
+  resize: none;
+  overflow: hidden;
   background: var(--surface);
   color: var(--ink);
 }
@@ -160,12 +180,27 @@ select:disabled {
 }
 
 .same-focus-btn {
-  align-self: flex-start;
-  font-size: 0.74rem;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.same-focus-btn:hover {
+  background: var(--accent-soft);
+}
+
+.reuse-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .attendance-title {

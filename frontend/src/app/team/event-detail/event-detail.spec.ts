@@ -82,7 +82,7 @@ describe('EventDetail', () => {
     const fixture = await render(TRAINING);
     expect((fixture.nativeElement.textContent as string)).toContain('Training 2');
 
-    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
     expect(inputs.length).toBe(2);
     expect(inputs[0].value).toBe('Fokus A'); // line-a
     expect(inputs[1].value).toBe(''); // line-b, not set
@@ -94,7 +94,7 @@ describe('EventDetail', () => {
     const changes: unknown[] = [];
     fixture.componentInstance.focusChange.subscribe((c) => changes.push(c));
 
-    const lineBInput = fixture.nativeElement.querySelectorAll('.focus-input')[1] as HTMLInputElement;
+    const lineBInput = fixture.nativeElement.querySelectorAll('.focus-input')[1] as HTMLTextAreaElement;
     lineBInput.value = 'Abschlussübungen 2-auf-1';
     lineBInput.dispatchEvent(new Event('change'));
 
@@ -107,7 +107,7 @@ describe('EventDetail', () => {
     const changes: unknown[] = [];
     fixture.componentInstance.focusChange.subscribe((c) => changes.push(c));
 
-    const lineAInput = fixture.nativeElement.querySelectorAll('.focus-input')[0] as HTMLInputElement;
+    const lineAInput = fixture.nativeElement.querySelectorAll('.focus-input')[0] as HTMLTextAreaElement;
     lineAInput.value = '';
     lineAInput.dispatchEvent(new Event('change'));
 
@@ -115,16 +115,17 @@ describe('EventDetail', () => {
   });
 
   // spec: ui.same-focus-again
-  it('shows "same focus again" per line with the last focus text, and emits it as a plain copy on click', async () => {
+  it('shows "same focus again" only for lines with no focus set yet, and emits the last focus text as a plain copy on click', async () => {
     const fixture = await render(TRAINING);
     const changes: unknown[] = [];
     fixture.componentInstance.focusChange.subscribe((c) => changes.push(c));
 
+    // line-a already has "Fokus A" set, so only line-b (unset) gets the button.
     const buttons = fixture.nativeElement.querySelectorAll('.same-focus-btn') as NodeListOf<HTMLButtonElement>;
-    expect(buttons.length).toBe(2);
-    expect(buttons[1].textContent).toContain('Cross-Pässe unter Druck');
+    expect(buttons.length).toBe(1);
+    expect(buttons[0].getAttribute('aria-label')).toContain('Cross-Pässe unter Druck');
 
-    buttons[1].click();
+    buttons[0].click();
 
     expect(changes).toEqual([{ lineId: 'line-b', focus: 'Cross-Pässe unter Druck' }]);
   });
@@ -155,7 +156,7 @@ describe('EventDetail', () => {
   it('disables the focus fields, date, and delete button for a past event', async () => {
     const fixture = await render(PAST_TRAINING);
 
-    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
     expect(inputs[0].disabled).toBe(true);
     expect((fixture.nativeElement.querySelector('.detail-date input') as HTMLInputElement).disabled).toBe(true);
     expect((fixture.nativeElement.querySelector('.delete-btn') as HTMLButtonElement).disabled).toBe(true);
@@ -173,12 +174,12 @@ describe('EventDetail', () => {
 
     (fixture.nativeElement.querySelector('.link-btn') as HTMLButtonElement).click();
     fixture.detectChanges();
-    let inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    let inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
     expect(inputs[0].disabled).toBe(false);
 
     (fixture.nativeElement.querySelector('.link-btn') as HTMLButtonElement).click();
     fixture.detectChanges();
-    inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
     expect(inputs[0].disabled).toBe(true);
   });
 
@@ -186,7 +187,7 @@ describe('EventDetail', () => {
   it('does not disable controls for a future event', async () => {
     const fixture = await render(TRAINING);
 
-    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
     expect(inputs[0].disabled).toBe(false);
     expect(fixture.nativeElement.textContent).not.toContain('liegt in der Vergangenheit');
   });

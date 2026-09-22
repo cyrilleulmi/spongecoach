@@ -52,26 +52,35 @@
             <span class="attendance-count" [attr.aria-label]="'Zusagen für ' + line.name">
               {{ lineAttendanceCount(line.id).attending }}/{{ lineAttendanceCount(line.id).total }}
             </span>
-            <input
-              type="text"
+            @if (!readonly() && !focusTextFor(line.id) && lastFocusFor(line.id); as lastFocus) {
+              <button
+                type="button"
+                class="same-focus-btn"
+                [attr.aria-label]="'Gleicher Fokus wie zuletzt für ' + line.name + ': ' + lastFocus"
+                [attr.title]="'Gleicher Fokus wie zuletzt: „' + lastFocus + '“'"
+                (click)="sameFocusAgain(line.id)"
+              >
+                <svg class="reuse-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L14 11h7V4l-3.35 3.35z"
+                  />
+                </svg>
+              </button>
+            }
+          </div>
+          <div class="focus-input-wrap" [attr.data-replicated-value]="focusDraftFor(line.id)">
+            <textarea
               class="focus-input"
+              rows="1"
               placeholder="Fokus setzen"
               [attr.aria-label]="'Fokus für ' + line.name + ' setzen'"
               [value]="focusTextFor(line.id)"
               [disabled]="readonly()"
+              (input)="onFocusDraft(line.id, $any($event.target).value)"
               (change)="onFocusInput(line.id, $any($event.target).value)"
-            />
+            ></textarea>
           </div>
-          @if (!readonly() && lastFocusFor(line.id); as lastFocus) {
-            <button
-              type="button"
-              class="link-btn same-focus-btn"
-              [attr.aria-label]="'Gleicher Fokus wie zuletzt für ' + line.name"
-              (click)="sameFocusAgain(line.id)"
-            >
-              Gleicher Fokus wie zuletzt: „{{ lastFocus }}“
-            </button>
-          }
         </li>
       }
     </ul>

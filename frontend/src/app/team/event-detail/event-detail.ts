@@ -44,10 +44,16 @@ export class EventDetail {
   /** Lifts the default read-only state for a done event, for the current selection only. */
   protected readonly editAnyway = signal(false);
 
+  /** Per-line focus text as currently typed, kept only while it differs from the committed
+   * `focusAttachments` value — powers the textarea's live auto-grow (see `.focus-input-wrap` in
+   * the stylesheet) ahead of the `change` commit. */
+  private readonly focusDrafts = signal<Map<string, string>>(new Map());
+
   constructor() {
     effect(() => {
       this.event();
       this.editAnyway.set(false);
+      this.focusDrafts.set(new Map());
     });
   }
 
@@ -91,9 +97,22 @@ export class EventDetail {
     return this.lastFocusByLine().get(lineId) ?? null;
   }
 
+  protected focusDraftFor(lineId: string): string {
+    return this.focusDrafts().get(lineId) ?? this.focusTextFor(lineId);
+  }
+
+  protected onFocusDraft(lineId: string, value: string): void {
+    const next = new Map(this.focusDrafts());
+    next.set(lineId, value);
+    this.focusDrafts.set(next);
+  }
+
   protected onFocusInput(lineId: string, value: string): void {
     const trimmed = value.trim();
     this.focusChange.emit({ lineId, focus: trimmed ? trimmed : null });
+    const next = new Map(this.focusDrafts());
+    next.delete(lineId);
+    this.focusDrafts.set(next);
   }
 
   /** "Gleicher Fokus wie zuletzt": copies that Line's most recent earlier Focus text as this

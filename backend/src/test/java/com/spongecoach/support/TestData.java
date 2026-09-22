@@ -39,6 +39,11 @@ public class TestData {
     EntityManager entityManager;
 
     @Transactional
+    public boolean teamExists() {
+        return Team.count() > 0;
+    }
+
+    @Transactional
     public Line createLine(String name) {
         Team team = Team.theTeam();
         Line line = new Line();
@@ -156,6 +161,12 @@ public class TestData {
                 .setParameter(1, lineId)
                 .executeUpdate();
         line.delete();
+    }
+
+    @Transactional
+    public void softDeleteSkill(UUID skillId) {
+        Skill skill = Skill.findById(skillId);
+        skill.deletedAt = Instant.now();
     }
 
     @Transactional

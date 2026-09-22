@@ -34,8 +34,8 @@ function Invoke-Stage {
     $script:results[$Name] = if ($ok) { 'PASS' } else { 'FAIL' }
 }
 
-Invoke-Stage 'spec' $repoRoot { node scripts/check-spec-coverage.mjs }
-
+# Backend runs before spec: the backend suite executes docs/spec/*.feature through Cucumber, and
+# the spec stage reads that run's report to confirm every scenario was actually executed.
 if (-not $Only -or $Only -eq 'backend') {
     docker info *> $null
     if ($LASTEXITCODE -ne 0) {
@@ -47,6 +47,8 @@ if (-not $Only -or $Only -eq 'backend') {
         Invoke-Stage 'backend' (Join-Path $repoRoot 'backend') { & ./gradlew.bat test --console=plain }
     }
 }
+
+Invoke-Stage 'spec' $repoRoot { node scripts/check-spec-coverage.mjs }
 
 Invoke-Stage 'frontend' (Join-Path $repoRoot 'frontend') { npx jest --ci }
 

@@ -15,8 +15,13 @@ Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/do
 ### Behaviour spec
 
 `docs/spec/*.feature` is the behavioural source of truth, and `docs/architecture.md` the map of how
-the pieces fit. When behaviour changes, change the feature file in the same commit and keep its
-`// spec: <id>` test marker pointing at the test that proves it (see `docs/spec/README.md`).
+the pieces fit. When behaviour changes, change the feature file in the same commit as the code.
+
+The five backend feature files are **executed** by Cucumber (`SpecTest`) and are the backend test
+suite — there are no separate resource-layer tests. Changing backend behaviour means editing the
+scenario and its step definition in `com.spongecoach.spec.steps`; never create a fixture row in a
+step except through `Fixtures`. `ui.feature` is the exception: it stays traced to the frontend
+suites by `// spec: <id>` marker comments. See `docs/spec/README.md` and ADR-0013.
 
 ### Verifying
 

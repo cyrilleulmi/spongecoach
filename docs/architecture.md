@@ -107,8 +107,13 @@ UI copy is German; every domain term in code, API and docs stays English ([gloss
 
 ## Verifying
 
-`.\verify.ps1` runs all of it: spec traceability, backend `@QuarkusTest` + RestAssured, frontend
-Jest, Playwright e2e. See [spec/README.md](spec/README.md) for how a scenario is tied to its test.
+`.\verify.ps1` runs all of it: backend, spec coverage, frontend Jest, Playwright e2e.
+
+The backend suite **is** the specification. `docs/spec/*.feature` (except `ui.feature`) is executed
+by Cucumber through `SpecTest`, one Quarkus boot, black-box over the HTTP API — there are no
+separate backend unit tests of the resource layer. `ui.feature` is proven by the frontend suites and
+tied to them by `// spec:` marker comments. ADR-0013 records why the two layers differ; see
+[spec/README.md](spec/README.md) for how to add a scenario or a feature file.
 
 ## Known gaps
 

@@ -8,9 +8,12 @@ Feature: Iterations and Events
 
     @spec:timeline.aggregate-read
     Scenario: Listing Iterations nests their Events in datetime order
-      Given an Iteration with three Events scheduled out of order
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 2" in "Vorbereitung" at "2026-08-12 18:00"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      And a Match "Testspiel" in "Vorbereitung" at "2026-08-19 19:00"
       When the Iteration list is read
-      Then its Events come back nested, ordered by datetime ascending
+      Then "Vorbereitung" nests its Events in the order "Einheit 1", "Einheit 2", "Testspiel"
 
     @spec:timeline.iteration-unknown
     Scenario: An unknown Iteration
@@ -21,7 +24,7 @@ Feature: Iterations and Events
 
     @spec:timeline.create-iteration-with-events
     Scenario: Creating an Iteration with its first Events in one call
-      When the coach creates an Iteration with two nested Events
+      When the coach creates an Iteration "Rückrunde" holding a Match "Derby" at "2026-09-15 19:00" and a Training at "2026-09-01 18:00"
       Then the Iteration and both Events are persisted, in datetime order
 
     @spec:timeline.iteration-needs-name
@@ -31,13 +34,14 @@ Feature: Iterations and Events
 
     @spec:timeline.rename-iteration
     Scenario: Renaming an Iteration
-      Given an Iteration named "Vorbereitung"
-      When the coach renames it
-      Then the new name is returned on the next read
+      Given an Iteration "Vorbereitung"
+      When the coach renames it to "Rückrunde" at position 7
+      Then the new name and position come back on the next read
 
     @spec:timeline.delete-iteration
     Scenario: Deleting an Iteration takes its Events with it
-      Given an Iteration holding Events
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
       When the coach deletes the Iteration
       Then neither it nor its Events appear on the timeline
 
@@ -45,70 +49,88 @@ Feature: Iterations and Events
 
     @spec:timeline.event-requires-datetime
     Scenario: An Event without a datetime is rejected
-      When the coach adds an Event with no datetime
+      Given an Iteration "Vorbereitung"
+      When the coach adds a Training to "Vorbereitung" with no datetime
       Then the request is rejected as a bad request
 
     @spec:timeline.event-carries-datetime
     Scenario: The datetime comes back on the Event
-      When the coach adds an Event at a given datetime
+      Given an Iteration "Vorbereitung"
+      When the coach adds a Training to "Vorbereitung" at "2026-10-05 18:00"
       Then that datetime is returned on the created Event
 
     @spec:timeline.slot-collision-on-create
     Scenario: Two Events in one Iteration cannot share a datetime
-      Given an Iteration with an Event at 2026-08-05 18:00
-      When the coach adds another Event at 2026-08-05 18:00
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      When the coach adds a Training to "Vorbereitung" at "2026-08-05 18:00"
       Then the request is rejected as a scheduling conflict
 
     @spec:timeline.slot-scoped-to-iteration
     Scenario: The same datetime in two Iterations is fine
-      Given two Iterations
-      When the coach adds an Event at the same datetime in each
-      Then both are accepted
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      And an Iteration "Rückrunde"
+      When the coach adds a Training to "Rückrunde" at "2026-08-05 18:00"
+      Then the Event is created
 
     @spec:timeline.reschedule
     Scenario: Rescheduling an Event
-      Given an Event in an Iteration
-      When the coach moves it to a free datetime
-      Then its datetime changes, and the timeline reorders around it
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      And a Training "Einheit 2" in "Vorbereitung" at "2026-08-12 18:00"
+      When the coach moves "Einheit 1" to "2026-08-19 18:00"
+      Then its datetime is "2026-08-19 18:00", and it now comes after "Einheit 2" on the timeline
 
     @spec:timeline.reschedule-to-own-slot
     Scenario: Rescheduling an Event onto its own current datetime
-      Given an Event at 2026-08-05 18:00
-      When the coach reschedules it to 2026-08-05 18:00
-      Then it is accepted — an Event never collides with itself
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      When the coach moves "Einheit 1" to "2026-08-05 18:00"
+      Then its datetime is "2026-08-05 18:00" — an Event never collides with itself
 
     @spec:timeline.reschedule-collision
     Scenario: Rescheduling onto a sibling's datetime
-      Given two Events in one Iteration
-      When the coach moves one onto the other's datetime
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      And a Training "Einheit 2" in "Vorbereitung" at "2026-08-12 18:00"
+      When the coach moves "Einheit 1" to "2026-08-12 18:00"
       Then the request is rejected as a scheduling conflict
 
     @spec:timeline.reschedule-collision-via-event-endpoint
     Scenario: The same collision rule applies to the Iteration-free Event endpoint
-      Given two Events in one Iteration
-      When the coach moves one onto the other's datetime by Event id alone
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      And a Training "Einheit 2" in "Vorbereitung" at "2026-08-12 18:00"
+      When the coach moves "Einheit 1" to "2026-08-12 18:00" by Event id alone
       Then the request is rejected as a scheduling conflict
 
   Rule: Event identity
 
     @spec:timeline.event-type-must-exist
     Scenario: An Event needs a known Event type
-      When the coach adds an Event with an unknown Event type
+      Given an Iteration "Vorbereitung"
+      When the coach adds an Event of an unknown Event type to "Vorbereitung"
       Then the response is not found
 
     @spec:timeline.rename-event
     Scenario: Naming a Match
-      Given a Match on the timeline
-      When the coach sets its name to the opponent
+      Given a Line "Kiwi"
+      And an Iteration "Vorbereitung"
+      And a Match "Testspiel" in "Vorbereitung" at "2026-08-19 19:00"
+      And "Kiwi" has the Focus "Spielaufbau aus der tiefen Zone" for "Testspiel"
+      When the coach renames "Testspiel" to "Testspiel gegen Bern"
       Then the name is stored, and the Event's Focus attachments are left untouched
 
     @spec:timeline.delete-event
     Scenario: Deleting a single Event
-      Given an Iteration with two Events
-      When the coach deletes one
-      Then only that Event is gone and its sibling remains
+      Given an Iteration "Vorbereitung"
+      And a Training "Einheit 1" in "Vorbereitung" at "2026-08-05 18:00"
+      And a Training "Einheit 2" in "Vorbereitung" at "2026-08-12 18:00"
+      When the coach deletes the Event "Einheit 2"
+      Then only "Einheit 2" is gone and "Einheit 1" remains
 
     @spec:timeline.event-unknown
     Scenario: Updating an Event that does not exist
-      When an unknown Event is updated
+      When an Event that does not exist is updated
       Then the response is not found

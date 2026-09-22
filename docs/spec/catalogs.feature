@@ -8,39 +8,41 @@ Feature: Shared catalogs
 
     @spec:catalogs.list-active-skills
     Scenario: Soft-deleted Skills are out of the listing
-      Given an active Skill and a soft-deleted Skill
+      Given the Skill "Passgenauigkeit"
+      And the soft-deleted Skill "Stockführung"
       When the Skill catalog is listed
-      Then only the active one is returned
+      Then "Passgenauigkeit" is in the Skill catalog but "Stockführung" is not
 
     @spec:catalogs.list-active-goals
     Scenario: Soft-deleted Development goals are out of the listing
-      Given an active Development goal and a soft-deleted one
+      Given the Development goal "Überzahlspiel verbessern"
+      And the soft-deleted Development goal "Kompakte Defensive aufbauen"
       When the Development goal catalog is listed
-      Then only the active one is returned
+      Then "Überzahlspiel verbessern" is in the Development goal catalog but "Kompakte Defensive aufbauen" is not
 
   Rule: Every catalog entry carries a color from a fixed palette
 
     @spec:catalogs.create-skill
     Scenario: Creating a Skill from the line screen
-      When the coach creates the Skill "Bully-Kontrolle" with a chosen color
-      Then it is listed in the catalog with that color
+      When the coach creates the Skill "Bully-Kontrolle" with the color "#4f7a3f"
+      Then it is listed in the Skill catalog with that color
 
     @spec:catalogs.create-goal
     Scenario: Creating a Development goal from the line screen
-      When the coach creates the Development goal "Überzahlspiel verbessern"
-      Then it is listed in the catalog
+      When the coach creates the Development goal "Überzahlspiel verbessern" with the color "#b1467a"
+      Then it is listed in the Development goal catalog with that color
 
     @spec:catalogs.recolor-skill
     Scenario: Recoloring a Skill
-      Given a Skill in the catalog
-      When the coach changes its color
-      Then the new color is persisted and seen by every Line associated with it
+      Given the Skill "Passgenauigkeit", rated 60 by the Line "Kiwi"
+      When the coach changes that Skill's color to "#c8722e"
+      Then the new color comes back, and "Kiwi" sees it on that Skill
 
     @spec:catalogs.recolor-goal
     Scenario: Recoloring a Development goal
-      Given a Development goal in the catalog
-      When the coach changes its color
-      Then the new color is persisted
+      Given the Development goal "Überzahlspiel verbessern"
+      When the coach changes that Development goal's color to "#3b6ea5"
+      Then the new color comes back on the Development goal
 
     @spec:catalogs.create-requires-name
     Scenario: A catalog entry needs a name
@@ -51,12 +53,15 @@ Feature: Shared catalogs
 
     @spec:catalogs.create-focus
     Scenario: Creating a Focus from one Development goal
-      When the coach creates the Focus "Cross-Pässe unter Druck" from one Development goal
+      Given the Development goal "Abschlüsse aus dem Slot erhöhen"
+      When the coach creates the Focus "Cross-Pässe unter Druck" from it
       Then it is listed carrying that goal's id
 
     @spec:catalogs.focus-from-several-goals
     Scenario: Creating a Focus from several Development goals
-      When the coach creates a Focus from two Development goals
+      Given the Development goal "Ballverluste im eigenen Drittel reduzieren"
+      And the Development goal "Überzahlspiel verbessern"
+      When the coach creates the Focus "Einläufe im Überzahlspiel" from both
       Then both goal ids are linked to it
 
     @spec:catalogs.focus-needs-a-goal
@@ -66,9 +71,10 @@ Feature: Shared catalogs
 
     @spec:catalogs.focus-carries-goal-ids
     Scenario: The Focus listing carries each Focus's originating goals
-      Given Focuses derived from Development goals
+      Given the Development goal "Abschlüsse aus dem Slot erhöhen"
+      And the Focus "Rebound-Kontrolle nach Pad-Abwehr" derived from it
       When the Focus catalog is listed
-      Then each Focus carries the ids of the goals it came from
+      Then "Rebound-Kontrolle nach Pad-Abwehr" carries the id of the goal it came from
 
   Rule: Focus deletion is not implemented in v1
 

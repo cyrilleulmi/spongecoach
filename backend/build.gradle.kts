@@ -23,6 +23,7 @@ dependencies {
     implementation("io.quarkus:quarkus-hibernate-orm")
     testImplementation("io.quarkus:quarkus-junit")
     testImplementation("io.rest-assured:rest-assured")
+    testImplementation("io.quarkiverse.cucumber:quarkus-cucumber:1.3.0")
 }
 
 group = "com.spongecoach"

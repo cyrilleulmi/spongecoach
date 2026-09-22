@@ -168,10 +168,6 @@ h3 {
   grid-column: span 3;
 }
 
-.card.focus {
-  grid-column: span 7;
-}
-
 @media (max-width: 900px) {
   .card {
     grid-column: 1 / -1 !important;
@@ -403,66 +399,3 @@ h3 {
   flex: 1;
 }
 
-.focus-strip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.6rem;
-}
-
-.focus-card {
-  flex: none;
-  width: 11.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.6rem;
-  padding: 0.75rem 0.85rem;
-  background: var(--paper);
-}
-
-.focus-card h3 {
-  font-size: 0.85rem;
-  margin: 0 0 0.45rem;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-.focus-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.focus-tag {
-  font-size: 0.68rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 0.3rem;
-  display: inline-block;
-  font-weight: 600;
-}
-
-.create-focus {
-  margin-bottom: 0.9rem;
-}
-
-.create-focus input {
-  width: 100%;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 0.4rem;
-  font-family: inherit;
-  font-size: 0.85rem;
-  background: var(--surface);
-  color: var(--ink);
-}
-
-.create-focus input::placeholder {
-  color: var(--ink-soft);
-}
-
-.create-focus .hint {
-  margin: 0.5rem 0 0.4rem;
-}
-
-.create-focus .btn {
-  margin-top: 0.6rem;
-}

@@ -32,7 +32,7 @@ A development target. Shared across Lines — a Line links to existing Developme
 _Avoid_: Goal (reserved — would collide with a scored goal/Tor if that concept is ever modeled; out of scope for this MVP)
 
 **Focus** (German: *Fokus*):
-A reusable item attached to one or more Trainings/Matches (per Line, at each attachment). Shared across Lines — a Line links to existing Focuses. History is preserved via soft-delete only — never hard-deleted.
+Free text a coach sets per Line per Training/Match, naming what that Line works on. Not a shared catalog — it's typed at the Event, not reused by reference.
 
 **Iteration** (no German pairing — internal/technical concept, not floorball vocabulary):
 A named group of Events, ordered relative to other Iterations.

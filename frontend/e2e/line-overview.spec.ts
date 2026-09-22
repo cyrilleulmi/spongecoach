@@ -3,7 +3,6 @@ import { test, expect, Page } from '@playwright/test';
 const LINE_ID = '11111111-1111-1111-1111-111111111111';
 const SKILL_ID = '22222222-2222-2222-2222-222222222222';
 const GOAL_ID = '33333333-3333-3333-3333-333333333333';
-const FOCUS_ID = '44444444-4444-4444-4444-444444444444';
 const CARMELA_ID = '55555555-5555-5555-5555-555555555555';
 const DEBI_ID = '66666666-6666-6666-6666-666666666666';
 
@@ -36,9 +35,6 @@ async function mockApi(page: Page) {
   await page.route('**/api/development-goals', (route) =>
     route.fulfill({ json: [{ id: GOAL_ID, name: 'Ballverluste im eigenen Drittel reduzieren', color: '#c8722e' }] }),
   );
-  await page.route('**/api/focuses', (route) =>
-    route.fulfill({ json: [{ id: FOCUS_ID, name: 'Cross-Pässe unter Druck', goalIds: [GOAL_ID] }] }),
-  );
 
   const lineDetail = () => ({
     id: LINE_ID,
@@ -46,7 +42,6 @@ async function mockApi(page: Page) {
     players: rosterIds.map((id) => TEAM_PLAYERS.find((p) => p.id === id)!),
     skills: [{ skillId: SKILL_ID, name: 'Passgenauigkeit', color: '#2c7a68', rating }],
     developmentGoals: [{ id: GOAL_ID, name: 'Ballverluste im eigenen Drittel reduzieren', color: '#c8722e' }],
-    focuses: [{ id: FOCUS_ID, name: 'Cross-Pässe unter Druck', goalIds: [GOAL_ID] }],
   });
 
   await page.route(`**/api/lines/${LINE_ID}`, async (route) => {
@@ -73,7 +68,7 @@ async function mockApi(page: Page) {
 }
 
 test.describe('Per-line overview page', () => {
-  test('shows the roster, skills, goals, and focuses for the selected line', async ({ page }) => {
+  test('shows the roster, skills, and goals for the selected line', async ({ page }) => {
     await mockApi(page);
     await page.goto('/');
 
@@ -81,7 +76,6 @@ test.describe('Per-line overview page', () => {
     await expect(page.locator('.roster-row').getByText('Carmela')).toBeVisible();
     await expect(page.getByText('Passgenauigkeit')).toBeVisible();
     await expect(page.getByText('Ballverluste im eigenen Drittel reduzieren').first()).toBeVisible();
-    await expect(page.getByText('Cross-Pässe unter Druck')).toBeVisible();
   });
 
   test('lets the coach rate a skill by clicking a segment of the bar', async ({ page }) => {

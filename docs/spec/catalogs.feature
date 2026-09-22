@@ -1,8 +1,8 @@
 Feature: Shared catalogs
-  Skills, Development goals and Focuses are Team-wide catalogs, not per-Line copies (ADR-0006): a
-  Line associates with an existing catalog row, so editing that row is visible to every Line linked
-  to it. Coaches create new entries straight from the line screen (ADR-0009). Catalog rows are
-  hidden by soft delete, never removed.
+  Skills and Development goals are Team-wide catalogs, not per-Line copies (ADR-0006): a Line
+  associates with an existing catalog row, so editing that row is visible to every Line linked to
+  it. Coaches create new entries straight from the line screen (ADR-0009). Catalog rows are hidden
+  by soft delete, never removed.
 
   Rule: Catalogs list only what is still active
 
@@ -48,41 +48,3 @@ Feature: Shared catalogs
     Scenario: A catalog entry needs a name
       When the coach creates a Skill with a blank name
       Then the request is rejected as a bad request
-
-  Rule: A Focus is derived from at least one Development goal
-
-    @spec:catalogs.create-focus
-    Scenario: Creating a Focus from one Development goal
-      Given the Development goal "Abschlüsse aus dem Slot erhöhen"
-      When the coach creates the Focus "Cross-Pässe unter Druck" from it
-      Then it is listed carrying that goal's id
-
-    @spec:catalogs.focus-from-several-goals
-    Scenario: Creating a Focus from several Development goals
-      Given the Development goal "Ballverluste im eigenen Drittel reduzieren"
-      And the Development goal "Überzahlspiel verbessern"
-      When the coach creates the Focus "Einläufe im Überzahlspiel" from both
-      Then both goal ids are linked to it
-
-    @spec:catalogs.focus-needs-a-goal
-    Scenario: A Focus with no originating Development goal is rejected
-      When the coach creates a Focus with an empty goal list
-      Then the request is rejected as a bad request
-
-    @spec:catalogs.focus-carries-goal-ids
-    Scenario: The Focus listing carries each Focus's originating goals
-      Given the Development goal "Abschlüsse aus dem Slot erhöhen"
-      And the Focus "Rebound-Kontrolle nach Pad-Abwehr" derived from it
-      When the Focus catalog is listed
-      Then "Rebound-Kontrolle nach Pad-Abwehr" carries the id of the goal it came from
-
-  Rule: Focus deletion is not implemented in v1
-
-    @unverified
-    @spec:catalogs.focus-delete-blocked
-    Scenario: Deleting a Focus that a Line still uses
-      Given a Focus associated with a Line
-      When the coach deletes that Focus
-      Then the deletion is refused while any Line is still associated with it
-      # CONTEXT.md describes this rule, but v1 exposes no Focus deletion endpoint at all.
-      # Nothing can regress here until that endpoint exists.

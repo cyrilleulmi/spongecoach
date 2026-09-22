@@ -265,57 +265,6 @@
       }
     </div>
 
-    <div class="card focus">
-      <div class="section-title">
-        <h2>Fokusse</h2>
-        <button class="btn" type="button" (click)="toggleManage('focuses')">Verwalten</button>
-      </div>
-      @if (line.focuses.length === 0) {
-        <p class="empty">Keine Fokusse zugewiesen.</p>
-      }
-      <div class="focus-strip">
-        @for (focus of line.focuses; track focus.id) {
-          <div class="focus-card">
-            <h3>{{ focus.name }}</h3>
-            <div class="focus-tags">
-              @for (tag of goalTagsFor(focus); track tag.id) {
-                <span
-                  class="focus-tag"
-                  [style.background]="'color-mix(in srgb, ' + tag.color + ' 16%, var(--surface))'"
-                  [style.color]="'color-mix(in srgb, ' + tag.color + ' 65%, var(--ink))'"
-                >
-                  {{ tag.name }}
-                </span>
-              }
-            </div>
-          </div>
-        }
-      </div>
-      @if (openSection() === 'focuses') {
-        <div class="manage-box">
-          <div class="create-focus">
-            <input
-              type="text"
-              placeholder="Neuer Fokus"
-              [value]="newFocusName()"
-              (input)="newFocusName.set($any($event.target).value)"
-            />
-            <p class="hint">Aus welchen Zielen leitet sich der Fokus ab? (mindestens eines)</p>
-            <app-manage-chips
-              [items]="goalChipItems()"
-              [associatedIds]="newFocusGoalIdSet()"
-              (toggle)="toggleNewFocusGoal($event)"
-            />
-            <button type="button" class="btn" (click)="createFocus()">Anlegen</button>
-          </div>
-          <app-manage-chips
-            [items]="focusChipItems()"
-            [associatedIds]="associatedFocusIds()"
-            (toggle)="toggleFocus($event)"
-          />
-        </div>
-      }
-    </div>
   </div>
 } @else if (lines().length === 0 && !errorMessage()) {
   <p class="empty-state">Noch keine Blöcke – keine Beispieldaten geladen.</p>

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { LineApiService } from '../../lines/line-api.service';
-import { FocusRef, LineSummary } from '../../lines/line.model';
+import { LineSummary } from '../../lines/line.model';
 import { ThemeToggle } from '../../theme/theme-toggle/theme-toggle';
 import { DialLine } from '../dial-palette';
 import { DialTimeline } from '../dial-timeline/dial-timeline';
@@ -29,7 +29,6 @@ export class TeamOverview implements OnInit {
   protected readonly iterations = signal<Iteration[]>([]);
   protected readonly eventTypes = signal<EventType[]>([]);
   protected readonly lineList = signal<LineSummary[]>([]);
-  protected readonly focusesByLine = signal<Map<string, FocusRef[]>>(new Map());
   protected readonly iterationIndex = signal(0);
   protected readonly selectedEventId = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
@@ -82,6 +81,33 @@ export class TeamOverview implements OnInit {
     return !!selected && selected.id === this.nextEventId();
   });
 
+  /**
+   * Each Line's most recent Focus text on an Event scheduled before the selected one, across every
+   * Iteration (scheduledOn order) — powers "same focus again" (ADR-0014). A plain lookup, not a
+   * reference: the copy the coach confirms is this Event's own text from then on.
+   */
+  protected readonly lastFocusByLine = computed<Map<string, string>>(() => {
+    const selected = this.selectedEvent();
+    if (!selected) {
+      return new Map();
+    }
+    const allEvents = this.iterations()
+      .flatMap((it) => it.events)
+      .filter((e) => e.id !== selected.id)
+      .sort((a, b) => new Date(a.scheduledOn).getTime() - new Date(b.scheduledOn).getTime());
+    const selectedAt = new Date(selected.scheduledOn).getTime();
+    const map = new Map<string, string>();
+    for (const event of allEvents) {
+      if (new Date(event.scheduledOn).getTime() >= selectedAt) {
+        continue;
+      }
+      for (const attachment of event.focusAttachments) {
+        map.set(attachment.lineId, attachment.focus);
+      }
+    }
+    return map;
+  });
+
   ngOnInit(): void {
     forkJoin({
       iterations: this.api.listIterations(),
@@ -93,26 +119,11 @@ export class TeamOverview implements OnInit {
         this.eventTypes.set(eventTypes);
         this.lineList.set(lines);
         this.loading.set(false);
-        this.loadLineFocuses(lines);
       },
       error: () => {
         this.errorMessage.set('Die Team-Übersicht konnte nicht geladen werden. Läuft das Backend?');
         this.loading.set(false);
       },
-    });
-  }
-
-  private loadLineFocuses(lines: LineSummary[]): void {
-    if (lines.length === 0) {
-      return;
-    }
-    forkJoin(lines.map((line) => this.lineApi.getLine(line.id))).subscribe({
-      next: (details) => {
-        const map = new Map<string, FocusRef[]>();
-        details.forEach((detail) => map.set(detail.id, detail.focuses));
-        this.focusesByLine.set(map);
-      },
-      error: () => this.errorMessage.set('Die Fokus-Listen der Blöcke konnten nicht geladen werden.'),
     });
   }
 
@@ -148,9 +159,9 @@ export class TeamOverview implements OnInit {
     }
     const attachments = event.focusAttachments
       .filter((a) => a.lineId !== change.lineId)
-      .map((a) => ({ lineId: a.lineId, focusId: a.focusId }));
-    if (change.focusId) {
-      attachments.push({ lineId: change.lineId, focusId: change.focusId });
+      .map((a) => ({ lineId: a.lineId, focus: a.focus }));
+    if (change.focus) {
+      attachments.push({ lineId: change.lineId, focus: change.focus });
     }
     this.api.setFocusAttachments(event.id, attachments).subscribe({
       next: () => this.reload(event.id),

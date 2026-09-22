@@ -15,12 +15,12 @@ import { ThemeToggle } from '../../theme/theme-toggle/theme-toggle';
 import { ColorPicker } from '../../theme/color-picker/color-picker';
 import { CATALOG_PALETTE } from '../../theme/palette';
 import { LineApiService } from '../line-api.service';
-import { CatalogRef, FocusRef, LineDetail, LineSummary, Player } from '../line.model';
+import { CatalogRef, LineDetail, LineSummary, Player } from '../line.model';
 
 /** Neutral chip color for players, which — unlike Skills/Goals — carry no color of their own. */
 const PLAYER_CHIP_COLOR = '#7a828c';
 
-type ManageSection = 'skills' | 'goals' | 'focuses';
+type ManageSection = 'skills' | 'goals';
 
 @Component({
   selector: 'app-line-overview',
@@ -37,7 +37,6 @@ export class LineOverview implements OnInit {
   protected readonly playerCatalog = signal<Player[]>([]);
   protected readonly skillCatalog = signal<CatalogRef[]>([]);
   protected readonly goalCatalog = signal<CatalogRef[]>([]);
-  protected readonly focusCatalog = signal<FocusRef[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly openSection = signal<ManageSection | null>(null);
   protected readonly newLineName = signal('');
@@ -54,9 +53,6 @@ export class LineOverview implements OnInit {
   protected readonly newSkillColor = signal<string>(CATALOG_PALETTE[0]);
   protected readonly newGoalName = signal('');
   protected readonly newGoalColor = signal<string>(CATALOG_PALETTE[2]);
-  protected readonly newFocusName = signal('');
-  protected readonly newFocusGoalIds = signal<string[]>([]);
-  protected readonly newFocusGoalIdSet = computed(() => new Set(this.newFocusGoalIds()));
 
   private readonly rosterDialog = viewChild<ElementRef<HTMLDialogElement>>('rosterDialog');
   private readonly createLineDialog = viewChild<ElementRef<HTMLDialogElement>>('createLineDialog');
@@ -72,9 +68,6 @@ export class LineOverview implements OnInit {
   protected readonly associatedGoalIds = computed(
     () => new Set((this.detail()?.developmentGoals ?? []).map((g) => g.id)),
   );
-  protected readonly associatedFocusIds = computed(
-    () => new Set((this.detail()?.focuses ?? []).map((f) => f.id)),
-  );
 
   protected readonly playerChipItems = computed<ChipItem[]>(() =>
     this.playerCatalog().map((p) => ({ id: p.id, name: p.name, color: PLAYER_CHIP_COLOR })),
@@ -85,14 +78,6 @@ export class LineOverview implements OnInit {
   protected readonly goalChipItems = computed<ChipItem[]>(() =>
     this.goalCatalog().map((g) => ({ id: g.id, name: g.name, color: g.color })),
   );
-  protected readonly focusChipItems = computed<ChipItem[]>(() =>
-    this.focusCatalog().map((f) => ({
-      id: f.id,
-      name: f.name,
-      color: this.goalColorFor(f) ?? '#888888',
-      tooltip: this.goalNameFor(f) ?? undefined,
-    })),
-  );
 
   ngOnInit(): void {
     forkJoin({
@@ -100,14 +85,12 @@ export class LineOverview implements OnInit {
       players: this.api.listPlayerCatalog(),
       skills: this.api.listSkillCatalog(),
       goals: this.api.listGoalCatalog(),
-      focuses: this.api.listFocusCatalog(),
     }).subscribe({
-      next: ({ lines, players, skills, goals, focuses }) => {
+      next: ({ lines, players, skills, goals }) => {
         this.lines.set(lines);
         this.playerCatalog.set(players);
         this.skillCatalog.set(skills);
         this.goalCatalog.set(goals);
-        this.focusCatalog.set(focuses);
         if (lines.length > 0) {
           this.selectLine(lines[0].id);
         }
@@ -240,19 +223,6 @@ export class LineOverview implements OnInit {
       .join('');
   }
 
-  /** Every catalog goal this focus is derived from, in catalog order. */
-  protected goalTagsFor(focus: FocusRef): CatalogRef[] {
-    return this.goalCatalog().filter((g) => focus.goalIds.includes(g.id));
-  }
-
-  protected goalNameFor(focus: FocusRef): string | null {
-    return this.goalTagsFor(focus).map((g) => g.name).join(', ') || null;
-  }
-
-  protected goalColorFor(focus: FocusRef): string | null {
-    return this.goalTagsFor(focus)[0]?.color ?? null;
-  }
-
   protected openRosterDialog(): void {
     this.stagedPlayerIds.set(new Set(this.associatedPlayerIds()));
     this.rosterDialog()?.nativeElement.showModal();
@@ -380,18 +350,6 @@ export class LineOverview implements OnInit {
     });
   }
 
-  protected toggleFocus(focusId: string): void {
-    const lineId = this.selectedLineId();
-    if (!lineId) {
-      return;
-    }
-    const ids = this.toggledIds(this.associatedFocusIds(), focusId);
-    this.api.updateLineAssociations(lineId, { focusIds: ids }).subscribe({
-      next: () => this.selectLine(lineId),
-      error: () => this.errorMessage.set('Fokusse konnten nicht aktualisiert werden.'),
-    });
-  }
-
   protected toggleColorEdit(id: string): void {
     this.editingColorId.set(this.editingColorId() === id ? null : id);
   }
@@ -447,28 +405,6 @@ export class LineOverview implements OnInit {
         this.toggleGoal(created.id);
       },
       error: () => this.errorMessage.set('Ziel konnte nicht angelegt werden.'),
-    });
-  }
-
-  protected toggleNewFocusGoal(goalId: string): void {
-    this.newFocusGoalIds.set(this.toggledIds(this.newFocusGoalIdSet(), goalId));
-  }
-
-  protected createFocus(): void {
-    const lineId = this.selectedLineId();
-    const name = this.newFocusName().trim();
-    const goalIds = this.newFocusGoalIds();
-    if (!lineId || !name || goalIds.length === 0) {
-      return;
-    }
-    this.api.createFocus(name, goalIds).subscribe({
-      next: (created) => {
-        this.focusCatalog.set([...this.focusCatalog(), created]);
-        this.newFocusName.set('');
-        this.newFocusGoalIds.set([]);
-        this.toggleFocus(created.id);
-      },
-      error: () => this.errorMessage.set('Fokus konnte nicht angelegt werden.'),
     });
   }
 

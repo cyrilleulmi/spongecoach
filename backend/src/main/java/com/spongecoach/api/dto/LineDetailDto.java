@@ -11,8 +11,7 @@ public record LineDetailDto(
         String name,
         List<PlayerDto> players,
         List<LineSkillDto> skills,
-        List<CatalogRefDto> developmentGoals,
-        List<FocusDto> focuses) {
+        List<CatalogRefDto> developmentGoals) {
 
     public static LineDetailDto from(Line line, List<LineSkill> lineSkills) {
         return new LineDetailDto(
@@ -20,7 +19,6 @@ public record LineDetailDto(
                 line.name,
                 line.players.stream().map(PlayerDto::from).toList(),
                 lineSkills.stream().map(LineSkillDto::from).toList(),
-                line.developmentGoals.stream().map(CatalogRefDto::from).toList(),
-                line.focuses.stream().map(FocusDto::from).toList());
+                line.developmentGoals.stream().map(CatalogRefDto::from).toList());
     }
 }

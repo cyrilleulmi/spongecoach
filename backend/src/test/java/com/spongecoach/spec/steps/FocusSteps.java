@@ -25,11 +25,12 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 
-/** Proves docs/spec/focus-planning.feature — the three-way Line-Focus-Event link. */
+/** Proves docs/spec/focus-planning.feature — the three-way Line-Focus-Event link, free text. */
 @ScenarioScope
 public class FocusSteps {
 
     private static final LocalDateTime DEFAULT_SLOT = LocalDateTime.of(2026, 8, 5, 18, 0);
+    private static final String DEFAULT_FOCUS_TEXT = "Spielaufbau aus der tiefen Zone";
 
     @Inject
     Fixtures fixtures;
@@ -39,9 +40,6 @@ public class FocusSteps {
 
     /** The attending Lines of the Event under discussion, in the order the Background named them. */
     private final List<String> attendingLines = new ArrayList<>();
-
-    /** The Focuses the Background made available, in order. */
-    private final List<String> availableFocuses = new ArrayList<>();
 
     // --- Given ------------------------------------------------------------------
 
@@ -55,29 +53,18 @@ public class FocusSteps {
         fixtures.event("Planung", "Training", eventName, DEFAULT_SLOT);
     }
 
-    @Given("the Focuses {string} and {string}")
-    public void theFocuses(String first, String second) {
-        fixtures.focus(first);
-        fixtures.focus(second);
-        availableFocuses.add(first);
-        availableFocuses.add(second);
-    }
-
     @Given("both Lines have a Focus set")
     public void bothLinesHaveAFocusSet() {
         setAttachments(Map.of(
-                attendingLines.get(0), availableFocuses.get(0),
-                attendingLines.get(1), availableFocuses.get(0)))
+                attendingLines.get(0), DEFAULT_FOCUS_TEXT,
+                attendingLines.get(1), DEFAULT_FOCUS_TEXT))
                 .then().statusCode(200);
     }
 
     @Given("{string} has the Focus {string} for {string}")
-    public void hasTheFocusFor(String lineName, String focusName, String eventName) {
-        fixtures.focus(focusName);
+    public void hasTheFocusFor(String lineName, String focusText, String eventName) {
         fixtures.testData().attachFocus(
-                world.id(Kind.EVENT, eventName),
-                world.id(Kind.LINE, lineName),
-                world.id(Kind.FOCUS, focusName));
+                world.id(Kind.EVENT, eventName), world.id(Kind.LINE, lineName), focusText);
     }
 
     @Given("a Line {string} created after the Event")
@@ -96,7 +83,7 @@ public class FocusSteps {
 
     @When("the coach sends a set containing only {string}'s")
     public void theCoachSendsASetContainingOnly(String lineName) {
-        world.setResponse(setAttachments(Map.of(lineName, availableFocuses.get(0))));
+        world.setResponse(setAttachments(Map.of(lineName, DEFAULT_FOCUS_TEXT)));
     }
 
     @When("the coach sends an empty attachment set")
@@ -105,10 +92,10 @@ public class FocusSteps {
     }
 
     @When("the coach changes only {string}'s Focus to {string}")
-    public void theCoachChangesOnlyOneLinesFocus(String lineName, String focusName) {
+    public void theCoachChangesOnlyOneLinesFocus(String lineName, String focusText) {
         Map<String, String> attachments = new LinkedHashMap<>();
         for (String line : attendingLines) {
-            attachments.put(line, line.equals(lineName) ? focusName : availableFocuses.get(0));
+            attachments.put(line, line.equals(lineName) ? focusText : DEFAULT_FOCUS_TEXT);
         }
         world.setResponse(setAttachments(attachments));
     }
@@ -119,30 +106,30 @@ public class FocusSteps {
                 .contentType(ContentType.JSON)
                 .body(Map.of("focusAttachments", List.of(Map.of(
                         "lineId", UUID.randomUUID().toString(),
-                        "focusId", world.id(Kind.FOCUS, availableFocuses.get(0)).toString()))))
+                        "focus", DEFAULT_FOCUS_TEXT))))
                 .when().put("/api/events/" + world.current(Kind.EVENT)));
     }
 
-    @When("the coach attaches a focus id that does not exist for {string}")
-    public void theCoachAttachesAnUnknownFocus(String lineName) {
+    @When("the coach attaches blank Focus text for {string}")
+    public void theCoachAttachesBlankFocusTextFor(String lineName) {
         world.setResponse(given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("focusAttachments", List.of(Map.of(
                         "lineId", world.id(Kind.LINE, lineName).toString(),
-                        "focusId", UUID.randomUUID().toString()))))
+                        "focus", "   "))))
                 .when().put("/api/events/" + world.current(Kind.EVENT)));
     }
 
     @When("the coach attaches {string} for {string}")
-    public void theCoachAttachesFocusFor(String focusName, String lineName) {
-        world.setResponse(setAttachments(Map.of(lineName, focusName)));
+    public void theCoachAttachesFocusFor(String focusText, String lineName) {
+        world.setResponse(setAttachments(Map.of(lineName, focusText)));
     }
 
     private Response setAttachments(Map<String, String> focusByLine) {
         List<Map<String, String>> attachments = focusByLine.entrySet().stream()
                 .map(entry -> Map.of(
                         "lineId", world.id(Kind.LINE, entry.getKey()).toString(),
-                        "focusId", world.id(Kind.FOCUS, entry.getValue()).toString()))
+                        "focus", entry.getValue()))
                 .toList();
         return given()
                 .contentType(ContentType.JSON)
@@ -159,8 +146,8 @@ public class FocusSteps {
                 .statusCode(200)
                 .body("focusAttachments", hasSize(expected.size()));
         expected.forEach((line, focus) -> assertion.body(
-                "focusAttachments.find { it.lineId == '" + world.id(Kind.LINE, line) + "' }.focusId",
-                equalTo(world.id(Kind.FOCUS, focus).toString())));
+                "focusAttachments.find { it.lineId == '" + world.id(Kind.LINE, line) + "' }.focus",
+                equalTo(focus)));
     }
 
     @Then("{string} has no Focus for this Event any more")
@@ -181,8 +168,8 @@ public class FocusSteps {
         world.response().then()
                 .statusCode(200)
                 .body("focusAttachments", hasSize(2))
-                .body("focusAttachments.find { it.lineId == '" + world.id(Kind.LINE, lineName) + "' }.focusId",
-                        equalTo(world.id(Kind.FOCUS, availableFocuses.get(0)).toString()));
+                .body("focusAttachments.find { it.lineId == '" + world.id(Kind.LINE, lineName) + "' }.focus",
+                        equalTo(DEFAULT_FOCUS_TEXT));
     }
 
     @Then("its attachments are unchanged")
@@ -193,7 +180,7 @@ public class FocusSteps {
                 .body("focusAttachments[0].lineId", equalTo(world.id(Kind.LINE, "Kiwi").toString()));
     }
 
-    @Then("{string}'s attachment on {string} carries its Line name and Focus name inline")
+    @Then("{string}'s attachment on {string} carries its Line name and Focus text inline")
     public void theAttachmentCarriesNamesInline(String lineName, String eventName) {
         String iterationId = world.current(Kind.ITERATION).toString();
         String eventPath = "find { it.id == '" + iterationId + "' }.events"
@@ -203,8 +190,7 @@ public class FocusSteps {
         world.response().then()
                 .statusCode(200)
                 .body(attachmentPath + ".lineName", equalTo(world.actualName(Kind.LINE, lineName)))
-                .body(attachmentPath + ".focusName",
-                        equalTo(world.actualName(Kind.FOCUS, "Spielaufbau aus der tiefen Zone")))
+                .body(attachmentPath + ".focus", equalTo(DEFAULT_FOCUS_TEXT))
                 .body(eventPath + ".scheduledOn", equalTo(Datetimes.echoedFrom(DEFAULT_SLOT)));
     }
 }

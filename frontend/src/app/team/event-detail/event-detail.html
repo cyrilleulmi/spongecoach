@@ -52,23 +52,25 @@
             <span class="attendance-count" [attr.aria-label]="'Zusagen für ' + line.name">
               {{ lineAttendanceCount(line.id).attending }}/{{ lineAttendanceCount(line.id).total }}
             </span>
-            <select
-              class="focus-select"
+            <input
+              type="text"
+              class="focus-input"
+              placeholder="Fokus setzen"
               [attr.aria-label]="'Fokus für ' + line.name + ' setzen'"
-              [value]="selectedFocusId(line.id)"
+              [value]="focusTextFor(line.id)"
               [disabled]="readonly()"
-              (change)="onFocusSelect(line.id, $any($event.target).value)"
-            >
-              <option value="">— nicht gesetzt —</option>
-              @for (focus of focusesFor(line.id); track focus.id) {
-                <option [value]="focus.id" [selected]="focus.id === selectedFocusId(line.id)">
-                  {{ focus.name }}
-                </option>
-              }
-            </select>
+              (change)="onFocusInput(line.id, $any($event.target).value)"
+            />
           </div>
-          @if (selectedFocusName(line.id); as focusName) {
-            <p class="focus-readout">{{ focusName }}</p>
+          @if (!readonly() && lastFocusFor(line.id); as lastFocus) {
+            <button
+              type="button"
+              class="link-btn same-focus-btn"
+              [attr.aria-label]="'Gleicher Fokus wie zuletzt für ' + line.name"
+              (click)="sameFocusAgain(line.id)"
+            >
+              Gleicher Fokus wie zuletzt: „{{ lastFocus }}“
+            </button>
           }
         </li>
       }

@@ -13,7 +13,6 @@ const PLAYERS = [
 const SKILL = { id: 'skill-1', name: 'Passgenauigkeit', color: '#2c7a68' };
 const GOAL = { id: 'goal-1', name: 'Ballverluste im eigenen Drittel reduzieren', color: '#c8722e' };
 const GOAL_2 = { id: 'goal-2', name: 'Kompakte Defensive aufbauen', color: '#16a085' };
-const FOCUS = { id: 'focus-1', name: 'Cross-Pässe unter Druck', goalIds: ['goal-1', 'goal-2'] };
 
 function detailFor(line: { id: string; name: string }): LineDetail {
   return {
@@ -22,7 +21,6 @@ function detailFor(line: { id: string; name: string }): LineDetail {
     players: [{ id: 'player-1', name: 'Carmela' }],
     skills: [{ skillId: SKILL.id, name: SKILL.name, color: SKILL.color, rating: 60 }],
     developmentGoals: [GOAL],
-    focuses: [FOCUS],
   };
 }
 
@@ -43,7 +41,6 @@ describe('LineOverview', () => {
     httpMock.expectOne('/api/players').flush(PLAYERS);
     httpMock.expectOne('/api/skills').flush([SKILL]);
     httpMock.expectOne('/api/development-goals').flush([GOAL, GOAL_2]);
-    httpMock.expectOne('/api/focuses').flush([FOCUS]);
     httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
 
     await fixture.whenStable();
@@ -53,7 +50,7 @@ describe('LineOverview', () => {
   afterEach(() => httpMock.verify());
 
   // spec: ui.first-line-selected
-  it('given lines exist, selects the first one and renders its roster/skills/goals/focuses', async () => {
+  it('given lines exist, selects the first one and renders its roster/skills/goals', async () => {
     const fixture = await render();
     const text = fixture.nativeElement.textContent as string;
 
@@ -61,7 +58,6 @@ describe('LineOverview', () => {
     expect(text).toContain('Carmela');
     expect(text).toContain('Passgenauigkeit');
     expect(text).toContain('Ballverluste im eigenen Drittel reduzieren');
-    expect(text).toContain('Cross-Pässe unter Druck');
   });
 
   // spec: ui.switch-line-refetches
@@ -204,41 +200,6 @@ describe('LineOverview', () => {
 
     // No follow-up GET — the optimistically-added skill already matches the server response.
     httpMock.expectNone('/api/lines/line-a');
-  });
-
-  // spec: ui.create-focus-auto-associates
-  it('when creating a focus, POSTs it with every chosen goal id and auto-associates it', async () => {
-    const fixture = await render();
-
-    (fixture.nativeElement.querySelector('.card.focus .section-title .btn') as HTMLButtonElement).click();
-    await fixture.whenStable();
-
-    const nameInput: HTMLInputElement = fixture.nativeElement.querySelector('.card.focus .create-focus input');
-    nameInput.value = 'Zonenpressing';
-    nameInput.dispatchEvent(new Event('input'));
-    await fixture.whenStable();
-
-    const goalChipButtons: HTMLButtonElement[] = Array.from(
-      fixture.nativeElement.querySelectorAll('.card.focus .create-focus app-manage-chips .chip button.x'),
-    );
-    goalChipButtons[0].click();
-    goalChipButtons[1].click();
-    await fixture.whenStable();
-
-    (fixture.nativeElement.querySelector('.card.focus .create-focus .btn') as HTMLButtonElement).click();
-
-    const post = httpMock.expectOne('/api/focuses');
-    expect(post.request.method).toBe('POST');
-    expect(post.request.body).toEqual({ name: 'Zonenpressing', goalIds: ['goal-1', 'goal-2'] });
-    post.flush({ id: 'focus-new', name: 'Zonenpressing', goalIds: ['goal-1', 'goal-2'] });
-
-    const assoc = httpMock.expectOne('/api/lines/line-a');
-    expect(assoc.request.method).toBe('PUT');
-    expect(assoc.request.body.focusIds).toEqual(['focus-1', 'focus-new']);
-    assoc.flush(detailFor(LINE_A));
-
-    httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
-    await fixture.whenStable();
   });
 
   function openMenu(fixture: { nativeElement: HTMLElement }): void {

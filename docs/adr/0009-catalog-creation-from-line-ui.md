@@ -13,3 +13,7 @@ status: accepted
 **Colors are chosen from a fixed 8-color palette** (`frontend/src/app/theme/palette.ts`), never free-form. Both the create forms and the "change this row's color" affordance use the same swatch picker. Rationale: keeps the small set of category colors visually distinct and on-brand, and avoids a color-input widget. The palette lives only in the frontend — the backend still stores whatever hex string it's given (`varchar(7)`), so widening or theming the palette later is a frontend-only change.
 
 This is additive and low-risk to reverse (drop the `POST` routes and the create forms); accepted because entering a season's real skills/goals/focuses through seed edits or raw SQL was the main friction left in the per-line workflow.
+
+> **Superseded in part (ADR-0014):** Focus is no longer a catalog, so `POST /api/focuses` and its
+> line-screen create form are gone. Skill and Development goal creation, and the fixed color
+> palette, are unchanged.

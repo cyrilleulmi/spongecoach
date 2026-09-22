@@ -23,17 +23,10 @@ export interface LineSkill {
   rating: number;
 }
 
-export interface FocusRef {
-  id: string;
-  name: string;
-  goalIds: string[];
-}
-
 export interface LineDetail {
   id: string;
   name: string;
   players: Player[];
   skills: LineSkill[];
   developmentGoals: CatalogRef[];
-  focuses: FocusRef[];
 }

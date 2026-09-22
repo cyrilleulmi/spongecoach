@@ -21,9 +21,7 @@ const EVENTS: TimelineEvent[] = [
     type: 'Training',
     name: null,
     scheduledOn: '2026-09-08T18:00',
-    focusAttachments: [
-      { lineId: 'line-a', lineName: 'Kiwi', focusId: 'f-1', focusName: 'Fokus A' },
-    ],
+    focusAttachments: [{ lineId: 'line-a', lineName: 'Kiwi', focus: 'Fokus A' }],
     lines: LINES,
     attendance: ATTENDANCE,
   },

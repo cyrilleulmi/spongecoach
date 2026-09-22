@@ -22,30 +22,29 @@ Single hardcoded Team, no auth in v1. UUID primary keys everywhere (ADR-0002).
   `BadRequestException` / `ConflictException` / `NotFoundException`; `ApiExceptionMapper` turns
   those into a uniform `{error, message}` envelope with status 400 / 409 / 404.
 - `api/dto/` — records with static `from(entity)` factories. Read DTOs denormalise names
-  (`FocusAttachmentDto` carries `lineName`/`focusName`) so the timeline is one call, no N+1.
+  (`FocusAttachmentDto` carries `lineName` alongside the free-text `focus`) so the timeline is one
+  call, no N+1.
 - `domain/` — Panache entities with public fields and static finders. Join tables that carry a
   payload are entities (`LineSkill`, `LineFocusEvent`, `EventAttendance`); join tables that do not
-  are `@ManyToMany` (`line_player`, `event_line`, `line_focus`, `focus_development_goal`).
+  are `@ManyToMany` (`line_player`, `event_line`).
 
 ## Data model
 
 ```
 Team 1─* Line ─*─* Player            (line_player: a Player may be on several Lines, ADR-0008)
          Line ─*─* DevelopmentGoal   (line_development_goal)
-         Line ─*─* Focus             (line_focus)
          Line ─*── LineSkill ──* Skill      payload: rating 0-100, overwritten, no history
 Team 1─* Iteration 1─* Event
          Event ──* EventType
          Event ─*─* Line             (event_line: SNAPSHOT of attending Lines, ADR-0012)
          Event ──* EventLinePlayer   (event_line_player: snapshot of each attending Line's roster)
          Event ──* EventAttendance   (one answer per (Event, Player): PENDING|ATTENDING|DECLINED)
-         Event ──* LineFocusEvent ──* Focus (at most one Focus per (Event, Line), ADR-0010)
-Focus ─*─* DevelopmentGoal           (focus_development_goal, a Focus needs >= 1)
+         Event ──* LineFocusEvent    (at most one per (Event, Line); `focus` is free text, ADR-0014)
 ```
 
-Soft delete (`deleted_at`) on Line, Skill, DevelopmentGoal, Focus (ADR-0004). `Line.color` is
-assigned once at creation from a fixed 8-color dial palette, so a Line's color survives its own
-deletion on historic Event dials.
+Soft delete (`deleted_at`) on Line, Skill, DevelopmentGoal (ADR-0004). `Line.color` is assigned
+once at creation from a fixed 8-color dial palette, so a Line's color survives its own deletion on
+historic Event dials.
 
 ### The two snapshots that make history work (ADR-0012)
 
@@ -65,9 +64,9 @@ Player dropped from one of two attending Lines keeps their single answer through
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/api/lines` | active Lines, name order, with `playerCount` and `color` |
-| GET | `/api/lines/{id}` | roster, Skill ratings, Development goals and Focuses inline |
+| GET | `/api/lines/{id}` | roster, Skill ratings and Development goals inline |
 | POST | `/api/lines` | `{name}`; assigns the next palette color |
-| PUT | `/api/lines/{id}` | `{name?, playerIds?, developmentGoalIds?, focusIds?}` — each list replaces wholesale; a roster change syncs upcoming Events' attendance |
+| PUT | `/api/lines/{id}` | `{name?, playerIds?, developmentGoalIds?}` — each list replaces wholesale; a roster change syncs upcoming Events' attendance |
 | DELETE | `/api/lines/{id}` | soft delete |
 | GET | `/api/lines/deleted` | most recently deleted first |
 | POST | `/api/lines/{id}/restore` | |
@@ -75,13 +74,12 @@ Player dropped from one of two attending Lines keeps their single answer through
 | GET | `/api/players` | the Team pool; seed-only in v1 |
 | GET | `/api/event-types` | seeded Training / Match |
 | GET/POST/PUT | `/api/skills`, `/api/development-goals` | shared catalogs with a color |
-| GET/POST | `/api/focuses` | create needs >= 1 `goalIds` |
 | GET | `/api/iterations` | **the timeline**: Iterations by position, Events nested by datetime, each with `focusAttachments`, `lines`, `attendance` |
 | POST | `/api/iterations` | `{name, position?, events?}` — Events may be nested |
 | PUT/DELETE | `/api/iterations/{id}` | delete cascades to its Events |
 | POST | `/api/iterations/{id}/events` | `{eventTypeId, name?, scheduledOn}`; takes the attendance snapshot |
 | PUT/DELETE | `/api/iterations/{it}/events/{ev}` | reschedule / rename / delete |
-| PUT | `/api/events/{id}` | `{eventTypeId?, name?, scheduledOn?, focusAttachments?}` — a non-null `focusAttachments` **replaces the whole set** |
+| PUT | `/api/events/{id}` | `{eventTypeId?, name?, scheduledOn?, focusAttachments?}` — `focusAttachments` is `[{lineId, focus}]` free text; a non-null value **replaces the whole set** |
 | PUT | `/api/events/{id}/attendance/{playerId}` | `{status, declineMessage?}`; the message is kept only while `DECLINED` |
 
 `scheduledOn` is mandatory and unique within its Iteration (ADR-0011); a collision returns **409
@@ -93,12 +91,14 @@ Two routes, `/lines` (default) and `/team`.
 
 - **`/lines`** — one Line at a time. Ratings are optimistic with rollback; every other association
   edit sends the full id array and refetches. The roster dialog stages changes and commits once on
-  "Fertig". New Skills / Development goals / Focuses are created from here and auto-associated
-  (ADR-0009).
+  "Fertig". New Skills / Development goals are created from here and auto-associated (ADR-0009).
+  Focus is not managed here (ADR-0014) — it's set per Event from `/team`.
 - **`/team`** — the Iteration timeline. Each Event is a dial with one slice per *snapshotted*
   attending Line, lit in that Line's color when the Line has a Focus set — so a dial reads as
-  "how much of this session is planned". Roster icons under it show each Player's answer. The
-  **next** Event is the first, in Iteration-then-datetime order, whose datetime has not passed.
+  "how much of this session is planned". A Line's Focus is a plain text field in the event detail
+  panel; "same focus again" copies that Line's most recent earlier Focus text into it (ADR-0014).
+  Roster icons under the dial show each Player's answer. The **next** Event is the first, in
+  Iteration-then-datetime order, whose datetime has not passed.
 - **Read-only past Events** are a frontend default, not a backend rule (ADR-0012): an Event whose
   datetime has passed renders disabled, and the coach can lift the lock per Event with "Trotzdem
   bearbeiten". The lock returns when another Event is selected.
@@ -117,7 +117,6 @@ tied to them by `// spec:` marker comments. ADR-0013 records why the two layers 
 
 ## Known gaps
 
-- Focus deletion is described in `CONTEXT.md` but has no endpoint at all in v1.
 - Playwright e2e stubs the API in the browser; no e2e runs against the real backend.
 - Backend does not enforce read-only past Events — the frontend does, deliberately.
 - `Line.count()` drives the palette index and counts soft-deleted Lines, so colors can repeat

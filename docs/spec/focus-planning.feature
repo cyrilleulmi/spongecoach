@@ -1,11 +1,10 @@
 Feature: Planning a Focus per Line per Event
-  A Focus is no longer implicitly one Line's, so attaching one to an Event is a three-way
-  Line-Focus-Event link: at most one Focus per Line per Event (ADR-0010). The team overview writes
-  the whole set of an Event's attachments in one call, so clearing is just sending less.
+  A Focus is free text set per Line per Event — a three-way Line-Focus-Event link (ADR-0010): at
+  most one Focus per Line per Event, not a reusable catalog entry. The team overview writes the
+  whole set of an Event's attachments in one call, so clearing is just sending less.
 
   Background:
     Given an Event "Einheit 1" attended by the Lines "Kiwi" and "Bäri"
-    And the Focuses "Spielaufbau aus der tiefen Zone" and "Abschlussübungen 2-auf-1"
 
   Rule: An Event's attachments are replaced as a set
 
@@ -38,17 +37,17 @@ Feature: Planning a Focus per Line per Event
       When the coach renames "Einheit 1" to "Testspiel gegen Bern"
       Then its attachments are unchanged
 
-  Rule: Attachments are validated against the Event's attending Lines
+  Rule: An attachment needs a real, attending Line and non-blank text
 
     @spec:focus.unknown-line
     Scenario: Attaching for a Line that does not exist
       When the coach attaches a Focus for a line id that does not exist
       Then the response is a not-found error envelope
 
-    @spec:focus.unknown-focus
-    Scenario: Attaching a Focus that does not exist
-      When the coach attaches a focus id that does not exist for "Kiwi"
-      Then the response is not found
+    @spec:focus.blank-focus
+    Scenario: Attaching blank Focus text
+      When the coach attaches blank Focus text for "Kiwi"
+      Then the request is rejected as a bad request
 
     @spec:focus.line-not-attending
     Scenario: Attaching for a Line that is not attending this Event
@@ -59,7 +58,7 @@ Feature: Planning a Focus per Line per Event
   Rule: The timeline reads attachments denormalised
 
     @spec:focus.inline-names-on-timeline
-    Scenario: The timeline carries Line and Focus names, not just ids
+    Scenario: The timeline carries the Line name and Focus text, not just ids
       Given "Kiwi" has the Focus "Spielaufbau aus der tiefen Zone" for "Einheit 1"
       When the Iteration list is read
-      Then "Kiwi"'s attachment on "Einheit 1" carries its Line name and Focus name inline
+      Then "Kiwi"'s attachment on "Einheit 1" carries its Line name and Focus text inline

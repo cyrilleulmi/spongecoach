@@ -4,14 +4,11 @@ import com.spongecoach.domain.LineFocusEvent;
 
 import java.util.UUID;
 
-/** One Line's Focus set for an Event, denormalised with names for the read-side timeline. */
-public record FocusAttachmentDto(UUID lineId, String lineName, UUID focusId, String focusName) {
+/** One Line's free-text Focus set for an Event, denormalised with its Line name for the
+ * read-side timeline. */
+public record FocusAttachmentDto(UUID lineId, String lineName, String focus) {
 
     public static FocusAttachmentDto from(LineFocusEvent attachment) {
-        return new FocusAttachmentDto(
-                attachment.line.id,
-                attachment.line.name,
-                attachment.focus.id,
-                attachment.focus.name);
+        return new FocusAttachmentDto(attachment.line.id, attachment.line.name, attachment.focus);
     }
 }

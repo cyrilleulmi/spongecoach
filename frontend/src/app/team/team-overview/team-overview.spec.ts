@@ -3,7 +3,6 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { TeamOverview } from './team-overview';
 import { Iteration } from '../iteration.model';
-import { LineDetail } from '../../lines/line.model';
 
 const LINES = [
   { id: 'line-a', name: 'Kiwi', playerCount: 4, color: '#4c8c3d' },
@@ -34,9 +33,7 @@ function iterations(): Iteration[] {
           type: 'Training',
           name: null,
           scheduledOn: '2099-08-05T18:00',
-          focusAttachments: [
-            { lineId: 'line-a', lineName: 'Kiwi', focusId: 'f-1', focusName: 'Fokus A' },
-          ],
+          focusAttachments: [{ lineId: 'line-a', lineName: 'Kiwi', focus: 'Fokus A' }],
           lines: LINE_REFS,
           attendance: [],
         },
@@ -56,10 +53,6 @@ function iterations(): Iteration[] {
   ];
 }
 
-function detail(id: string, focuses: LineDetail['focuses']): LineDetail {
-  return { id, name: id, players: [], skills: [], developmentGoals: [], focuses };
-}
-
 describe('TeamOverview', () => {
   let httpMock: HttpTestingController;
 
@@ -76,10 +69,6 @@ describe('TeamOverview', () => {
     httpMock.expectOne('/api/iterations').flush(iterations());
     httpMock.expectOne('/api/event-types').flush(EVENT_TYPES);
     httpMock.expectOne('/api/lines').flush(LINES);
-    httpMock
-      .expectOne('/api/lines/line-a')
-      .flush(detail('line-a', [{ id: 'f-1', name: 'Fokus A', goalIds: [] }, { id: 'f-2', name: 'Fokus B', goalIds: [] }]));
-    httpMock.expectOne('/api/lines/line-b').flush(detail('line-b', [{ id: 'f-3', name: 'Fokus C', goalIds: [] }]));
 
     await fixture.whenStable();
     fixture.detectChanges();
@@ -109,20 +98,44 @@ describe('TeamOverview', () => {
   it('when a line focus is changed, PUTs the merged attachment set and reloads', async () => {
     const fixture = await render();
 
-    // ev-1 is the default selection (it is "next"); change Bäri's focus to f-3.
-    const lineBSelect = fixture.nativeElement.querySelectorAll('.focus-select')[1] as HTMLSelectElement;
-    lineBSelect.value = 'f-3';
-    lineBSelect.dispatchEvent(new Event('change'));
+    // ev-1 is the default selection (it is "next"); change Bäri's focus.
+    const lineBInput = fixture.nativeElement.querySelectorAll('.focus-input')[1] as HTMLInputElement;
+    lineBInput.value = 'Abschlussübungen 2-auf-1';
+    lineBInput.dispatchEvent(new Event('change'));
 
     const put = httpMock.expectOne('/api/events/ev-1');
     expect(put.request.method).toBe('PUT');
     expect(put.request.body).toEqual({
       focusAttachments: [
-        { lineId: 'line-a', focusId: 'f-1' },
-        { lineId: 'line-b', focusId: 'f-3' },
+        { lineId: 'line-a', focus: 'Fokus A' },
+        { lineId: 'line-b', focus: 'Abschlussübungen 2-auf-1' },
       ],
     });
     put.flush({ ...iterations()[0].events[0], focusAttachments: [] });
+
+    httpMock.expectOne('/api/iterations').flush(iterations());
+    await fixture.whenStable();
+  });
+
+  // spec: ui.same-focus-again
+  it('offers "same focus again" for a line with an earlier focus, copying it in as plain text', async () => {
+    const fixture = await render();
+
+    // ev-2 (Testspiel) has no focus set; ev-1 (earlier) set "Fokus A" for line-a.
+    const dNodes = fixture.nativeElement.querySelectorAll('.d-node');
+    (dNodes[1] as HTMLElement).click();
+    fixture.detectChanges();
+
+    const sameFocusButtons = fixture.nativeElement.querySelectorAll(
+      '.same-focus-btn',
+    ) as NodeListOf<HTMLButtonElement>;
+    expect(sameFocusButtons.length).toBe(1); // only line-a has an earlier focus
+    sameFocusButtons[0].click();
+
+    const put = httpMock.expectOne('/api/events/ev-2');
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body).toEqual({ focusAttachments: [{ lineId: 'line-a', focus: 'Fokus A' }] });
+    put.flush({ ...iterations()[0].events[1], focusAttachments: [{ lineId: 'line-a', lineName: 'Kiwi', focus: 'Fokus A' }] });
 
     httpMock.expectOne('/api/iterations').flush(iterations());
     await fixture.whenStable();

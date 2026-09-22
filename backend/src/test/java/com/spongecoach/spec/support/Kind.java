@@ -6,7 +6,6 @@ public enum Kind {
     PLAYER,
     SKILL,
     GOAL,
-    FOCUS,
     ITERATION,
     EVENT
 }

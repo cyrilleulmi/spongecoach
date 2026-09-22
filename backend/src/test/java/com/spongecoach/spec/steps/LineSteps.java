@@ -38,13 +38,8 @@ public class LineSteps {
     @Inject
     ScenarioWorld world;
 
-    /**
-     * What the scenario associated with the Line, by spoken name. Held here rather than read back
-     * off the world's "most recent" subject, because creating a Focus also creates the Development
-     * goal it derives from — which would otherwise shadow the goal the Line was associated with.
-     */
+    /** What the scenario associated with the Line, by spoken name. */
     private String associatedGoal;
-    private String associatedFocus;
 
     // --- Given ------------------------------------------------------------------
 
@@ -96,17 +91,6 @@ public class LineSteps {
         given()
                 .contentType(ContentType.JSON)
                 .body(Map.of("developmentGoalIds", List.of(goalId.toString())))
-                .when().put("/api/lines/" + world.id(Kind.LINE, lineName))
-                .then().statusCode(200);
-    }
-
-    @Given("{string} is associated with the Focus {string}")
-    public void isAssociatedWithTheFocus(String lineName, String focusName) {
-        UUID focusId = fixtures.focus(focusName);
-        associatedFocus = focusName;
-        given()
-                .contentType(ContentType.JSON)
-                .body(Map.of("focusIds", List.of(focusId.toString())))
                 .when().put("/api/lines/" + world.id(Kind.LINE, lineName))
                 .then().statusCode(200);
     }
@@ -263,7 +247,7 @@ public class LineSteps {
                 .body("find { it.id == '" + id + "' }.playerCount", equalTo(playerCount));
     }
 
-    @Then("its roster, its Skill ratings, its Development goals and its Focuses come back inline")
+    @Then("its roster, its Skill ratings and its Development goals come back inline")
     public void itsAssociationsComeBackInline() {
         int rating = world.recall("rating");
         world.response().then()
@@ -271,10 +255,7 @@ public class LineSteps {
                 .body("id", equalTo(world.current(Kind.LINE).toString()))
                 .body("players.name", hasItem(world.currentName(Kind.PLAYER)))
                 .body("skills.find { it.skillId == '" + world.current(Kind.SKILL) + "' }.rating", equalTo(rating))
-                .body("developmentGoals.id", hasItem(world.id(Kind.GOAL, associatedGoal).toString()))
-                .body("focuses.id", hasItem(world.id(Kind.FOCUS, associatedFocus).toString()))
-                .body("focuses.find { it.id == '" + world.id(Kind.FOCUS, associatedFocus) + "' }.goalIds",
-                        hasSize(1));
+                .body("developmentGoals.id", hasItem(world.id(Kind.GOAL, associatedGoal).toString()));
     }
 
     @Then("it no longer appears in the Line list, and reading it by id is not found")

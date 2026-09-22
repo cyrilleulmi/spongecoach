@@ -10,7 +10,6 @@ import com.spongecoach.domain.EventAttendance;
 import com.spongecoach.domain.EventAttendanceId;
 import com.spongecoach.domain.EventLinePlayer;
 import com.spongecoach.domain.EventType;
-import com.spongecoach.domain.Focus;
 import com.spongecoach.domain.Line;
 import com.spongecoach.domain.LineFocusEvent;
 import com.spongecoach.domain.LineFocusEventId;
@@ -128,8 +127,8 @@ public class EventResource {
     private void replaceFocusAttachments(Event event, List<FocusAttachmentRequest> requested) {
         Set<UUID> keepLineIds = new HashSet<>();
         for (FocusAttachmentRequest item : requested) {
-            if (item.lineId() == null || item.focusId() == null) {
-                throw new BadRequestException("each focus attachment needs a lineId and a focusId");
+            if (item.lineId() == null || item.focus() == null || item.focus().isBlank()) {
+                throw new BadRequestException("each focus attachment needs a lineId and a non-blank focus");
             }
             Line line = Line.findById(item.lineId());
             if (line == null) {
@@ -140,10 +139,6 @@ public class EventResource {
                 throw new BadRequestException(
                         "Line " + item.lineId() + " is not attending event " + event.id);
             }
-            Focus focus = Focus.findById(item.focusId());
-            if (focus == null || focus.deletedAt != null) {
-                throw new NotFoundException("Focus " + item.focusId() + " not found");
-            }
 
             LineFocusEvent attachment = LineFocusEvent.find(event.id, line.id);
             if (attachment == null) {
@@ -153,7 +148,7 @@ public class EventResource {
                 attachment.line = line;
                 event.focusAttachments.add(attachment);
             }
-            attachment.focus = focus;
+            attachment.focus = item.focus().trim();
             attachment.persist();
             keepLineIds.add(line.id);
         }

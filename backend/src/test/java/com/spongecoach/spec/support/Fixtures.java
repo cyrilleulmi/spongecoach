@@ -9,7 +9,6 @@ import io.quarkiverse.cucumber.ScenarioScope;
 import jakarta.inject.Inject;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -76,22 +75,6 @@ public class Fixtures {
         world.register(Kind.GOAL, spokenName, goal.id, goal.name);
         world.onCleanup(() -> testData.deleteGoal(goal.id));
         return goal.id;
-    }
-
-    public UUID focus(String spokenName, List<UUID> goalIds) {
-        if (world.knows(Kind.FOCUS, spokenName)) {
-            return world.id(Kind.FOCUS, spokenName);
-        }
-        var focus = testData.createFocus(world.uniquify(spokenName), goalIds);
-        world.register(Kind.FOCUS, spokenName, focus.id, focus.name);
-        world.onCleanup(() -> testData.deleteFocus(focus.id));
-        return focus.id;
-    }
-
-    /** A Focus derived from one Development goal created alongside it. */
-    public UUID focus(String spokenName) {
-        UUID goalId = goal(spokenName + " goal", "#c0392b");
-        return focus(spokenName, List.of(goalId));
     }
 
     public UUID iteration(String spokenName) {

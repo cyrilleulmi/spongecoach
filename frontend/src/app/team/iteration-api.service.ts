@@ -5,7 +5,7 @@ import { AttendanceStatus, EventDraft, EventType, Iteration, TimelineEvent } fro
 
 interface FocusAttachmentInput {
   lineId: string;
-  focusId: string;
+  focus: string;
 }
 
 @Injectable({ providedIn: 'root' })

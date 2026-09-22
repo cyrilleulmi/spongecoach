@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CatalogRef, FocusRef, LineDetail, LineSkill, LineSummary, Player } from './line.model';
+import { CatalogRef, LineDetail, LineSkill, LineSummary, Player } from './line.model';
 
 @Injectable({ providedIn: 'root' })
 export class LineApiService {
@@ -33,7 +33,7 @@ export class LineApiService {
 
   updateLineAssociations(
     lineId: string,
-    body: { playerIds?: string[]; developmentGoalIds?: string[]; focusIds?: string[] },
+    body: { playerIds?: string[]; developmentGoalIds?: string[] },
   ): Observable<LineDetail> {
     return this.http.put<LineDetail>(`/api/lines/${lineId}`, body);
   }
@@ -58,20 +58,12 @@ export class LineApiService {
     return this.http.get<CatalogRef[]>('/api/development-goals');
   }
 
-  listFocusCatalog(): Observable<FocusRef[]> {
-    return this.http.get<FocusRef[]>('/api/focuses');
-  }
-
   createSkill(name: string, color: string): Observable<CatalogRef> {
     return this.http.post<CatalogRef>('/api/skills', { name, color });
   }
 
   createGoal(name: string, color: string): Observable<CatalogRef> {
     return this.http.post<CatalogRef>('/api/development-goals', { name, color });
-  }
-
-  createFocus(name: string, goalIds: string[]): Observable<FocusRef> {
-    return this.http.post<FocusRef>('/api/focuses', { name, goalIds });
   }
 
   setSkillColor(skillId: string, color: string): Observable<CatalogRef> {

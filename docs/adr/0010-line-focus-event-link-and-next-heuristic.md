@@ -27,3 +27,7 @@ data we have. If real scheduling arrives later, this heuristic is the obvious th
 > read-only once done. "Next" is now simply the first event, in the same iteration/event order,
 > whose `scheduledOn` hasn't passed — not a Focus-completeness signal. A done event that was never
 > fully planned no longer steals the marker.
+
+> **Superseded in part (ADR-0014):** Focus stopped being a catalog row referenced by id — it's now
+> free text carried directly on `line_focus_event`. The cardinality decision above (one Focus per
+> Line per Event, a full-set replace on write) is unchanged.

@@ -10,8 +10,6 @@ import io.quarkiverse.cucumber.ScenarioScope;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,9 +29,6 @@ public class CatalogSteps {
 
     @Inject
     ScenarioWorld world;
-
-    /** The goals a {@code Given} has named, in the order the scenario named them. */
-    private final List<String> namedGoals = new ArrayList<>();
 
     // --- Given ------------------------------------------------------------------
 
@@ -58,18 +53,12 @@ public class CatalogSteps {
     @Given("the Development goal {string}")
     public void theDevelopmentGoal(String name) {
         fixtures.goal(name, SEED_COLOR);
-        namedGoals.add(name);
     }
 
     @Given("the soft-deleted Development goal {string}")
     public void theSoftDeletedDevelopmentGoal(String name) {
         UUID goalId = fixtures.goal(name, SEED_COLOR);
         fixtures.testData().softDeleteGoal(goalId);
-    }
-
-    @Given("the Focus {string} derived from it")
-    public void theFocusDerivedFromIt(String focusName) {
-        fixtures.focus(focusName, List.of(world.current(Kind.GOAL)));
     }
 
     // --- When -------------------------------------------------------------------
@@ -82,11 +71,6 @@ public class CatalogSteps {
     @When("the Development goal catalog is listed")
     public void theDevelopmentGoalCatalogIsListed() {
         world.setResponse(given().when().get("/api/development-goals"));
-    }
-
-    @When("the Focus catalog is listed")
-    public void theFocusCatalogIsListed() {
-        world.setResponse(given().when().get("/api/focuses"));
     }
 
     @When("the coach creates the Skill {string} with the color {string}")
@@ -147,38 +131,6 @@ public class CatalogSteps {
                 .when().put("/api/development-goals/" + world.current(Kind.GOAL)));
     }
 
-    @When("the coach creates the Focus {string} from it")
-    public void theCoachCreatesTheFocusFromIt(String name) {
-        createFocus(name, List.of(world.current(Kind.GOAL)));
-    }
-
-    @When("the coach creates the Focus {string} from both")
-    public void theCoachCreatesTheFocusFromBoth(String name) {
-        createFocus(name, namedGoals.stream().map(goal -> world.id(Kind.GOAL, goal)).toList());
-    }
-
-    @When("the coach creates a Focus with an empty goal list")
-    public void theCoachCreatesAFocusWithAnEmptyGoalList() {
-        world.setResponse(given()
-                .contentType(ContentType.JSON)
-                .body(Map.of("name", world.uniquify("Orphan focus"), "goalIds", List.of()))
-                .when().post("/api/focuses"));
-    }
-
-    private void createFocus(String name, List<UUID> goalIds) {
-        String actualName = world.uniquify(name);
-        var response = given()
-                .contentType(ContentType.JSON)
-                .body(Map.of("name", actualName, "goalIds", goalIds.stream().map(UUID::toString).toList()))
-                .when().post("/api/focuses");
-        world.setResponse(response);
-        if (response.statusCode() == 201) {
-            UUID id = UUID.fromString(response.path("id"));
-            world.register(Kind.FOCUS, name, id, actualName);
-            world.onCleanup(() -> fixtures.testData().deleteFocus(id));
-        }
-    }
-
     // --- Then -------------------------------------------------------------------
 
     @Then("{string} is in the Skill catalog but {string} is not")
@@ -231,35 +183,5 @@ public class CatalogSteps {
     public void theNewColorComesBackOnTheGoal() {
         String color = world.recall("color");
         world.response().then().statusCode(200).body("color", equalTo(color));
-    }
-
-    @Then("it is listed carrying that goal's id")
-    public void itIsListedCarryingThatGoalsId() {
-        String focusId = world.current(Kind.FOCUS).toString();
-        String goalId = world.current(Kind.GOAL).toString();
-        world.response().then().statusCode(201).body("goalIds", hasItem(goalId));
-        given().when().get("/api/focuses").then()
-                .statusCode(200)
-                .body("find { it.id == '" + focusId + "' }.goalIds", hasItem(goalId));
-    }
-
-    @Then("both goal ids are linked to it")
-    public void bothGoalIdsAreLinkedToIt() {
-        String focusId = world.current(Kind.FOCUS).toString();
-        world.response().then().statusCode(201);
-        for (String goal : namedGoals) {
-            world.response().then().body("goalIds", hasItem(world.id(Kind.GOAL, goal).toString()));
-        }
-        given().when().get("/api/focuses").then()
-                .statusCode(200)
-                .body("find { it.id == '" + focusId + "' }.goalIds.size()", equalTo(namedGoals.size()));
-    }
-
-    @Then("{string} carries the id of the goal it came from")
-    public void carriesTheIdOfTheGoalItCameFrom(String focusName) {
-        world.response().then()
-                .statusCode(200)
-                .body("find { it.id == '" + world.id(Kind.FOCUS, focusName) + "' }.goalIds",
-                        hasItem(world.current(Kind.GOAL).toString()));
     }
 }

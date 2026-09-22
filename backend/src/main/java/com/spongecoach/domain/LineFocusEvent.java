@@ -1,6 +1,7 @@
 package com.spongecoach.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,8 +14,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * The Focus a Line has set for an Event — a three-way link, since a Focus is no longer implicitly
- * one Line's. Payload-carrying join (like {@link LineSkill}): at most one Focus per (Event, Line).
+ * The free-text Focus a Line has set for an Event — a three-way link, since a Focus is per (Line,
+ * Event), not a reusable catalog row. Payload-carrying join (like {@link LineSkill}): at most one
+ * Focus per (Event, Line).
  */
 @Entity
 @Table(name = "line_focus_event")
@@ -33,9 +35,8 @@ public class LineFocusEvent extends PanacheEntityBase {
     @JoinColumn(name = "line_id")
     public Line line;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "focus_id", nullable = false)
-    public Focus focus;
+    @Column(name = "focus", nullable = false)
+    public String focus;
 
     public static List<LineFocusEvent> listForEvent(UUID eventId) {
         return list("event.id", eventId);

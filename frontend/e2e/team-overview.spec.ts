@@ -6,8 +6,6 @@ const TRAINING_TYPE = '80000000-0000-0000-0000-000000000001';
 const MATCH_TYPE = '80000000-0000-0000-0000-000000000002';
 const EV_1 = 'aaaaaaaa-0000-0000-0000-000000000001';
 const EV_2 = 'aaaaaaaa-0000-0000-0000-000000000002';
-const FOCUS_A1 = 'ffffffff-0000-0000-0000-0000000000a1';
-const FOCUS_B1 = 'ffffffff-0000-0000-0000-0000000000b1';
 const PLAYER_1 = 'cccccccc-0000-0000-0000-000000000001';
 const PLAYER_2 = 'cccccccc-0000-0000-0000-000000000002';
 
@@ -26,8 +24,8 @@ const ATTENDANCE = [
 ];
 
 async function mockApi(page: Page) {
-  let ev1Attachments: { lineId: string; lineName: string; focusId: string; focusName: string }[] = [
-    { lineId: LINE_A, lineName: 'Kiwi', focusId: FOCUS_A1, focusName: 'Spielaufbau' },
+  let ev1Attachments: { lineId: string; lineName: string; focus: string }[] = [
+    { lineId: LINE_A, lineName: 'Kiwi', focus: 'Spielaufbau' },
   ];
 
   const iterations = () => [
@@ -79,36 +77,21 @@ async function mockApi(page: Page) {
   );
   await page.route(`**/api/lines/${LINE_A}`, (route) =>
     route.fulfill({
-      json: {
-        id: LINE_A,
-        name: 'Kiwi',
-        players: [],
-        skills: [],
-        developmentGoals: [],
-        focuses: [{ id: FOCUS_A1, name: 'Spielaufbau', goalIds: [] }],
-      },
+      json: { id: LINE_A, name: 'Kiwi', players: [], skills: [], developmentGoals: [] },
     }),
   );
   await page.route(`**/api/lines/${LINE_B}`, (route) =>
     route.fulfill({
-      json: {
-        id: LINE_B,
-        name: 'Bäri',
-        players: [],
-        skills: [],
-        developmentGoals: [],
-        focuses: [{ id: FOCUS_B1, name: 'Cross-Pässe unter Druck', goalIds: [] }],
-      },
+      json: { id: LINE_B, name: 'Bäri', players: [], skills: [], developmentGoals: [] },
     }),
   );
 
   await page.route(`**/api/events/${EV_1}`, async (route) => {
     const body = route.request().postDataJSON();
-    ev1Attachments = (body.focusAttachments as { lineId: string; focusId: string }[]).map((a) => ({
+    ev1Attachments = (body.focusAttachments as { lineId: string; focus: string }[]).map((a) => ({
       lineId: a.lineId,
       lineName: a.lineId === LINE_A ? 'Kiwi' : 'Bäri',
-      focusId: a.focusId,
-      focusName: a.focusId === FOCUS_B1 ? 'Cross-Pässe unter Druck' : 'Spielaufbau',
+      focus: a.focus,
     }));
     await route.fulfill({ json: iterations()[0].events[0] });
   });
@@ -140,10 +123,11 @@ test.describe('Team overview timeline', () => {
 
     // ev-1 is selected by default (it is "next"). Set Bäri's focus.
     const baeriRow = page.locator('.focus-rows li', { hasText: 'Bäri' });
-    await baeriRow.locator('select').selectOption({ label: 'Cross-Pässe unter Druck' });
+    await baeriRow.locator('.focus-input').fill('Cross-Pässe unter Druck');
+    await baeriRow.locator('.focus-input').press('Tab');
 
-    // After the PUT + reload, Bäri's dropdown keeps the chosen focus.
-    await expect(baeriRow.locator('select')).toHaveValue(FOCUS_B1);
+    // After the PUT + reload, Bäri's field keeps the typed focus text.
+    await expect(baeriRow.locator('.focus-input')).toHaveValue('Cross-Pässe unter Druck');
   });
 
   test('navigates to the timeline from the per-line page via the nav', async ({ page }) => {
@@ -151,7 +135,6 @@ test.describe('Team overview timeline', () => {
     await page.route('**/api/players', (route) => route.fulfill({ json: [] }));
     await page.route('**/api/skills', (route) => route.fulfill({ json: [] }));
     await page.route('**/api/development-goals', (route) => route.fulfill({ json: [] }));
-    await page.route('**/api/focuses', (route) => route.fulfill({ json: [] }));
 
     await page.goto('/lines');
     await page.getByRole('link', { name: 'Team-Übersicht' }).click();

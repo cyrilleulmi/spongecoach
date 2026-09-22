@@ -1,10 +1,10 @@
 import { Component, computed, effect, input, output, signal } from '@angular/core';
-import { CatalogRef, FocusRef } from '../../lines/line.model';
+import { CatalogRef } from '../../lines/line.model';
 import { AttendanceStatus, PlayerAttendance, TimelineEvent } from '../iteration.model';
 
 export interface FocusChange {
   lineId: string;
-  focusId: string | null;
+  focus: string | null;
 }
 
 export interface AttendanceChange {
@@ -14,11 +14,11 @@ export interface AttendanceChange {
 }
 
 /**
- * The detail panel for the selected event: its per-Line Focus status (each editable via a
- * dropdown of that Line's associated Focuses), its date, a Match's name, and a delete control.
- * Once the event's date is in the past it's read-only by default — the backend still allows the
- * write, but the coach must explicitly choose "edit anyway" to avoid accidental changes to a
- * done event.
+ * The detail panel for the selected event: its per-Line Focus (a free-text field, with a "same
+ * focus again" shortcut to repeat that Line's most recent earlier Focus text — ADR-0014), its
+ * date, a Match's name, and a delete control. Once the event's date is in the past it's read-only
+ * by default — the backend still allows the write, but the coach must explicitly choose "edit
+ * anyway" to avoid accidental changes to a done event.
  */
 @Component({
   selector: 'app-event-detail',
@@ -29,8 +29,10 @@ export class EventDetail {
   readonly event = input.required<TimelineEvent | null>();
   /** All events in the current Iteration, scheduledOn-sorted — used to number Trainings. */
   readonly events = input.required<TimelineEvent[]>();
-  /** Each Line's associated Focuses (from the per-line overview), keyed by line id. */
-  readonly focusesByLine = input.required<Map<string, FocusRef[]>>();
+  /** Each Line's most recent earlier Focus text (across the whole timeline, not just this
+   * Iteration), keyed by line id — powers "same focus again". Absent where a Line has never had
+   * one set on an earlier Event. */
+  readonly lastFocusByLine = input.required<Map<string, string>>();
   readonly isNext = input<boolean>(false);
 
   readonly focusChange = output<FocusChange>();
@@ -81,22 +83,26 @@ export class EventDetail {
     this.editAnyway.set(!this.editAnyway());
   }
 
-  protected focusesFor(lineId: string): FocusRef[] {
-    return this.focusesByLine().get(lineId) ?? [];
+  protected focusTextFor(lineId: string): string {
+    return this.event()?.focusAttachments.find((a) => a.lineId === lineId)?.focus ?? '';
   }
 
-  protected selectedFocusId(lineId: string): string {
-    return this.event()?.focusAttachments.find((a) => a.lineId === lineId)?.focusId ?? '';
+  protected lastFocusFor(lineId: string): string | null {
+    return this.lastFocusByLine().get(lineId) ?? null;
   }
 
-  /** Full name of the Focus currently set for a Line — read out below the dropdown so a long,
-   * multi-sentence Focus name isn't stuck truncated inside the closed `<select>`. */
-  protected selectedFocusName(lineId: string): string {
-    return this.event()?.focusAttachments.find((a) => a.lineId === lineId)?.focusName ?? '';
+  protected onFocusInput(lineId: string, value: string): void {
+    const trimmed = value.trim();
+    this.focusChange.emit({ lineId, focus: trimmed ? trimmed : null });
   }
 
-  protected onFocusSelect(lineId: string, value: string): void {
-    this.focusChange.emit({ lineId, focusId: value ? value : null });
+  /** "Gleicher Fokus wie zuletzt": copies that Line's most recent earlier Focus text as this
+   * Event's own text — a plain copy, not a reference (ADR-0014). */
+  protected sameFocusAgain(lineId: string): void {
+    const lastFocus = this.lastFocusFor(lineId);
+    if (lastFocus) {
+      this.focusChange.emit({ lineId, focus: lastFocus });
+    }
   }
 
   protected onDateInput(value: string): void {

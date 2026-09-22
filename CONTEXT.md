@@ -28,17 +28,17 @@ A Line's 0-100 self-assessment of a Skill it's associated with, held as a single
 _Avoid_: score, evaluation, SkillEvaluation
 
 **Development goal**:
-A development target. Shared catalog, not owned per-Line: a Line associates with existing Development goals, and can create new ones from the line UI (ADR-0009), each with a palette color. One or more Development goals give rise to a Focus.
+A development target. Shared catalog, not owned per-Line: a Line associates with existing Development goals, and can create new ones from the line UI (ADR-0009), each with a palette color.
 _Avoid_: Goal (reserved — would collide with a scored goal if that concept is ever modeled; out of scope for this MVP)
 
 **Focus**:
-A reusable item derived from one or more Development goals, attached to one or more Events (per Line, via that Event's Line-Focus-Event link — see Event). Shared catalog, not owned per-Line: a Line associates with existing Focuses, and can create new ones from the line UI (ADR-0009) by naming them and picking one or more originating Development goals. Preserved via soft-delete only — never hard-deleted; deleting a Focus is blocked while any Line is still associated with it. An Event/Focus attachment itself carries no such history: detaching one is a plain delete.
+Free text a coach sets per Line per Event (via that Event's Line-Focus-Event link — see Event), naming what that Line works on for that Training or Match. Not a catalog — there's nothing to associate a Line with outside an Event, and no id to reuse; "same focus again" is a plain copy of a Line's most recent earlier Focus text, not a reference (ADR-0014). Setting an Event's attachments replaces the whole set; leaving a Line out of the set clears its Focus for that Event.
 
 **Iteration**:
 A named group of Events, ordered relative to other Iterations. The unit a coach plans around (e.g. a training block or phase).
 
 **Event**:
-Umbrella term covering both Training and Match — a single kind of thing, distinguished by its Event type rather than by being separate concepts. Belongs to exactly one Iteration and holds a position within it (see Sequence). A Line attaches a Focus to an Event via a three-way Line-Focus-Event link, since a Focus is no longer implicitly one Line's — at most one Focus per Line per Event (ADR-0010). An Event has a fixed set of attending Lines, snapshotted once when the Event is created — every Line active at that moment, for now (ADR-0012); a likely future feature is letting a coach edit that set per Event, so not every Line has to be invited. An Event becomes read-only in the frontend once its `scheduledOn` has passed (ADR-0012) — a default the coach can lift per Event, not a backend restriction.
+Umbrella term covering both Training and Match — a single kind of thing, distinguished by its Event type rather than by being separate concepts. Belongs to exactly one Iteration and holds a position within it (see Sequence). A Line attaches a free-text Focus to an Event via a three-way Line-Focus-Event link — at most one Focus per Line per Event (ADR-0010, ADR-0014). An Event has a fixed set of attending Lines, snapshotted once when the Event is created — every Line active at that moment, for now (ADR-0012); a likely future feature is letting a coach edit that set per Event, so not every Line has to be invited. An Event becomes read-only in the frontend once its `scheduledOn` has passed (ADR-0012) — a default the coach can lift per Event, not a backend restriction.
 _Avoid_: appointment, item
 
 **Event type**:
@@ -56,7 +56,7 @@ _Avoid_: chain (superseded predecessor/successor model)
 
 ## Sample data
 
-The canonical example data for mockups, prototypes, and seed data (see [Seed data content](https://github.com/cyrilleulmi/spongecoach/issues/10)). Use this — not placeholder names — whenever a Line/Player/Skill/Development goal/Focus example is needed.
+The canonical example data for mockups, prototypes, and seed data (see [Seed data content](https://github.com/cyrilleulmi/spongecoach/issues/10)). Use this — not placeholder names — whenever a Line/Player/Skill/Development goal example is needed; a Focus example is just a short German sentence naming what a Line works on (e.g. "Spielaufbau aus der tiefen Zone"), not drawn from a catalog.
 
 **The content is written in German** — the language the team actually uses — even though domain *terms* (entity names, API/JSON fields, DB columns) stay English per [docs/glossary.md](docs/glossary.md). Copy these rows verbatim; don't translate them back to English or substitute English placeholders.
 
@@ -75,12 +75,4 @@ The canonical example data for mockups, prototypes, and seed data (see [Seed dat
 
 **Development goal catalog**: Ballverluste im eigenen Drittel reduzieren, Überzahlspiel verbessern, Kompakte Defensive aufbauen, Abschlüsse aus dem Slot erhöhen
 
-**Focus catalog** (each derived from one Development goal):
-
-| Focus | Development goal |
-|---|---|
-| Spielaufbau aus der tiefen Zone | Kompakte Defensive aufbauen |
-| Abschlussübungen 2-auf-1 | Abschlüsse aus dem Slot erhöhen |
-| Einläufe im Überzahlspiel | Überzahlspiel verbessern |
-| Cross-Pässe unter Druck | Ballverluste im eigenen Drittel reduzieren |
-| Rebound-Kontrolle nach Pad-Abwehr | Abschlüsse aus dem Slot erhöhen |
+**Example Focus text** (each set per Line per Event, not a catalog): Spielaufbau aus der tiefen Zone, Abschlussübungen 2-auf-1, Einläufe im Überzahlspiel, Cross-Pässe unter Druck, Rebound-Kontrolle nach Pad-Abwehr

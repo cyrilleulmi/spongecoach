@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { EventDetail } from './event-detail';
-import { FocusRef } from '../../lines/line.model';
 import { DialLine } from '../dial-palette';
 import { PlayerAttendance, TimelineEvent } from '../iteration.model';
 
@@ -15,15 +14,9 @@ const ATTENDANCE: PlayerAttendance[] = [
   { playerId: 'p-3', playerName: 'Debi', lineIds: ['line-a'], status: 'PENDING', declineMessage: null },
 ];
 
-const FOCUSES = new Map<string, FocusRef[]>([
-  [
-    'line-a',
-    [
-      { id: 'f-1', name: 'Fokus A', goalIds: [] },
-      { id: 'f-2', name: 'Fokus B', goalIds: [] },
-    ],
-  ],
-  ['line-b', [{ id: 'f-3', name: 'Fokus C', goalIds: [] }]],
+const LAST_FOCUS = new Map<string, string>([
+  ['line-a', 'Einläufe im Überzahlspiel'],
+  ['line-b', 'Cross-Pässe unter Druck'],
 ]);
 
 // Far-future dates keep these events "not done" for as long as this suite is maintained.
@@ -44,7 +37,7 @@ const TRAINING: TimelineEvent = {
   type: 'Training',
   name: null,
   scheduledOn: '2099-09-08T18:00',
-  focusAttachments: [{ lineId: 'line-a', lineName: 'Kiwi', focusId: 'f-1', focusName: 'Fokus A' }],
+  focusAttachments: [{ lineId: 'line-a', lineName: 'Kiwi', focus: 'Fokus A' }],
   lines: LINES,
   attendance: ATTENDANCE,
 };
@@ -79,46 +72,73 @@ describe('EventDetail', () => {
     const fixture = TestBed.createComponent(EventDetail);
     fixture.componentRef.setInput('event', event);
     fixture.componentRef.setInput('events', ALL_EVENTS);
-    fixture.componentRef.setInput('focusesByLine', FOCUSES);
+    fixture.componentRef.setInput('lastFocusByLine', LAST_FOCUS);
     fixture.componentRef.setInput('isNext', isNext);
     await fixture.whenStable();
     return fixture;
   }
 
-  it('shows the training number (its rank among Trainings) and a focus dropdown per line, preselecting the set focus', async () => {
+  it('shows the training number (its rank among Trainings) and a focus text field per line, preloaded with the set focus', async () => {
     const fixture = await render(TRAINING);
     expect((fixture.nativeElement.textContent as string)).toContain('Training 2');
 
-    const selects = fixture.nativeElement.querySelectorAll('.focus-select') as NodeListOf<HTMLSelectElement>;
-    expect(selects.length).toBe(2);
-    expect(selects[0].value).toBe('f-1'); // line-a
-    expect(selects[1].value).toBe(''); // line-b, not set
+    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    expect(inputs.length).toBe(2);
+    expect(inputs[0].value).toBe('Fokus A'); // line-a
+    expect(inputs[1].value).toBe(''); // line-b, not set
   });
 
   // spec: ui.set-focus-from-detail
-  it('emits a focusChange with the chosen focus id when a dropdown changes', async () => {
+  it('emits a focusChange with the typed focus text when a field changes', async () => {
     const fixture = await render(TRAINING);
     const changes: unknown[] = [];
     fixture.componentInstance.focusChange.subscribe((c) => changes.push(c));
 
-    const lineBSelect = fixture.nativeElement.querySelectorAll('.focus-select')[1] as HTMLSelectElement;
-    lineBSelect.value = 'f-3';
-    lineBSelect.dispatchEvent(new Event('change'));
+    const lineBInput = fixture.nativeElement.querySelectorAll('.focus-input')[1] as HTMLInputElement;
+    lineBInput.value = 'Abschlussübungen 2-auf-1';
+    lineBInput.dispatchEvent(new Event('change'));
 
-    expect(changes).toEqual([{ lineId: 'line-b', focusId: 'f-3' }]);
+    expect(changes).toEqual([{ lineId: 'line-b', focus: 'Abschlussübungen 2-auf-1' }]);
   });
 
   // spec: ui.clear-focus-from-detail
-  it('emits a focusChange with a null focus when "nicht gesetzt" is chosen', async () => {
+  it('emits a focusChange with a null focus when the field is emptied', async () => {
     const fixture = await render(TRAINING);
     const changes: unknown[] = [];
     fixture.componentInstance.focusChange.subscribe((c) => changes.push(c));
 
-    const lineASelect = fixture.nativeElement.querySelectorAll('.focus-select')[0] as HTMLSelectElement;
-    lineASelect.value = '';
-    lineASelect.dispatchEvent(new Event('change'));
+    const lineAInput = fixture.nativeElement.querySelectorAll('.focus-input')[0] as HTMLInputElement;
+    lineAInput.value = '';
+    lineAInput.dispatchEvent(new Event('change'));
 
-    expect(changes).toEqual([{ lineId: 'line-a', focusId: null }]);
+    expect(changes).toEqual([{ lineId: 'line-a', focus: null }]);
+  });
+
+  // spec: ui.same-focus-again
+  it('shows "same focus again" per line with the last focus text, and emits it as a plain copy on click', async () => {
+    const fixture = await render(TRAINING);
+    const changes: unknown[] = [];
+    fixture.componentInstance.focusChange.subscribe((c) => changes.push(c));
+
+    const buttons = fixture.nativeElement.querySelectorAll('.same-focus-btn') as NodeListOf<HTMLButtonElement>;
+    expect(buttons.length).toBe(2);
+    expect(buttons[1].textContent).toContain('Cross-Pässe unter Druck');
+
+    buttons[1].click();
+
+    expect(changes).toEqual([{ lineId: 'line-b', focus: 'Cross-Pässe unter Druck' }]);
+  });
+
+  it('hides "same focus again" for a line with no earlier focus text', async () => {
+    await TestBed.configureTestingModule({ imports: [EventDetail] }).compileComponents();
+    const fixture = TestBed.createComponent(EventDetail);
+    fixture.componentRef.setInput('event', TRAINING);
+    fixture.componentRef.setInput('events', ALL_EVENTS);
+    fixture.componentRef.setInput('lastFocusByLine', new Map());
+    fixture.componentRef.setInput('isNext', false);
+    await fixture.whenStable();
+
+    expect(fixture.nativeElement.querySelectorAll('.same-focus-btn').length).toBe(0);
   });
 
   it('emits deleteEvent with the event id', async () => {
@@ -132,14 +152,19 @@ describe('EventDetail', () => {
   });
 
   // spec: ui.event-readonly-when-done
-  it('disables the focus selects, date, and delete button for a past event', async () => {
+  it('disables the focus fields, date, and delete button for a past event', async () => {
     const fixture = await render(PAST_TRAINING);
 
-    const selects = fixture.nativeElement.querySelectorAll('.focus-select') as NodeListOf<HTMLSelectElement>;
-    expect(selects[0].disabled).toBe(true);
+    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    expect(inputs[0].disabled).toBe(true);
     expect((fixture.nativeElement.querySelector('.detail-date input') as HTMLInputElement).disabled).toBe(true);
     expect((fixture.nativeElement.querySelector('.delete-btn') as HTMLButtonElement).disabled).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('liegt in der Vergangenheit');
+  });
+
+  it('hides "same focus again" for a read-only (past) event', async () => {
+    const fixture = await render(PAST_TRAINING);
+    expect(fixture.nativeElement.querySelectorAll('.same-focus-btn').length).toBe(0);
   });
 
   // spec: ui.edit-anyway
@@ -148,21 +173,21 @@ describe('EventDetail', () => {
 
     (fixture.nativeElement.querySelector('.link-btn') as HTMLButtonElement).click();
     fixture.detectChanges();
-    let selects = fixture.nativeElement.querySelectorAll('.focus-select') as NodeListOf<HTMLSelectElement>;
-    expect(selects[0].disabled).toBe(false);
+    let inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    expect(inputs[0].disabled).toBe(false);
 
     (fixture.nativeElement.querySelector('.link-btn') as HTMLButtonElement).click();
     fixture.detectChanges();
-    selects = fixture.nativeElement.querySelectorAll('.focus-select') as NodeListOf<HTMLSelectElement>;
-    expect(selects[0].disabled).toBe(true);
+    inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    expect(inputs[0].disabled).toBe(true);
   });
 
   // spec: ui.future-event-editable
   it('does not disable controls for a future event', async () => {
     const fixture = await render(TRAINING);
 
-    const selects = fixture.nativeElement.querySelectorAll('.focus-select') as NodeListOf<HTMLSelectElement>;
-    expect(selects[0].disabled).toBe(false);
+    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLInputElement>;
+    expect(inputs[0].disabled).toBe(false);
     expect(fixture.nativeElement.textContent).not.toContain('liegt in der Vergangenheit');
   });
 

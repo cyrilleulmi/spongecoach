@@ -1,14 +1,15 @@
 Feature: What the coach sees
-  Two screens: "Blöcke" (`/lines`), where a Line's roster, ratings, Development goals and Focuses
-  are managed, and "Team-Übersicht" (`/team`), the Iteration timeline where Events are planned.
-  UI copy is German; domain terms in code and API stay English (docs/glossary.md).
+  Two screens: "Blöcke" (`/lines`), where a Line's roster, ratings and Development goals are
+  managed, and "Team-Übersicht" (`/team`), the Iteration timeline where Events — and each Line's
+  Focus text per Event — are planned. UI copy is German; domain terms in code and API stay English
+  (docs/glossary.md).
 
   Rule: The line screen edits one Line at a time
 
     @spec:ui.first-line-selected
     Scenario: The first Line is selected on arrival
       When the coach opens the line screen
-      Then the first Line is selected and its roster, Skills, Development goals and Focuses are shown
+      Then the first Line is selected and its roster, Skills and Development goals are shown
 
     @spec:ui.switch-line-refetches
     Scenario: Switching Line loads that Line's detail
@@ -39,11 +40,6 @@ Feature: What the coach sees
     @spec:ui.create-skill-auto-associates
     Scenario: A Skill created from the line screen is associated straight away
       When the coach creates a Skill with a chosen color
-      Then it is added to the catalog and associated with the selected Line
-
-    @spec:ui.create-focus-auto-associates
-    Scenario: A Focus created from the line screen is associated straight away
-      When the coach creates a Focus from one or more Development goals
       Then it is added to the catalog and associated with the selected Line
 
     @spec:ui.recolor-from-line-screen
@@ -88,7 +84,7 @@ Feature: What the coach sees
     @spec:ui.event-readonly-when-done
     Scenario: An Event whose datetime has passed cannot be edited
       When the coach selects a done Event
-      Then its name, datetime, Focus selects, attendance controls and delete button are all disabled
+      Then its name, datetime, Focus text fields, attendance controls and delete button are all disabled
 
     @spec:ui.edit-anyway
     Scenario: The coach can lift the lock per Event
@@ -105,13 +101,19 @@ Feature: What the coach sees
 
     @spec:ui.set-focus-from-detail
     Scenario: Setting a Line's Focus for the selected Event
-      When the coach picks a Focus for a Line
+      When the coach types a Focus into a Line's text field and it loses focus
       Then the Event's whole attachment set is saved with that change and the timeline reloads
 
     @spec:ui.clear-focus-from-detail
     Scenario: Clearing a Line's Focus
-      When the coach picks "— nicht gesetzt —"
+      When the coach empties a Line's Focus text field
       Then that Line's attachment is dropped from the saved set
+
+    @spec:ui.same-focus-again
+    Scenario: Repeating a Line's most recent Focus
+      Given a Line has a Focus set on an earlier Event and none on the selected one
+      When the coach chooses "Gleicher Fokus wie zuletzt" for that Line
+      Then that earlier Focus text is copied into the field and saved as this Event's own text, not a reference
 
     @spec:ui.attendance-from-detail
     Scenario: Answering for a Player

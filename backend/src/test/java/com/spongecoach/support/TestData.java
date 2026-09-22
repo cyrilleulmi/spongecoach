@@ -8,7 +8,6 @@ import com.spongecoach.domain.EventAttendanceId;
 import com.spongecoach.domain.EventLinePlayer;
 import com.spongecoach.domain.EventLinePlayerId;
 import com.spongecoach.domain.EventType;
-import com.spongecoach.domain.Focus;
 import com.spongecoach.domain.Iteration;
 import com.spongecoach.domain.Line;
 import com.spongecoach.domain.LineFocusEvent;
@@ -116,16 +115,6 @@ public class TestData {
     }
 
     @Transactional
-    public Focus createFocus(String name, List<UUID> goalIds) {
-        Focus focus = new Focus();
-        focus.id = UUID.randomUUID();
-        focus.name = name;
-        focus.developmentGoals = goalIds.stream().map((UUID id) -> (DevelopmentGoal) DevelopmentGoal.findById(id)).toList();
-        focus.persist();
-        return focus;
-    }
-
-    @Transactional
     public void setRating(UUID lineId, UUID skillId, int rating) {
         LineSkill lineSkill = new LineSkill();
         lineSkill.id = new LineSkillId(lineId, skillId);
@@ -155,9 +144,6 @@ public class TestData {
                 .setParameter(1, lineId)
                 .executeUpdate();
         entityManager.createNativeQuery("delete from line_development_goal where line_id = ?1")
-                .setParameter(1, lineId)
-                .executeUpdate();
-        entityManager.createNativeQuery("delete from line_focus where line_id = ?1")
                 .setParameter(1, lineId)
                 .executeUpdate();
         line.delete();
@@ -200,24 +186,7 @@ public class TestData {
         entityManager.createNativeQuery("delete from line_development_goal where development_goal_id = ?1")
                 .setParameter(1, goalId)
                 .executeUpdate();
-        entityManager.createNativeQuery("delete from focus_development_goal where development_goal_id = ?1")
-                .setParameter(1, goalId)
-                .executeUpdate();
         DevelopmentGoal.deleteById(goalId);
-    }
-
-    @Transactional
-    public void deleteFocus(UUID focusId) {
-        entityManager.createNativeQuery("delete from line_focus_event where focus_id = ?1")
-                .setParameter(1, focusId)
-                .executeUpdate();
-        entityManager.createNativeQuery("delete from line_focus where focus_id = ?1")
-                .setParameter(1, focusId)
-                .executeUpdate();
-        entityManager.createNativeQuery("delete from focus_development_goal where focus_id = ?1")
-                .setParameter(1, focusId)
-                .executeUpdate();
-        Focus.deleteById(focusId);
     }
 
     // --- Iteration timeline (issue #12) ----------------------------------------
@@ -302,12 +271,12 @@ public class TestData {
     }
 
     @Transactional
-    public void attachFocus(UUID eventId, UUID lineId, UUID focusId) {
+    public void attachFocus(UUID eventId, UUID lineId, String focusText) {
         LineFocusEvent attachment = new LineFocusEvent();
         attachment.id = new LineFocusEventId(eventId, lineId);
         attachment.event = Event.findById(eventId);
         attachment.line = Line.findById(lineId);
-        attachment.focus = Focus.findById(focusId);
+        attachment.focus = focusText;
         attachment.persist();
     }
 

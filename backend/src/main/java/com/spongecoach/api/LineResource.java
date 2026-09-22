@@ -12,7 +12,6 @@ import com.spongecoach.domain.EventAttendance;
 import com.spongecoach.domain.EventAttendanceId;
 import com.spongecoach.domain.EventLinePlayer;
 import com.spongecoach.domain.EventLinePlayerId;
-import com.spongecoach.domain.Focus;
 import com.spongecoach.domain.Line;
 import com.spongecoach.domain.LineSkill;
 import com.spongecoach.domain.LineSkillId;
@@ -129,9 +128,6 @@ public class LineResource {
             line.developmentGoals = request.developmentGoalIds().stream()
                     .map(this::findGoalOrThrow)
                     .toList();
-        }
-        if (request.focusIds() != null) {
-            line.focuses = request.focusIds().stream().map(this::findFocusOrThrow).toList();
         }
         return LineDetailDto.from(line, LineSkill.listForLine(lineId));
     }
@@ -262,11 +258,4 @@ public class LineResource {
         return goal;
     }
 
-    private Focus findFocusOrThrow(UUID focusId) {
-        Focus focus = Focus.findById(focusId);
-        if (focus == null || focus.deletedAt != null) {
-            throw new NotFoundException("Focus " + focusId + " not found");
-        }
-        return focus;
-    }
 }

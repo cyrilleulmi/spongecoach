@@ -5,12 +5,12 @@ export interface EventType {
   name: string;
 }
 
-/** One Line's Focus set for an Event, denormalised with names by the read-side timeline. */
+/** One Line's free-text Focus set for an Event, denormalised with the Line name by the read-side
+ * timeline. */
 export interface FocusAttachment {
   lineId: string;
   lineName: string;
-  focusId: string;
-  focusName: string;
+  focus: string;
 }
 
 export type AttendanceStatus = 'PENDING' | 'ATTENDING' | 'DECLINED';

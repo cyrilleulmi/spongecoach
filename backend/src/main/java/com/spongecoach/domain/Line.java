@@ -55,13 +55,6 @@ public class Line extends PanacheEntityBase {
             inverseJoinColumns = @JoinColumn(name = "development_goal_id"))
     public List<DevelopmentGoal> developmentGoals = new ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "line_focus",
-            joinColumns = @JoinColumn(name = "line_id"),
-            inverseJoinColumns = @JoinColumn(name = "focus_id"))
-    public List<Focus> focuses = new ArrayList<>();
-
     public static List<Line> listAllOrderedByName() {
         return list("deletedAt is null order by name asc");
     }

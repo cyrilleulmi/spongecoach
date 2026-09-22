@@ -1,8 +1,7 @@
 Feature: Lines
   A Line is a group of Players who train and play together. Its roster is a selection of the Team's
-  Players, it self-rates Skills, and it associates with Development goals and Focuses from the
-  shared catalogs. Lines are never hard-deleted (ADR-0004) so that Events they attended keep
-  showing them.
+  Players, it self-rates Skills, and it associates with Development goals from the shared catalog.
+  Lines are never hard-deleted (ADR-0004) so that Events they attended keep showing them.
 
   Background:
     Given the single seeded Team
@@ -31,9 +30,8 @@ Feature: Lines
       Given a Line "Bäri" rostering "Rahel"
       And "Bäri" rates the Skill "Passgenauigkeit" at 72
       And "Bäri" is associated with the Development goal "Ballverluste im eigenen Drittel reduzieren"
-      And "Bäri" is associated with the Focus "Cross-Pässe unter Druck"
       When "Bäri" is read by id
-      Then its roster, its Skill ratings, its Development goals and its Focuses come back inline
+      Then its roster, its Skill ratings and its Development goals come back inline
 
     @spec:lines.unknown-is-not-found
     Scenario: An unknown Line

@@ -138,7 +138,7 @@ select:disabled {
   text-align: center;
 }
 
-.focus-select {
+.focus-input {
   flex: 1;
   min-width: 0;
   font-family: inherit;
@@ -159,18 +159,13 @@ select:disabled {
   text-align: center;
 }
 
-/* Below the (necessarily single-line) select, the chosen Focus's full name in a wrapped,
- * comfortably-sized block — so a Focus described in a few sentences stays fully readable, not
- * clipped to whatever fits inside the closed dropdown. */
-.focus-readout {
-  margin: 0;
-  padding: 0.5rem 0.65rem;
-  font-size: 0.86rem;
-  line-height: 1.5;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 0.4rem;
+.same-focus-btn {
+  align-self: flex-start;
+  font-size: 0.74rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .attendance-title {

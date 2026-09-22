@@ -44,7 +44,6 @@ describe('App shell', () => {
     httpMock.expectOne('/api/players').flush([]);
     httpMock.expectOne('/api/skills').flush([]);
     httpMock.expectOne('/api/development-goals').flush([]);
-    httpMock.expectOne('/api/focuses').flush([]);
 
     expect(router.url).toBe('/lines');
   });

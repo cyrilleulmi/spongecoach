@@ -24,6 +24,7 @@ const CUCUMBER_FEATURES = new Set([
   'catalogs.feature',
   'focus-planning.feature',
   'lines.feature',
+  'players.feature',
   'timeline.feature',
 ]);
 

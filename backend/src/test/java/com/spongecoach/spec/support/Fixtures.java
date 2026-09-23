@@ -77,6 +77,26 @@ public class Fixtures {
         return goal.id;
     }
 
+    public UUID playerSkill(String spokenName, String color) {
+        if (world.knows(Kind.PLAYER_SKILL, spokenName)) {
+            return world.id(Kind.PLAYER_SKILL, spokenName);
+        }
+        var skill = testData.createPlayerSkill(world.uniquify(spokenName), color);
+        world.register(Kind.PLAYER_SKILL, spokenName, skill.id, skill.name);
+        world.onCleanup(() -> testData.deletePlayerSkill(skill.id));
+        return skill.id;
+    }
+
+    public UUID playerGoal(String spokenName, String color) {
+        if (world.knows(Kind.PLAYER_GOAL, spokenName)) {
+            return world.id(Kind.PLAYER_GOAL, spokenName);
+        }
+        var goal = testData.createPlayerGoal(world.uniquify(spokenName), color);
+        world.register(Kind.PLAYER_GOAL, spokenName, goal.id, goal.name);
+        world.onCleanup(() -> testData.deletePlayerGoal(goal.id));
+        return goal.id;
+    }
+
     public UUID iteration(String spokenName) {
         if (world.knows(Kind.ITERATION, spokenName)) {
             return world.id(Kind.ITERATION, spokenName);

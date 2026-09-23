@@ -1,0 +1,33 @@
+:host {
+  display: inline-flex;
+  flex: none;
+}
+
+.avatar {
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.sm {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.7rem;
+}
+
+.md {
+  width: 3.1rem;
+  height: 3.1rem;
+  font-size: 1.2rem;
+}
+
+.lg {
+  width: 5rem;
+  height: 5rem;
+  font-size: 2rem;
+}

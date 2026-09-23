@@ -8,7 +8,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { PlayerAvatar } from '../../players/player-avatar/player-avatar';
 import { ChipItem, ManageChips } from '../manage-chips/manage-chips';
 import { RatingBar } from '../rating-bar/rating-bar';
 import { ThemeToggle } from '../../theme/theme-toggle/theme-toggle';
@@ -24,12 +26,13 @@ type ManageSection = 'skills' | 'goals';
 
 @Component({
   selector: 'app-line-overview',
-  imports: [RatingBar, ManageChips, ThemeToggle, ColorPicker],
+  imports: [RatingBar, ManageChips, ThemeToggle, ColorPicker, RouterLink, PlayerAvatar],
   templateUrl: './line-overview.html',
   styleUrl: './line-overview.scss',
 })
 export class LineOverview implements OnInit {
   private readonly api = inject(LineApiService);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly lines = signal<LineSummary[]>([]);
   protected readonly selectedLineId = signal<string | null>(null);
@@ -91,8 +94,10 @@ export class LineOverview implements OnInit {
         this.playerCatalog.set(players);
         this.skillCatalog.set(skills);
         this.goalCatalog.set(goals);
-        if (lines.length > 0) {
-          this.selectLine(lines[0].id);
+        const requested = this.route.snapshot.queryParamMap.get('line');
+        const initial = lines.find((l) => l.id === requested) ?? lines[0];
+        if (initial) {
+          this.selectLine(initial.id);
         }
       },
       error: () => this.errorMessage.set('Blöcke konnten nicht geladen werden. Läuft das Backend?'),
@@ -213,14 +218,6 @@ export class LineOverview implements OnInit {
 
   protected levelOf(rating: number): number {
     return Math.max(1, Math.min(5, Math.round((rating / 100) * 5)));
-  }
-
-  protected initials(name: string): string {
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join('');
   }
 
   protected openRosterDialog(): void {

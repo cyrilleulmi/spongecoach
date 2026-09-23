@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { EventDetail } from './event-detail';
 import { DialLine } from '../dial-palette';
@@ -68,7 +69,7 @@ const ALL_EVENTS: TimelineEvent[] = [OTHER_TRAINING, TRAINING, MATCH, PAST_TRAIN
 
 describe('EventDetail', () => {
   async function render(event: TimelineEvent, isNext = false) {
-    await TestBed.configureTestingModule({ imports: [EventDetail] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [EventDetail], providers: [provideRouter([])] }).compileComponents();
     const fixture = TestBed.createComponent(EventDetail);
     fixture.componentRef.setInput('event', event);
     fixture.componentRef.setInput('events', ALL_EVENTS);
@@ -86,6 +87,19 @@ describe('EventDetail', () => {
     expect(inputs.length).toBe(2);
     expect(inputs[0].value).toBe('Fokus A'); // line-a
     expect(inputs[1].value).toBe(''); // line-b, not set
+  });
+
+  // spec: ui.player-link-from-event
+  it('links each attendance row to that Player, avatar and name', async () => {
+    const fixture = await render(TRAINING);
+    const links = Array.from(
+      fixture.nativeElement.querySelectorAll('.attendance-row .player-link'),
+    ) as HTMLAnchorElement[];
+
+    expect(links.map((a) => a.getAttribute('href')).sort()).toEqual(['/players/p-1', '/players/p-2', '/players/p-3']);
+    const carmela = links.find((a) => a.getAttribute('href') === '/players/p-1')!;
+    expect(carmela.querySelector('app-player-avatar')?.textContent?.trim()).toBe('C');
+    expect(carmela.textContent).toContain('Carmela');
   });
 
   // spec: ui.set-focus-from-detail
@@ -131,7 +145,7 @@ describe('EventDetail', () => {
   });
 
   it('hides "same focus again" for a line with no earlier focus text', async () => {
-    await TestBed.configureTestingModule({ imports: [EventDetail] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [EventDetail], providers: [provideRouter([])] }).compileComponents();
     const fixture = TestBed.createComponent(EventDetail);
     fixture.componentRef.setInput('event', TRAINING);
     fixture.componentRef.setInput('events', ALL_EVENTS);

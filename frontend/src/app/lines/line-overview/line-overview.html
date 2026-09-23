@@ -130,8 +130,10 @@
       <div>
         @for (player of line.players; track player.id) {
           <div class="roster-row">
-            <div class="avatar">{{ initials(player.name) }}</div>
-            <div class="player-name">{{ player.name }}</div>
+            <a class="player-link" [routerLink]="['/players', player.id]">
+              <app-player-avatar [name]="player.name" />
+              <span class="player-name">{{ player.name }}</span>
+            </a>
             <button
               class="remove"
               type="button"

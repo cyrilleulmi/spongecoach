@@ -1,8 +1,9 @@
 Feature: What the coach sees
-  Two screens: "Blöcke" (`/lines`), where a Line's roster, ratings and Development goals are
-  managed, and "Team-Übersicht" (`/team`), the Iteration timeline where Events — and each Line's
-  Focus text per Event — are planned. UI copy is German; domain terms in code and API stay English
-  (docs/glossary.md).
+  Three areas: "Team-Übersicht" (`/team`, the landing screen), the Iteration timeline where Events
+  — and each Line's Focus text per Event — are planned; "Blöcke" (`/lines`), where a Line's roster,
+  ratings and Development goals are managed; and "Spieler" (`/players`, `/players/:id`), the Player
+  list and each Player's own Ratings and Development goals. UI copy is German; domain terms in code
+  and API stay English (docs/glossary.md).
 
   Rule: The line screen edits one Line at a time
 
@@ -153,11 +154,62 @@ Feature: What the coach sees
       When the coach edits a Match's name
       Then the new name is saved and shown on its dial
 
+  Rule: The player screens show each Player's own profile (ADR-0015)
+
+    @spec:ui.player-list
+    Scenario: The Player list
+      When the coach opens the Player list
+      Then every Player is shown with avatar, name and Line badges, each linking to their player screen
+
+    @spec:ui.player-view-shows-profile
+    Scenario: A Player's screen
+      When the coach opens a Player
+      Then their name, initials avatar, Line badges, Player skill Ratings and Player development goals are shown
+
+    @spec:ui.player-not-found
+    Scenario: An unknown Player
+      When the coach opens a Player that does not exist
+      Then a "Spieler nicht gefunden" page is shown
+
+    @spec:ui.player-rating-optimistic
+    Scenario: A Player rating click lands immediately and is undone on failure
+      When the coach clicks a rating segment on a Player skill
+      Then the bar updates before the server answers, and returns to its previous value if the save fails
+
+    @spec:ui.player-goal-toggle-saves-full-set
+    Scenario: Toggling a Player development goal saves the whole set
+      When the coach toggles a Player development goal chip
+      Then the Player's full Player development goal list is saved
+
+    @spec:ui.create-player-skill-auto-associates
+    Scenario: A Player skill created from the player screen is rated straight away
+      When the coach creates a Player skill with a chosen color
+      Then it is added to the Player skill list and rated on that Player
+
+  Rule: Players and Lines link to each other
+
+    @spec:ui.player-link-from-line
+    Scenario: A roster row opens the Player
+      Then each roster row's avatar and name link to that Player, while its remove button stays a separate control
+
+    @spec:ui.player-link-from-event
+    Scenario: An attendance row opens the Player
+      Then each attendance row in the event detail links to that Player, with their avatar
+
+    @spec:ui.line-badge-jumps-to-line
+    Scenario: A Line badge opens that Line
+      When the coach clicks a Line badge on a Player
+      Then the line screen opens with that Line selected
+
   Rule: Shell
 
     @spec:ui.navigation
-    Scenario: Moving between the two screens
-      Then both screens are reachable from the header, and the root path lands on the line screen
+    Scenario: Moving between the screens
+      Then Team-Übersicht, Blöcke and Spieler are reachable from the header
+
+    @spec:ui.default-route-is-team
+    Scenario: Landing on the team overview
+      Then the root path lands on the team overview
 
     @spec:ui.theme-toggle
     Scenario: Light and dark

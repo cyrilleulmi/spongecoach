@@ -6,6 +6,8 @@ public enum Kind {
     PLAYER,
     SKILL,
     GOAL,
+    PLAYER_SKILL,
+    PLAYER_GOAL,
     ITERATION,
     EVENT
 }

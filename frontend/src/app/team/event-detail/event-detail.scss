@@ -275,6 +275,20 @@ select:disabled {
   background: transparent;
 }
 
+.player-link {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.player-link:hover .player-name {
+  text-decoration: underline;
+}
+
 .player-name {
   font-size: 0.78rem;
   font-weight: 600;

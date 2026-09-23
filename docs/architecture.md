@@ -33,6 +33,9 @@ Single hardcoded Team, no auth in v1. UUID primary keys everywhere (ADR-0002).
 ```
 Team 1─* Line ─*─* Player            (line_player: a Player may be on several Lines, ADR-0008)
          Line ─*─* DevelopmentGoal   (line_development_goal)
+Player ─*── PlayerSkillRating ──* PlayerSkill   payload: rating 0-100, overwritten (ADR-0015)
+Player ─*─* PlayerDevelopmentGoal               (player_player_development_goal)
+                                     Player lists are separate from the Line Skill/goal lists
          Line ─*── LineSkill ──* Skill      payload: rating 0-100, overwritten, no history
 Team 1─* Iteration 1─* Event
          Event ──* EventType
@@ -42,7 +45,7 @@ Team 1─* Iteration 1─* Event
          Event ──* LineFocusEvent    (at most one per (Event, Line); `focus` is free text, ADR-0014)
 ```
 
-Soft delete (`deleted_at`) on Line, Skill, DevelopmentGoal (ADR-0004). `Line.color` is assigned
+Soft delete (`deleted_at`) on Line, Skill, DevelopmentGoal, PlayerSkill, PlayerDevelopmentGoal (ADR-0004). `Line.color` is assigned
 once at creation from a fixed 8-color dial palette, so a Line's color survives its own deletion on
 historic Event dials.
 
@@ -71,7 +74,11 @@ Player dropped from one of two attending Lines keeps their single answer through
 | GET | `/api/lines/deleted` | most recently deleted first |
 | POST | `/api/lines/{id}/restore` | |
 | GET/PUT/DELETE | `/api/lines/{id}/skills[/{skillId}]` | `PUT {rating}` 0-100, upserts the association |
-| GET | `/api/players` | the Team pool; seed-only in v1 |
+| GET | `/api/players` | the Team pool, each with its active `lines`; seed-only in v1 |
+| GET | `/api/players/{id}` | `lines`, Player skill `skills` (with rating) and `developmentGoals` inline; 404 if unknown |
+| PUT | `/api/players/{id}` | `{developmentGoalIds?}` — replaces the set wholesale |
+| GET/PUT/DELETE | `/api/players/{id}/skills[/{skillId}]` | `PUT {rating}` 0-100, upserts; Player skills only, a Line Skill id is 404 |
+| GET/POST/PUT | `/api/player-skills`, `/api/player-development-goals` | the Player lists, with a color (ADR-0015) |
 | GET | `/api/event-types` | seeded Training / Match |
 | GET/POST/PUT | `/api/skills`, `/api/development-goals` | shared catalogs with a color |
 | GET | `/api/iterations` | **the timeline**: Iterations by position, Events nested by datetime, each with `focusAttachments`, `lines`, `attendance` |
@@ -87,9 +94,11 @@ Player dropped from one of two attending Lines keeps their single answer through
 
 ## Frontend
 
-Two routes, `/lines` (default) and `/team`.
+Four routes: `/team` (default), `/lines`, `/players`, `/players/:id`. The header nav reads
+Team-Übersicht · Blöcke · Spieler.
 
-- **`/lines`** — one Line at a time. Ratings are optimistic with rollback; every other association
+- **`/lines`** — one Line at a time; `?line=<id>` preselects one (unknown id → first Line), which
+  is how a Line badge elsewhere jumps here. Roster rows link to the player screen. Ratings are optimistic with rollback; every other association
   edit sends the full id array and refetches. The roster dialog stages changes and commits once on
   "Fertig". New Skills / Development goals are created from here and auto-associated (ADR-0009).
   Focus is not managed here (ADR-0014) — it's set per Event from `/team`.
@@ -97,8 +106,13 @@ Two routes, `/lines` (default) and `/team`.
   attending Line, lit in that Line's color when the Line has a Focus set — so a dial reads as
   "how much of this session is planned". A Line's Focus is a plain text field in the event detail
   panel; "same focus again" copies that Line's most recent earlier Focus text into it (ADR-0014).
-  Roster icons under the dial show each Player's answer. The **next** Event is the first, in
+  Roster icons under the dial show each Player's answer (not linked — too small a target);
+  attendance rows in the event detail link to the player screen. The **next** Event is the first, in
   Iteration-then-datetime order, whose datetime has not passed.
+- **`/players`** — every Player with an initials avatar (`PlayerAvatar`), name and clickable Line
+  badges (`LineBadge`). **`/players/:id`** — that Player's Player skill Ratings (optimistic, like
+  Lines) and Player development goals (full-set save); new ones are created here and associated
+  straight away. A 404 renders "Spieler nicht gefunden".
 - **Read-only past Events** are a frontend default, not a backend rule (ADR-0012): an Event whose
   datetime has passed renders disabled, and the coach can lift the lock per Event with "Trotzdem
   bearbeiten". The lock returns when another Event is selected.

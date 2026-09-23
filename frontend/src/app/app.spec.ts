@@ -21,7 +21,7 @@ describe('App shell', () => {
   afterEach(() => httpMock.verify());
 
   // spec: ui.navigation
-  it('renders the two top-level nav links', async () => {
+  it('renders the three top-level nav links', async () => {
     const fixture = TestBed.createComponent(App);
     await router.navigateByUrl('/team');
     fixture.detectChanges();
@@ -32,19 +32,19 @@ describe('App shell', () => {
     httpMock.match('/api/lines').forEach((r) => r.flush([]));
 
     const links = Array.from(fixture.nativeElement.querySelectorAll('.app-nav a')) as HTMLElement[];
-    expect(links.map((a) => a.textContent?.trim())).toEqual(['Blöcke', 'Team-Übersicht']);
+    expect(links.map((a) => a.textContent?.trim())).toEqual(['Team-Übersicht', 'Blöcke', 'Spieler']);
   });
 
-  it('redirects the empty path to the per-line overview', async () => {
+  // spec: ui.default-route-is-team
+  it('redirects the empty path to the team overview', async () => {
     const fixture = TestBed.createComponent(App);
     await router.navigateByUrl('');
     fixture.detectChanges();
 
-    httpMock.expectOne('/api/lines').flush([]);
-    httpMock.expectOne('/api/players').flush([]);
-    httpMock.expectOne('/api/skills').flush([]);
-    httpMock.expectOne('/api/development-goals').flush([]);
+    httpMock.match('/api/iterations').forEach((r) => r.flush([]));
+    httpMock.match('/api/event-types').forEach((r) => r.flush([]));
+    httpMock.match('/api/lines').forEach((r) => r.flush([]));
 
-    expect(router.url).toBe('/lines');
+    expect(router.url).toBe('/team');
   });
 });

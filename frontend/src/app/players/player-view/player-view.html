@@ -1,0 +1,109 @@
+@if (errorMessage(); as message) {
+  <p class="error-banner" role="alert">{{ message }}</p>
+}
+
+@if (notFound()) {
+  <div class="not-found">
+    <h1>Spieler nicht gefunden</h1>
+    <p class="empty">Diesen Spieler gibt es nicht (mehr).</p>
+    <a class="btn" routerLink="/players">Zur Spielerliste</a>
+  </div>
+} @else if (detail(); as player) {
+  <header class="page-head">
+    <div class="identity">
+      <app-player-avatar [name]="player.name" size="lg" />
+      <div>
+        <a class="eyebrow back" routerLink="/players">&larr; Spieler</a>
+        <h1>{{ player.name }}</h1>
+        <div class="line-badges">
+          @for (line of player.lines; track line.id) {
+            <app-line-badge [line]="line" />
+          } @empty {
+            <span class="empty">In keinem Block.</span>
+          }
+        </div>
+      </div>
+    </div>
+    <app-theme-toggle />
+  </header>
+
+  <div class="shell">
+    <div class="card skills">
+      <div class="section-title">
+        <h2>Skills</h2>
+        <button class="btn" type="button" (click)="toggleManage('skills')">Verwalten</button>
+      </div>
+      @if (player.skills.length === 0) {
+        <p class="empty">Noch keine Skills.</p>
+      }
+      @for (skill of player.skills; track skill.skillId) {
+        <div class="skill-row">
+          <div class="skill-top">
+            <span class="dot" [style.background]="skill.color"></span>
+            <span class="skill-name">{{ skill.name }}</span>
+            <span class="skill-level num">{{ levelOf(skill.rating) }}/5</span>
+          </div>
+          <app-rating-bar
+            [rating]="skill.rating"
+            [color]="skill.color"
+            (levelChange)="setRating(skill.skillId, $event)"
+          />
+        </div>
+      }
+      @if (openSection() === 'skills') {
+        <div class="manage-box">
+          <form class="create-row" (submit)="$event.preventDefault(); createSkill()">
+            <input
+              type="text"
+              placeholder="Neuer Skill"
+              [value]="newSkillName()"
+              (input)="newSkillName.set($any($event.target).value)"
+            />
+            <app-color-picker [color]="newSkillColor()" (colorChange)="newSkillColor.set($event)" />
+            <button type="submit" class="btn">Anlegen</button>
+          </form>
+          <app-manage-chips
+            [items]="skillChipItems()"
+            [associatedIds]="associatedSkillIds()"
+            (toggle)="toggleSkill($event)"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="card goals">
+      <div class="section-title">
+        <h2>Ziele</h2>
+        <button class="btn" type="button" (click)="toggleManage('goals')">Verwalten</button>
+      </div>
+      @if (player.developmentGoals.length === 0) {
+        <p class="empty">Noch keine Ziele.</p>
+      }
+      @for (goal of player.developmentGoals; track goal.id) {
+        <div class="goal-item">
+          <span class="dot" [style.background]="goal.color"></span>
+          <span class="goal-name">{{ goal.name }}</span>
+        </div>
+      }
+      @if (openSection() === 'goals') {
+        <div class="manage-box">
+          <form class="create-row" (submit)="$event.preventDefault(); createGoal()">
+            <input
+              type="text"
+              placeholder="Neues Ziel"
+              [value]="newGoalName()"
+              (input)="newGoalName.set($any($event.target).value)"
+            />
+            <app-color-picker [color]="newGoalColor()" (colorChange)="newGoalColor.set($event)" />
+            <button type="submit" class="btn">Anlegen</button>
+          </form>
+          <app-manage-chips
+            [items]="goalChipItems()"
+            [associatedIds]="associatedGoalIds()"
+            (toggle)="toggleGoal($event)"
+          />
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -15,6 +15,10 @@ import com.spongecoach.domain.LineFocusEventId;
 import com.spongecoach.domain.LineSkill;
 import com.spongecoach.domain.LineSkillId;
 import com.spongecoach.domain.Player;
+import com.spongecoach.domain.PlayerDevelopmentGoal;
+import com.spongecoach.domain.PlayerSkill;
+import com.spongecoach.domain.PlayerSkillRating;
+import com.spongecoach.domain.PlayerSkillRatingId;
 import com.spongecoach.domain.Skill;
 import com.spongecoach.domain.Team;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -91,7 +95,69 @@ public class TestData {
         entityManager.createNativeQuery("delete from event_attendance where player_id = ?1")
                 .setParameter(1, playerId)
                 .executeUpdate();
+        entityManager.createNativeQuery("delete from player_skill_rating where player_id = ?1")
+                .setParameter(1, playerId)
+                .executeUpdate();
+        entityManager.createNativeQuery("delete from player_player_development_goal where player_id = ?1")
+                .setParameter(1, playerId)
+                .executeUpdate();
         Player.deleteById(playerId);
+    }
+
+    @Transactional
+    public PlayerSkill createPlayerSkill(String name, String color) {
+        PlayerSkill skill = new PlayerSkill();
+        skill.id = UUID.randomUUID();
+        skill.name = name;
+        skill.color = color;
+        skill.persist();
+        return skill;
+    }
+
+    @Transactional
+    public PlayerDevelopmentGoal createPlayerGoal(String name, String color) {
+        PlayerDevelopmentGoal goal = new PlayerDevelopmentGoal();
+        goal.id = UUID.randomUUID();
+        goal.name = name;
+        goal.color = color;
+        goal.persist();
+        return goal;
+    }
+
+    @Transactional
+    public void setPlayerRating(UUID playerId, UUID playerSkillId, int rating) {
+        PlayerSkillRating playerRating = new PlayerSkillRating();
+        playerRating.id = new PlayerSkillRatingId(playerId, playerSkillId);
+        playerRating.player = Player.findById(playerId);
+        playerRating.playerSkill = PlayerSkill.findById(playerSkillId);
+        playerRating.rating = rating;
+        playerRating.persist();
+    }
+
+    @Transactional
+    public void linkPlayerGoal(UUID playerId, UUID playerGoalId) {
+        entityManager.createNativeQuery(
+                        "insert into player_player_development_goal (player_id, player_development_goal_id) values (?1, ?2)")
+                .setParameter(1, playerId)
+                .setParameter(2, playerGoalId)
+                .executeUpdate();
+    }
+
+    @Transactional
+    public void deletePlayerSkill(UUID playerSkillId) {
+        entityManager.createNativeQuery("delete from player_skill_rating where player_skill_id = ?1")
+                .setParameter(1, playerSkillId)
+                .executeUpdate();
+        PlayerSkill.deleteById(playerSkillId);
+    }
+
+    @Transactional
+    public void deletePlayerGoal(UUID playerGoalId) {
+        entityManager.createNativeQuery(
+                        "delete from player_player_development_goal where player_development_goal_id = ?1")
+                .setParameter(1, playerGoalId)
+                .executeUpdate();
+        PlayerDevelopmentGoal.deleteById(playerGoalId);
     }
 
     @Transactional

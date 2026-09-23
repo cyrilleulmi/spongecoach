@@ -27,6 +27,9 @@ A configurable attribute, seeded with defaults, that a Line self-rates. Shared a
 A Line's 0-100 self-assessment of a Skill it's linked to, held as a single current value with no history (not tied to an individual Player).
 _Avoid_: score, evaluation
 
+**Player skill** / **Player rating** / **Player development goal** (German: *Skill* / *Bewertung* / *Ziel*):
+A Player's own Skills, Ratings and Development goals — separate lists from the Line ones (ADR-0015). The UI uses the same German words as for Lines.
+
 **Development goal** (German: *Ziel*):
 A development target. Shared across Lines — a Line links to existing Development goals.
 _Avoid_: Goal (reserved — would collide with a scored goal/Tor if that concept is ever modeled; out of scope for this MVP)

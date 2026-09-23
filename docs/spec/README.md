@@ -4,7 +4,7 @@ This folder is the **behavioural source of truth** for SpongeCoach: what the app
 language, independent of Java/TypeScript. `CONTEXT.md` defines the *words*; `docs/adr/` records the
 *decisions*; these `.feature` files record the *behaviour*.
 
-The five backend feature files are **run** by Cucumber against the real HTTP API. `ui.feature` is
+The six backend feature files are **run** by Cucumber against the real HTTP API. `ui.feature` is
 not — it is proven by the frontend suites and traced by marker comment. ADR-0013 records why.
 
 ## Layers
@@ -16,6 +16,7 @@ not — it is proven by the frontend suites and traced by marker comment. ADR-00
 | `timeline.feature` | Iterations, Events, scheduling | `TimelineSteps.java` |
 | `focus-planning.feature` | The Line-Focus-Event link | `FocusSteps.java` |
 | `attendance.feature` | Attendance snapshot and answers | `AttendanceSteps.java` |
+| `players.feature` | Player list/detail, Player ratings and development goals | `PlayerSteps.java` |
 | `ui.feature` | Screen behaviour a coach sees | `frontend/src/app/**/*.spec.ts`, `frontend/e2e/*.spec.ts` |
 
 Backend scenarios are black-box over the HTTP API: a `Given` is fixture state, a `When` is one

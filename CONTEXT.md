@@ -14,7 +14,16 @@ A group of Players who train and play together. A Line's roster is a selection o
 _Avoid_: Block (German term, code/API stays English), squad
 
 **Player**:
-A member of the Team, associated with zero or more Lines. Team-scoped like the Skill/Development goal/Focus catalogs; created by seed only in v1 (no create-Player endpoint or UI).
+A member of the Team, associated with zero or more Lines. Team-scoped like the Skill/Development goal/Focus catalogs; created by seed only in v1 (no create-Player endpoint or UI). Carries their own Player ratings and Player development goals (ADR-0015); shown with an initials avatar, no photo.
+
+**Player skill**:
+A Skill a Player is rated on. Its own list with a palette color, separate from the Line Skill list — no shared rows, and a Line Skill can't be rated on a Player (ADR-0015). Called "Skill" in the UI. Created from the player screen.
+
+**Player rating**:
+A Player's 0-100 Rating on a Player skill, one current value per (Player, Player skill), overwritten on each update, no history. Independent of any Line Rating — neither rolls up into the other.
+
+**Player development goal**:
+A Development goal for one Player. Its own list with a palette color, separate from the Line Development goal list (ADR-0015). Called "Ziel" in the UI.
 
 **Roster**:
 The set of Players associated with a Line — a Line↔Player selection, not ownership (`line_player` n:n).
@@ -24,7 +33,7 @@ _Avoid_: squad, lineup
 A configurable attribute a Line self-rates, seeded with defaults. Shared catalog, not owned per-Line: a Line associates with an existing Skill rather than holding its own copy, so editing the catalog row is visible to every Line linked to it. Coaches can create new Skills from the line UI (ADR-0009); each carries a color chosen from a fixed palette.
 
 **Rating**:
-A Line's 0-100 self-assessment of a Skill it's associated with, held as a single current value on that Line-Skill association and overwritten on each update. No history is kept. Not tied to an individual Player.
+A Line's 0-100 self-assessment of a Skill it's associated with, held as a single current value on that Line-Skill association and overwritten on each update. No history is kept. Not tied to an individual Player — a Player's own assessment is a Player rating.
 _Avoid_: score, evaluation, SkillEvaluation
 
 **Development goal**:

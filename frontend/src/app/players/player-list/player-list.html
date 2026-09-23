@@ -1,0 +1,32 @@
+@if (errorMessage(); as message) {
+  <p class="error-banner" role="alert">{{ message }}</p>
+}
+
+<header class="page-head">
+  <div>
+    <p class="eyebrow">Team</p>
+    <h1>Spieler</h1>
+  </div>
+  <app-theme-toggle />
+</header>
+
+<div class="shell">
+  @if (loaded() && players().length === 0) {
+    <p class="empty">Noch keine Spieler.</p>
+  }
+  <ul class="player-rows">
+    @for (player of players(); track player.id) {
+      <li class="player-row">
+        <a class="player-link" [routerLink]="['/players', player.id]">
+          <app-player-avatar [name]="player.name" />
+          <span class="player-name">{{ player.name }}</span>
+        </a>
+        <span class="line-badges">
+          @for (line of player.lines; track line.id) {
+            <app-line-badge [line]="line" />
+          }
+        </span>
+      </li>
+    }
+  </ul>
+</div>

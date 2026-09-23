@@ -17,7 +17,7 @@ Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/do
 `docs/spec/*.feature` is the behavioural source of truth, and `docs/architecture.md` the map of how
 the pieces fit. When behaviour changes, change the feature file in the same commit as the code.
 
-The five backend feature files are **executed** by Cucumber (`SpecTest`) and are the backend test
+The six backend feature files are **executed** by Cucumber (`SpecTest`) and are the backend test
 suite — there are no separate resource-layer tests. Changing backend behaviour means editing the
 scenario and its step definition in `com.spongecoach.spec.steps`; never create a fixture row in a
 step except through `Fixtures`. `ui.feature` is the exception: it stays traced to the frontend
@@ -35,3 +35,9 @@ Current wayfinder map: [SpongeCoach: floorball team collaboration MVP](https://g
 ## Git
 
 Always `git add` the necessary changes once a change is finished, so the working tree reflects completed work. This does not authorize committing — only staging; still ask before creating commits.
+
+## Planning
+
+- Be extremely concise. Sacrifice grammar for concision — plans are scannable, not prose.
+- End every plan with a list of unresolved questions: edge cases, error handling, unclear requirements — ask before proceeding.
+- End every plan with a numbered list of concrete steps, as the last thing in the plan, so it's visible without scrolling up.

@@ -94,7 +94,10 @@
           [class.status-declined]="row.status === 'DECLINED'"
           [class.status-pending]="row.status === 'PENDING'"
         >
-          <span class="player-name">{{ row.playerName }}</span>
+          <a class="player-link" [routerLink]="['/players', row.playerId]">
+            <app-player-avatar [name]="row.playerName" size="sm" />
+            <span class="player-name">{{ row.playerName }}</span>
+          </a>
           <span class="line-badges">
             @for (lineId of row.lineIds; track lineId) {
               <span class="line-badge" [style.background]="lineColor(lineId)">{{ lineName(lineId) }}</span>

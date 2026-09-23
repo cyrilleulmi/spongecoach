@@ -1,6 +1,8 @@
+import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { LineOverview } from './line-overview';
 import { LineDetail } from '../line.model';
 
@@ -30,7 +32,7 @@ describe('LineOverview', () => {
   async function render() {
     await TestBed.configureTestingModule({
       imports: [LineOverview],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
 
@@ -205,6 +207,41 @@ describe('LineOverview', () => {
   function openMenu(fixture: { nativeElement: HTMLElement }): void {
     (fixture.nativeElement.querySelector('.line-menu .icon-btn') as HTMLButtonElement).click();
   }
+
+  // spec: ui.player-link-from-line
+  it('links each roster row to that Player, keeping the remove button outside the link', async () => {
+    const fixture = await render();
+    const row = fixture.nativeElement.querySelector('.roster-row') as HTMLElement;
+    const link = row.querySelector('.player-link') as HTMLAnchorElement;
+
+    expect(link.getAttribute('href')).toBe('/players/player-1');
+    expect(link.textContent).toContain('Carmela');
+    expect(link.querySelector('.remove')).toBeNull();
+    expect(row.querySelector('.remove')).not.toBeNull();
+  });
+
+  // spec: ui.line-badge-jumps-to-line
+  it('selects the Line named by the ?line= query param instead of the first one', async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: 'lines', component: LineOverview }]),
+      ],
+    }).compileComponents();
+    httpMock = TestBed.inject(HttpTestingController);
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/lines?line=line-b');
+    httpMock.expectOne('/api/lines').flush([LINE_A, LINE_B]);
+    httpMock.expectOne('/api/players').flush(PLAYERS);
+    httpMock.expectOne('/api/skills').flush([SKILL]);
+    httpMock.expectOne('/api/development-goals').flush([GOAL, GOAL_2]);
+    httpMock.expectOne('/api/lines/line-b').flush(detailFor(LINE_B));
+    harness.detectChanges();
+
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('Bäri');
+  });
 
   // spec: ui.line-lifecycle-menu
   it('when creating a line via the "..." menu, POSTs the name and selects the new line', async () => {

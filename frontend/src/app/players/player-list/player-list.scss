@@ -1,0 +1,100 @@
+:host {
+  display: block;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Karla', ui-sans-serif, system-ui, sans-serif;
+  min-height: 100%;
+}
+
+h1 {
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 2rem;
+  margin: 0;
+}
+
+.error-banner {
+  margin: 0;
+  padding: 0.75rem 2rem;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin: 0 0 0.2rem;
+}
+
+.page-head {
+  padding: 1.5rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.shell {
+  padding: 2rem;
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.empty {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.player-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.player-row:last-child {
+  border-bottom: none;
+}
+
+.player-link {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.player-link:hover .player-name {
+  text-decoration: underline;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.line-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}

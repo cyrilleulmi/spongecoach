@@ -1,5 +1,7 @@
 import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CatalogRef } from '../../lines/line.model';
+import { PlayerAvatar } from '../../players/player-avatar/player-avatar';
 import { AttendanceStatus, PlayerAttendance, TimelineEvent } from '../iteration.model';
 
 export interface FocusChange {
@@ -22,6 +24,7 @@ export interface AttendanceChange {
  */
 @Component({
   selector: 'app-event-detail',
+  imports: [RouterLink, PlayerAvatar],
   templateUrl: './event-detail.html',
   styleUrl: './event-detail.scss',
 })

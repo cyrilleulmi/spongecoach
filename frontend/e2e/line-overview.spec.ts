@@ -70,7 +70,7 @@ async function mockApi(page: Page) {
 test.describe('Per-line overview page', () => {
   test('shows the roster, skills, and goals for the selected line', async ({ page }) => {
     await mockApi(page);
-    await page.goto('/');
+    await page.goto('/lines');
 
     await expect(page.getByRole('heading', { name: 'Kiwi', exact: true })).toBeVisible();
     await expect(page.locator('.roster-row').getByText('Carmela')).toBeVisible();
@@ -80,7 +80,7 @@ test.describe('Per-line overview page', () => {
 
   test('lets the coach rate a skill by clicking a segment of the bar', async ({ page }) => {
     await mockApi(page);
-    await page.goto('/');
+    await page.goto('/lines');
 
     await expect(page.getByText('3/5')).toBeVisible();
 
@@ -91,7 +91,7 @@ test.describe('Per-line overview page', () => {
 
   test('lets the coach add an existing team player to the roster via the dialog', async ({ page }) => {
     await mockApi(page);
-    await page.goto('/');
+    await page.goto('/lines');
 
     await expect(page.locator('.roster-row')).toHaveCount(1);
 
@@ -107,7 +107,7 @@ test.describe('Per-line overview page', () => {
 
   test('opens the goal manage panel to show catalog chips', async ({ page }) => {
     await mockApi(page);
-    await page.goto('/');
+    await page.goto('/lines');
 
     // Buttons in order: Kader, Skills, Ziele, Fokusse.
     await page.getByRole('button', { name: 'Verwalten' }).nth(2).click();
@@ -117,7 +117,7 @@ test.describe('Per-line overview page', () => {
 
   test('lets the coach create a new skill from the manage panel', async ({ page }) => {
     await mockApi(page);
-    await page.goto('/');
+    await page.goto('/lines');
 
     // Open the Skills manage panel (2nd "Verwalten": Kader, Skills, …).
     await page.getByRole('button', { name: 'Verwalten' }).nth(1).click();

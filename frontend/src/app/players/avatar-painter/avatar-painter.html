@@ -1,0 +1,120 @@
+<div class="backdrop">
+  <section
+    #dialog
+    class="painter"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="painter-title"
+    tabindex="-1"
+  >
+    <header class="painter-head">
+      <div>
+        <p class="eyebrow">{{ playerName() }}</p>
+        <h2 id="painter-title">Profilbild malen</h2>
+      </div>
+      @if (existingUrl()) {
+        <div class="segmented" role="group" aria-label="Ausgangsbild">
+          <button type="button" [attr.aria-pressed]="mode() === 'edit'" (click)="startFrom('edit')">
+            Bearbeiten
+          </button>
+          <button type="button" [attr.aria-pressed]="mode() === 'new'" (click)="startFrom('new')">
+            Neu
+          </button>
+        </div>
+      }
+    </header>
+
+    <div class="painter-body">
+      <div class="stage-wrap">
+        <div class="stage" [class]="'tool-' + tool()">
+          <canvas
+            #canvas
+            class="canvas"
+            [width]="canvasSize"
+            [height]="canvasSize"
+            aria-label="Malfläche"
+            (pointerdown)="onPointerDown($event)"
+            (pointermove)="onPointerMove($event)"
+            (pointerup)="onPointerUp()"
+            (pointercancel)="onPointerUp()"
+            (lostpointercapture)="onPointerUp()"
+          ></canvas>
+          <div class="crop-guide" aria-hidden="true"></div>
+        </div>
+        <p class="hint">Nur was im Kreis ist, wird angezeigt.</p>
+      </div>
+
+      <div class="controls">
+        <div class="previews" aria-label="Vorschau">
+          <canvas #previewLarge class="preview lg" width="160" height="160"></canvas>
+          <canvas #previewSmall class="preview sm" width="48" height="48"></canvas>
+        </div>
+
+        <div class="group" role="group" aria-label="Werkzeug">
+          @for (item of tools; track item.id) {
+            <button
+              type="button"
+              class="tool"
+              [attr.aria-pressed]="tool() === item.id"
+              (click)="tool.set(item.id)"
+            >
+              <span class="tool-icon" aria-hidden="true">{{ item.icon }}</span>
+              {{ item.label }}
+            </button>
+          }
+        </div>
+
+        <div class="group sizes" role="group" aria-label="Pinselgrösse">
+          @for (size of sizes; track size.px) {
+            <button
+              type="button"
+              class="size"
+              [attr.aria-pressed]="brushSize() === size.px"
+              [attr.aria-label]="'Grösse ' + size.label"
+              (click)="brushSize.set(size.px)"
+            >
+              <span class="size-dot" [style.width.px]="size.px / 2 + 4" [style.height.px]="size.px / 2 + 4"></span>
+            </button>
+          }
+        </div>
+
+        <div class="palette" role="group" aria-label="Farbe">
+          @for (swatch of colors; track swatch) {
+            <button
+              type="button"
+              class="swatch"
+              [style.background]="swatch"
+              [attr.aria-pressed]="color() === swatch"
+              [attr.aria-label]="'Farbe ' + swatch"
+              (click)="color.set(swatch)"
+            ></button>
+          }
+          <label class="swatch custom" title="Eigene Farbe">
+            <span class="visually-hidden">Eigene Farbe</span>
+            <input type="color" [value]="color()" (input)="color.set($any($event.target).value)" />
+          </label>
+        </div>
+
+        <div class="group">
+          <button type="button" class="btn" [disabled]="!canUndo()" (click)="undo()">↶ Rückgängig</button>
+          <button type="button" class="btn" [disabled]="!canRedo()" (click)="redo()">↷ Wiederholen</button>
+        </div>
+      </div>
+    </div>
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    <footer class="painter-foot">
+      @if (existingUrl()) {
+        <button type="button" class="btn danger" (click)="onRemove()">Entfernen</button>
+      }
+      <span class="spacer"></span>
+      <button type="button" class="btn" (click)="onCancel()">Abbrechen</button>
+      <button type="button" class="btn primary" [disabled]="saving()" (click)="onSave()">
+        {{ saving() ? 'Speichert…' : 'Speichern' }}
+      </button>
+    </footer>
+  </section>
+</div>

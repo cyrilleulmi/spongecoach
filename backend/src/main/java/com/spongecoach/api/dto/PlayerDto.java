@@ -4,9 +4,9 @@ import com.spongecoach.domain.Player;
 
 import java.util.UUID;
 
-public record PlayerDto(UUID id, String name) {
+public record PlayerDto(UUID id, String name, Long avatarVersion) {
 
     public static PlayerDto from(Player player) {
-        return new PlayerDto(player.id, player.name);
+        return new PlayerDto(player.id, player.name, player.avatarVersion());
     }
 }

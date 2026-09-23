@@ -18,7 +18,11 @@
     @for (player of players(); track player.id) {
       <li class="player-row">
         <a class="player-link" [routerLink]="['/players', player.id]">
-          <app-player-avatar [name]="player.name" />
+          <app-player-avatar
+            [name]="player.name"
+            [playerId]="player.id"
+            [avatarVersion]="player.avatarVersion"
+          />
           <span class="player-name">{{ player.name }}</span>
         </a>
         <span class="line-badges">

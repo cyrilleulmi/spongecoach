@@ -9,9 +9,9 @@ const LINES: DialLine[] = [
 ];
 
 const ATTENDANCE: PlayerAttendance[] = [
-  { playerId: 'p-1', playerName: 'Carmela', lineIds: ['line-a'], status: 'ATTENDING', declineMessage: null },
-  { playerId: 'p-2', playerName: 'Rahel', lineIds: ['line-b'], status: 'DECLINED', declineMessage: 'Verletzt' },
-  { playerId: 'p-3', playerName: 'Debi', lineIds: ['line-a'], status: 'PENDING', declineMessage: null },
+  { playerId: 'p-1', playerName: 'Carmela', avatarVersion: null, lineIds: ['line-a'], status: 'ATTENDING', declineMessage: null },
+  { playerId: 'p-2', playerName: 'Rahel', avatarVersion: null, lineIds: ['line-b'], status: 'DECLINED', declineMessage: 'Verletzt' },
+  { playerId: 'p-3', playerName: 'Debi', avatarVersion: null, lineIds: ['line-a'], status: 'PENDING', declineMessage: null },
 ];
 
 const EVENTS: TimelineEvent[] = [

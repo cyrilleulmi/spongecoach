@@ -20,6 +20,7 @@ export type AttendanceStatus = 'PENDING' | 'ATTENDING' | 'DECLINED';
 export interface PlayerAttendance {
   playerId: string;
   playerName: string;
+  avatarVersion: number | null;
   lineIds: string[];
   status: AttendanceStatus;
   declineMessage: string | null;

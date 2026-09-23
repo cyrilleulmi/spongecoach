@@ -4,6 +4,11 @@ import { Observable } from 'rxjs';
 import { CatalogRef } from '../lines/line.model';
 import { PlayerDetail, PlayerSkillRating, PlayerSummary } from './player.model';
 
+/** The Avatar image URL; the version makes each saved painting its own, cacheable URL. */
+export function avatarUrl(playerId: string, avatarVersion: number): string {
+  return `/api/players/${playerId}/avatar?v=${avatarVersion}`;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PlayerApiService {
   private readonly http = inject(HttpClient);
@@ -28,7 +33,17 @@ export class PlayerApiService {
     return this.http.delete<void>(`/api/players/${playerId}/skills/${skillId}`);
   }
 
-  listSkillCatalog(): Observable<CatalogRef[]> {
+  saveAvatar(playerId: string, png: Blob): Observable<PlayerDetail> {
+    return this.http.put<PlayerDetail>(`/api/players/${playerId}/avatar`, png, {
+      headers: { 'Content-Type': 'image/png' },
+    });
+  }
+
+  removeAvatar(playerId: string): Observable<void> {
+    return this.http.delete<void>(`/api/players/${playerId}/avatar`);
+  }
+
+  listSkillCatalog():Observable<CatalogRef[]> {
     return this.http.get<CatalogRef[]>('/api/player-skills');
   }
 

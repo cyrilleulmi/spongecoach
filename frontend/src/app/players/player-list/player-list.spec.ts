@@ -6,8 +6,8 @@ import { PlayerList } from './player-list';
 import { PlayerSummary } from '../player.model';
 
 const PLAYERS: PlayerSummary[] = [
-  { id: 'p-1', name: 'Carmela', lines: [{ id: 'line-a', name: 'Kiwi', color: '#4c8c3d' }] },
-  { id: 'p-2', name: 'Stocki', lines: [] },
+  { id: 'p-1', name: 'Carmela', lines: [{ id: 'line-a', name: 'Kiwi', color: '#4c8c3d' }], avatarVersion: null },
+  { id: 'p-2', name: 'Stocki', lines: [], avatarVersion: null },
 ];
 
 describe('PlayerList', () => {

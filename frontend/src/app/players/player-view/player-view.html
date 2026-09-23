@@ -11,7 +11,21 @@
 } @else if (detail(); as player) {
   <header class="page-head">
     <div class="identity">
-      <app-player-avatar [name]="player.name" size="lg" />
+      <button
+        type="button"
+        class="avatar-button"
+        aria-label="Profilbild malen"
+        title="Profilbild malen"
+        (click)="openPainter()"
+      >
+        <app-player-avatar
+          [name]="player.name"
+          [playerId]="player.id"
+          [avatarVersion]="player.avatarVersion"
+          size="lg"
+        />
+        <span class="avatar-edit" aria-hidden="true">🖌️</span>
+      </button>
       <div>
         <a class="eyebrow back" routerLink="/players">&larr; Spieler</a>
         <h1>{{ player.name }}</h1>
@@ -106,4 +120,16 @@
       }
     </div>
   </div>
+}
+
+@if (painterOpen() && detail(); as player) {
+  <app-avatar-painter
+    [playerName]="player.name"
+    [existingUrl]="currentAvatarUrl()"
+    [saving]="savingAvatar()"
+    [error]="avatarError()"
+    (save)="saveAvatar($event)"
+    (remove)="removeAvatar()"
+    (cancel)="closePainter()"
+  />
 }

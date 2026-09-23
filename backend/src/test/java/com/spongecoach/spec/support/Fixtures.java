@@ -57,6 +57,16 @@ public class Fixtures {
         return playerId;
     }
 
+    /**
+     * A painted Avatar on an existing Player, noted as {@code avatar} and {@code avatarVersion};
+     * the Player's own cleanup removes it.
+     */
+    public void avatar(String playerSpokenName) {
+        byte[] image = Pngs.painted(64, 64);
+        world.note("avatar", image);
+        world.note("avatarVersion", testData.setAvatar(world.id(Kind.PLAYER, playerSpokenName), image));
+    }
+
     public UUID skill(String spokenName, String color) {
         if (world.knows(Kind.SKILL, spokenName)) {
             return world.id(Kind.SKILL, spokenName);

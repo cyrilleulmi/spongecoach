@@ -4,6 +4,8 @@ export interface PlayerSummary {
   id: string;
   name: string;
   lines: CatalogRef[];
+  /** Null while the Player shows initials; otherwise the cache-busting token for their Avatar image. */
+  avatarVersion: number | null;
 }
 
 export interface PlayerSkillRating {
@@ -19,4 +21,5 @@ export interface PlayerDetail {
   lines: CatalogRef[];
   skills: PlayerSkillRating[];
   developmentGoals: CatalogRef[];
+  avatarVersion: number | null;
 }

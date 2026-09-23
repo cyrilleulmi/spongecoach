@@ -164,7 +164,7 @@ Feature: What the coach sees
     @spec:ui.player-view-shows-profile
     Scenario: A Player's screen
       When the coach opens a Player
-      Then their name, initials avatar, Line badges, Player skill Ratings and Player development goals are shown
+      Then their name, Avatar, Line badges, Player skill Ratings and Player development goals are shown
 
     @spec:ui.player-not-found
     Scenario: An unknown Player
@@ -185,6 +185,55 @@ Feature: What the coach sees
     Scenario: A Player skill created from the player screen is rated straight away
       When the coach creates a Player skill with a chosen color
       Then it is added to the Player skill list and rated on that Player
+
+  Rule: A Player paints their own Avatar (ADR-0016)
+
+    @spec:ui.avatar-painted-or-initials
+    Scenario: A painted Avatar replaces the initials wherever the Player is shown
+      Given a Player with a painted Avatar and one without
+      Then the first shows their painting and the second their initials, falling back to initials if the image fails to load
+
+    @spec:ui.avatar-painter-opens
+    Scenario: The painter opens from the player screen
+      When the coach clicks the Avatar on a player screen
+      Then the painter opens with brush, spray, fill and eraser tools, three brush sizes and a color palette
+
+    @spec:ui.avatar-eraser
+    Scenario: The eraser paints the blank background back
+      When the coach paints a stroke and erases over it
+      Then the stroke is gone without a leftover edge, and the erased area is the blank background color, not see-through
+
+    @spec:ui.avatar-painter-shows-crop
+    Scenario: The painter shows what the round Avatar will show
+      When the painter is open
+      Then a circle guide marks the visible area, the corners outside it are dimmed, and a round preview follows every stroke
+
+    @spec:ui.avatar-painter-edit-or-new
+    Scenario: Painting on the existing Avatar or starting fresh
+      Given a Player with a painted Avatar
+      When the coach opens the painter
+      Then it starts on the existing Avatar ("Bearbeiten"), and "Neu" swaps to a blank canvas as an undoable step
+
+    @spec:ui.avatar-painter-undo
+    Scenario: Undo and redo
+      When the coach paints and then undoes
+      Then the canvas goes back one step, and redo brings it back
+
+    @spec:ui.avatar-save
+    Scenario: Saving the painting
+      When the coach clicks "Speichern"
+      Then the canvas is uploaded as a PNG, the painter closes and the new Avatar is shown; if the upload fails the painter stays open with an error
+
+    @spec:ui.avatar-cancel
+    Scenario: Cancelling the painter
+      When the coach clicks "Abbrechen" or presses Escape after painting
+      Then they are asked to confirm, and on confirming nothing is saved
+
+    @spec:ui.avatar-remove
+    Scenario: Removing the Avatar
+      Given a Player with a painted Avatar
+      When the coach clicks "Entfernen" in the painter
+      Then the Avatar is removed and the initials are shown again
 
   Rule: Players and Lines link to each other
 

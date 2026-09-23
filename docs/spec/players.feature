@@ -116,3 +116,61 @@ Feature: Players
       Given the Team Player "Debi", on no Line
       When the coach sets "Debi"'s Player development goals to an id that does not exist
       Then the response is not found
+
+  Rule: A Player's Avatar is a single current painted image, never a history (ADR-0016)
+
+    @spec:players.avatar-set
+    Scenario: Saving a painted Avatar
+      Given the Team Player "Carmela", on no Line
+      When the coach saves a painted Avatar for "Carmela"
+      Then "Carmela"'s Avatar is that image, and the Player list and detail carry its version
+
+    @spec:players.avatar-overwrites
+    Scenario: Saving again overwrites the previous Avatar
+      Given the Team Player "Carmela", on no Line
+      And "Carmela" has a painted Avatar
+      When the coach saves a painted Avatar for "Carmela"
+      Then "Carmela"'s Avatar is the new image, under a new version
+
+    @spec:players.avatar-none-by-default
+    Scenario: A Player without an Avatar shows initials
+      Given the Team Player "Nives", on no Line
+      When "Nives"'s Avatar is read
+      Then the response is a not-found error envelope
+
+    @spec:players.avatar-remove
+    Scenario: Removing an Avatar goes back to initials
+      Given the Team Player "Carmela", on no Line
+      And "Carmela" has a painted Avatar
+      When the coach removes "Carmela"'s Avatar
+      Then "Carmela" carries no Avatar version, and their Avatar is not found
+
+    @spec:players.avatar-must-be-small-square-png
+    Scenario Outline: An Avatar is a square PNG of at most 512 px and 200 KB
+      Given the Team Player "Carmela", on no Line
+      When the coach saves <image> as "Carmela"'s Avatar
+      Then the request is rejected as a bad request
+
+      Examples:
+        | image                   |
+        | a text file             |
+        | a 300x200 PNG           |
+        | a 1024x1024 PNG         |
+        | a noisy PNG over 200 KB |
+
+    @spec:players.avatar-unknown-player
+    Scenario: Saving an Avatar for a Player that does not exist
+      When the coach saves a painted Avatar for a Player that does not exist
+      Then the response is a not-found error envelope
+
+    @spec:players.avatar-seeded
+    Scenario: The seeded Players start with a painted Avatar
+      When the seeded Player "Carmela" is read by id
+      Then they carry an Avatar version, and their Avatar is a 512 px PNG
+
+    @spec:players.avatar-version-on-roster
+    Scenario: A Line's roster carries each Player's Avatar version
+      Given a Line "Kiwi" rostering "Carmela"
+      And "Carmela" has a painted Avatar
+      When "Kiwi" is read by id
+      Then "Carmela" is on the roster with their Avatar version

@@ -2,6 +2,7 @@ package com.spongecoach.spec.steps;
 
 import com.spongecoach.spec.support.Fixtures;
 import com.spongecoach.spec.support.Kind;
+import com.spongecoach.spec.support.Pngs;
 import com.spongecoach.spec.support.ScenarioWorld;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -10,16 +11,23 @@ import io.quarkiverse.cucumber.ScenarioScope;
 import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /** Proves docs/spec/players.feature. */
 @ScenarioScope
@@ -58,7 +66,48 @@ public class PlayerSteps {
         fixtures.testData().linkPlayerGoal(world.id(Kind.PLAYER, playerName), goalId);
     }
 
+    @Given("{string} has a painted Avatar")
+    public void hasAPaintedAvatar(String playerName) {
+        fixtures.avatar(playerName);
+    }
+
     // --- When -------------------------------------------------------------------
+
+    @When("the seeded Player {string} is read by id")
+    public void theSeededPlayerIsReadById(String playerName) {
+        // Seed rows keep their real names; look the Player up by name rather than through Fixtures.
+        String id = given().when().get("/api/players").then()
+                .statusCode(200)
+                .extract().path("find { it.name == '" + playerName + "' }.id");
+        world.setResponse(given().when().get("/api/players/" + id));
+    }
+
+    @When("the coach saves a painted Avatar for {string}")
+    public void theCoachSavesAPaintedAvatarFor(String playerName) {
+        byte[] image = Pngs.painted(512, 512);
+        world.note("newAvatar", image);
+        world.setResponse(saveAvatar(world.id(Kind.PLAYER, playerName), image));
+    }
+
+    @When("the coach saves a painted Avatar for a Player that does not exist")
+    public void theCoachSavesAPaintedAvatarForAnUnknownPlayer() {
+        world.setResponse(saveAvatar(UUID.randomUUID(), Pngs.painted(512, 512)));
+    }
+
+    @When("^the coach saves (a text file|a \\d+x\\d+ PNG|a noisy PNG over 200 KB) as \"([^\"]*)\"'s Avatar$")
+    public void theCoachSavesAsAvatar(String image, String playerName) {
+        world.setResponse(saveAvatar(world.id(Kind.PLAYER, playerName), invalidAvatar(image)));
+    }
+
+    @When("{string}'s Avatar is read")
+    public void avatarIsRead(String playerName) {
+        world.setResponse(given().when().get(avatarPath(world.id(Kind.PLAYER, playerName))));
+    }
+
+    @When("the coach removes {string}'s Avatar")
+    public void theCoachRemovesAvatar(String playerName) {
+        world.setResponse(given().when().delete(avatarPath(world.id(Kind.PLAYER, playerName))));
+    }
 
     @When("the Player {string} is read by id")
     public void thePlayerIsReadById(String playerName) {
@@ -141,6 +190,25 @@ public class PlayerSteps {
                 .contentType(ContentType.JSON)
                 .body(Map.of("developmentGoalIds", goalIds))
                 .when().put("/api/players/" + world.id(Kind.PLAYER, playerName)));
+    }
+
+    private io.restassured.response.Response saveAvatar(UUID playerId, byte[] image) {
+        return given().contentType("image/png").body(image).when().put(avatarPath(playerId));
+    }
+
+    private static byte[] invalidAvatar(String description) {
+        if (description.equals("a text file")) {
+            return "not a picture".getBytes(StandardCharsets.UTF_8);
+        }
+        if (description.startsWith("a noisy PNG")) {
+            return Pngs.noise(512);
+        }
+        String[] size = description.substring(2, description.indexOf(' ', 2)).split("x");
+        return Pngs.painted(Integer.parseInt(size[0]), Integer.parseInt(size[1]));
+    }
+
+    private static String avatarPath(UUID playerId) {
+        return "/api/players/" + playerId + "/avatar";
     }
 
     private io.restassured.response.Response rate(UUID playerId, UUID skillId, int rating) {
@@ -246,6 +314,74 @@ public class PlayerSteps {
                 .body("id", equalTo(world.id(Kind.PLAYER, playerName).toString()))
                 .body("developmentGoals.id", hasItem(world.id(Kind.PLAYER_GOAL, kept).toString()))
                 .body("developmentGoals.id", not(hasItem(world.id(Kind.PLAYER_GOAL, dropped).toString())));
+    }
+
+    @Then("{string}'s Avatar is that image, and the Player list and detail carry its version")
+    public void avatarIsThatImage(String playerName) {
+        UUID playerId = world.id(Kind.PLAYER, playerName);
+        Long version = world.response().then()
+                .statusCode(200)
+                .body("avatarVersion", notNullValue())
+                .extract().jsonPath().getLong("avatarVersion");
+        assertAvatarImage(playerId, version, world.recall("newAvatar"));
+        given().when().get("/api/players").then()
+                .statusCode(200)
+                .body("find { it.id == '" + playerId + "' }.avatarVersion", equalTo(version));
+        given().when().get("/api/players/" + playerId).then()
+                .statusCode(200)
+                .body("avatarVersion", equalTo(version));
+    }
+
+    @Then("{string}'s Avatar is the new image, under a new version")
+    public void avatarIsTheNewImage(String playerName) {
+        Long previous = world.recall("avatarVersion");
+        Long version = world.response().then()
+                .statusCode(200)
+                .extract().jsonPath().getLong("avatarVersion");
+        assertThat(version, not(equalTo(previous)));
+        assertAvatarImage(world.id(Kind.PLAYER, playerName), version, world.recall("newAvatar"));
+    }
+
+    @Then("{string} carries no Avatar version, and their Avatar is not found")
+    public void carriesNoAvatar(String playerName) {
+        UUID playerId = world.id(Kind.PLAYER, playerName);
+        world.response().then().statusCode(204);
+        given().when().get("/api/players/" + playerId).then()
+                .statusCode(200)
+                .body("avatarVersion", nullValue());
+        given().when().get(avatarPath(playerId)).then().statusCode(404);
+    }
+
+    @Then("they carry an Avatar version, and their Avatar is a 512 px PNG")
+    public void theyCarryASeededAvatar() {
+        String id = world.response().then().statusCode(200).extract().path("id");
+        long version = world.response().then()
+                .body("avatarVersion", notNullValue())
+                .extract().jsonPath().getLong("avatarVersion");
+        byte[] png = given().queryParam("v", version).when().get(avatarPath(UUID.fromString(id))).then()
+                .statusCode(200)
+                .contentType("image/png")
+                .extract().asByteArray();
+        // IHDR width, big-endian at byte 16.
+        assertThat(ByteBuffer.wrap(png, 16, 4).getInt(), equalTo(512));
+    }
+
+    @Then("{string} is on the roster with their Avatar version")
+    public void isOnTheRosterWithTheirAvatarVersion(String playerName) {
+        Long version = world.recall("avatarVersion");
+        world.response().then()
+                .statusCode(200)
+                .body("players.find { it.id == '" + world.id(Kind.PLAYER, playerName) + "' }.avatarVersion",
+                        equalTo(version));
+    }
+
+    private void assertAvatarImage(UUID playerId, Long version, byte[] expected) {
+        byte[] served = given().queryParam("v", version).when().get(avatarPath(playerId)).then()
+                .statusCode(200)
+                .contentType("image/png")
+                .header("Cache-Control", containsString("immutable"))
+                .extract().asByteArray();
+        assertArrayEquals(expected, served);
     }
 
     private String linesOf(String playerName) {

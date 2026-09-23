@@ -11,7 +11,8 @@ public record PlayerDetailDto(
         String name,
         List<CatalogRefDto> lines,
         List<PlayerSkillRatingDto> skills,
-        List<CatalogRefDto> developmentGoals) {
+        List<CatalogRefDto> developmentGoals,
+        Long avatarVersion) {
 
     public static PlayerDetailDto from(Player player, List<PlayerSkillRating> ratings) {
         return new PlayerDetailDto(
@@ -22,6 +23,7 @@ public record PlayerDetailDto(
                 player.developmentGoals.stream()
                         .filter(goal -> goal.deletedAt == null)
                         .map(CatalogRefDto::from)
-                        .toList());
+                        .toList(),
+                player.avatarVersion());
     }
 }

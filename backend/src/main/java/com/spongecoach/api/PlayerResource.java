@@ -6,6 +6,7 @@ import com.spongecoach.api.dto.PlayerSummaryDto;
 import com.spongecoach.api.dto.PlayerUpdateRequest;
 import com.spongecoach.api.dto.RatingRequest;
 import com.spongecoach.domain.Player;
+import com.spongecoach.domain.PlayerAvatar;
 import com.spongecoach.domain.PlayerDevelopmentGoal;
 import com.spongecoach.domain.PlayerSkill;
 import com.spongecoach.domain.PlayerSkillRating;
@@ -19,10 +20,14 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +36,11 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class PlayerResource {
+
+    private static final String PNG = "image/png";
+    private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'};
+    private static final int AVATAR_MAX_BYTES = 200 * 1024;
+    private static final int AVATAR_MAX_SIDE = 512;
 
     @GET
     @Transactional
@@ -99,6 +109,73 @@ public class PlayerResource {
         }
         rating.delete();
         return Response.noContent().build();
+    }
+
+    /**
+     * The painted Avatar PNG. Clients ask for it with {@code ?v=<avatarVersion>}; a request naming the
+     * current version is cached for good, since a new save produces a new version and thus a new URL.
+     */
+    @GET
+    @Path("/{playerId}/avatar")
+    @Produces(PNG)
+    @Transactional
+    public Response getAvatar(@PathParam("playerId") UUID playerId, @QueryParam("v") Long version) {
+        Player player = findPlayerOrThrow(playerId);
+        PlayerAvatar avatar = PlayerAvatar.findById(playerId);
+        if (avatar == null) {
+            throw new NotFoundException("Player " + playerId + " has no avatar");
+        }
+        boolean current = version != null && version.equals(player.avatarVersion());
+        return Response.ok(avatar.image, PNG)
+                .header("Cache-Control", current ? "public, max-age=31536000, immutable" : "no-cache")
+                .build();
+    }
+
+    /** Saves the painted Avatar, overwriting any earlier one — no history is kept (ADR-0016). */
+    @PUT
+    @Path("/{playerId}/avatar")
+    @Consumes(PNG)
+    @Transactional
+    public PlayerDetailDto setAvatar(@PathParam("playerId") UUID playerId, byte[] image) {
+        validateAvatar(image);
+        Player player = findPlayerOrThrow(playerId);
+        PlayerAvatar avatar = PlayerAvatar.findById(playerId);
+        if (avatar == null) {
+            avatar = new PlayerAvatar();
+            avatar.playerId = playerId;
+        }
+        avatar.image = image;
+        avatar.persist();
+        player.avatarUpdatedAt = Instant.now();
+        return PlayerDetailDto.from(player, PlayerSkillRating.listForPlayer(playerId));
+    }
+
+    /** Back to initials. Removing an Avatar the Player doesn't have is a no-op, not an error. */
+    @DELETE
+    @Path("/{playerId}/avatar")
+    @Transactional
+    public Response removeAvatar(@PathParam("playerId") UUID playerId) {
+        Player player = findPlayerOrThrow(playerId);
+        PlayerAvatar.deleteById(playerId);
+        player.avatarUpdatedAt = null;
+        return Response.noContent().build();
+    }
+
+    /** A PNG by signature, square, and no bigger than the painter produces. */
+    private static void validateAvatar(byte[] image) {
+        if (image == null || image.length < 24 || !Arrays.equals(image, 0, 8, PNG_SIGNATURE, 0, 8)) {
+            throw new BadRequestException("avatar must be a PNG image");
+        }
+        if (image.length > AVATAR_MAX_BYTES) {
+            throw new BadRequestException("avatar must be at most " + AVATAR_MAX_BYTES / 1024 + " KB");
+        }
+        // IHDR is always the first chunk: width and height are big-endian ints at bytes 16 and 20.
+        ByteBuffer header = ByteBuffer.wrap(image, 16, 8);
+        int width = header.getInt();
+        int height = header.getInt();
+        if (width != height || width < 1 || width > AVATAR_MAX_SIDE) {
+            throw new BadRequestException("avatar must be square and at most " + AVATAR_MAX_SIDE + " px");
+        }
     }
 
     private Player findPlayerOrThrow(UUID playerId) {

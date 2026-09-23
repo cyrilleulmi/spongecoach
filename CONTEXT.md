@@ -14,7 +14,11 @@ A group of Players who train and play together. A Line's roster is a selection o
 _Avoid_: Block (German term, code/API stays English), squad
 
 **Player**:
-A member of the Team, associated with zero or more Lines. Team-scoped like the Skill/Development goal/Focus catalogs; created by seed only in v1 (no create-Player endpoint or UI). Carries their own Player ratings and Player development goals (ADR-0015); shown with an initials avatar, no photo.
+A member of the Team, associated with zero or more Lines. Team-scoped like the Skill/Development goal/Focus catalogs; created by seed only in v1 (no create-Player endpoint or UI). Carries their own Player ratings and Player development goals (ADR-0015); shown with their Avatar, or their initials while they have none.
+
+**Avatar**:
+A picture a Player paints of themselves in the app — never a photo upload. One current square PNG per Player, overwritten on each save, no history; shown cropped to a circle. Removing it goes back to initials (ADR-0016). Called "Profilbild" in the UI.
+_Avoid_: photo, profile picture (in code), PFP
 
 **Player skill**:
 A Skill a Player is rated on. Its own list with a palette color, separate from the Line Skill list — no shared rows, and a Line Skill can't be rated on a Player (ADR-0015). Called "Skill" in the UI. Created from the player screen.

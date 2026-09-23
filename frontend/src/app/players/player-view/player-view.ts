@@ -9,7 +9,8 @@ import { RatingBar } from '../../lines/rating-bar/rating-bar';
 import { ColorPicker } from '../../theme/color-picker/color-picker';
 import { CATALOG_PALETTE } from '../../theme/palette';
 import { ThemeToggle } from '../../theme/theme-toggle/theme-toggle';
-import { PlayerApiService } from '../player-api.service';
+import { AvatarPainter } from '../avatar-painter/avatar-painter';
+import { PlayerApiService, avatarUrl } from '../player-api.service';
 import { PlayerDetail } from '../player.model';
 import { PlayerAvatar } from '../player-avatar/player-avatar';
 
@@ -17,7 +18,7 @@ type ManageSection = 'skills' | 'goals';
 
 @Component({
   selector: 'app-player-view',
-  imports: [RouterLink, LineBadge, ManageChips, RatingBar, ColorPicker, ThemeToggle, PlayerAvatar],
+  imports: [RouterLink, LineBadge, ManageChips, RatingBar, ColorPicker, ThemeToggle, PlayerAvatar, AvatarPainter],
   templateUrl: './player-view.html',
   styleUrl: './player-view.scss',
 })
@@ -31,6 +32,13 @@ export class PlayerView implements OnInit {
   protected readonly goalCatalog = signal<CatalogRef[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly openSection = signal<ManageSection | null>(null);
+  protected readonly painterOpen = signal(false);
+  protected readonly savingAvatar = signal(false);
+  protected readonly avatarError = signal<string | null>(null);
+  protected readonly currentAvatarUrl = computed(() => {
+    const player = this.detail();
+    return player?.avatarVersion != null ? avatarUrl(player.id, player.avatarVersion) : null;
+  });
 
   protected readonly newSkillName = signal('');
   protected readonly newSkillColor = signal<string>(CATALOG_PALETTE[0]);
@@ -54,6 +62,7 @@ export class PlayerView implements OnInit {
     this.detail.set(null);
     this.notFound.set(false);
     this.openSection.set(null);
+    this.painterOpen.set(false);
     forkJoin({
       player: this.api.getPlayer(playerId),
       skills: this.api.listSkillCatalog(),
@@ -176,6 +185,49 @@ export class PlayerView implements OnInit {
         this.toggleGoal(created.id);
       },
       error: () => this.errorMessage.set('Ziel konnte nicht angelegt werden.'),
+    });
+  }
+
+  protected openPainter(): void {
+    this.avatarError.set(null);
+    this.painterOpen.set(true);
+  }
+
+  protected closePainter(): void {
+    this.painterOpen.set(false);
+    this.savingAvatar.set(false);
+  }
+
+  protected saveAvatar(png: Blob): void {
+    const current = this.detail();
+    if (!current) {
+      return;
+    }
+    this.savingAvatar.set(true);
+    this.avatarError.set(null);
+    this.api.saveAvatar(current.id, png).subscribe({
+      next: (updated) => {
+        this.detail.set(updated);
+        this.closePainter();
+      },
+      error: () => {
+        this.savingAvatar.set(false);
+        this.avatarError.set('Profilbild konnte nicht gespeichert werden.');
+      },
+    });
+  }
+
+  protected removeAvatar(): void {
+    const current = this.detail();
+    if (!current) {
+      return;
+    }
+    this.api.removeAvatar(current.id).subscribe({
+      next: () => {
+        this.detail.set({ ...current, avatarVersion: null });
+        this.closePainter();
+      },
+      error: () => this.avatarError.set('Profilbild konnte nicht entfernt werden.'),
     });
   }
 

@@ -4,6 +4,7 @@ import com.spongecoach.domain.AttendanceStatus;
 import com.spongecoach.domain.Event;
 import com.spongecoach.domain.EventAttendance;
 import com.spongecoach.domain.EventLinePlayer;
+import com.spongecoach.domain.Player;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,10 +43,10 @@ public record EventDto(
 
     private static List<PlayerAttendanceDto> attendanceFor(Event event) {
         Map<UUID, List<UUID>> lineIdsByPlayer = new LinkedHashMap<>();
-        Map<UUID, String> nameByPlayer = new HashMap<>();
+        Map<UUID, Player> playerById = new HashMap<>();
         for (EventLinePlayer link : event.linePlayers) {
             lineIdsByPlayer.computeIfAbsent(link.player.id, id -> new ArrayList<>()).add(link.line.id);
-            nameByPlayer.put(link.player.id, link.player.name);
+            playerById.put(link.player.id, link.player);
         }
         Map<UUID, EventAttendance> attendanceByPlayer = event.attendance.stream()
                 .collect(Collectors.toMap(a -> a.player.id, a -> a));
@@ -55,7 +56,8 @@ public record EventDto(
                     EventAttendance attendance = attendanceByPlayer.get(playerId);
                     return new PlayerAttendanceDto(
                             playerId,
-                            nameByPlayer.get(playerId),
+                            playerById.get(playerId).name,
+                            playerById.get(playerId).avatarVersion(),
                             lineIdsByPlayer.get(playerId),
                             (attendance != null ? attendance.status : AttendanceStatus.PENDING).name(),
                             attendance != null ? attendance.declineMessage : null);

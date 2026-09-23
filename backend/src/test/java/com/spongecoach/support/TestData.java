@@ -15,6 +15,7 @@ import com.spongecoach.domain.LineFocusEventId;
 import com.spongecoach.domain.LineSkill;
 import com.spongecoach.domain.LineSkillId;
 import com.spongecoach.domain.Player;
+import com.spongecoach.domain.PlayerAvatar;
 import com.spongecoach.domain.PlayerDevelopmentGoal;
 import com.spongecoach.domain.PlayerSkill;
 import com.spongecoach.domain.PlayerSkillRating;
@@ -101,7 +102,21 @@ public class TestData {
         entityManager.createNativeQuery("delete from player_player_development_goal where player_id = ?1")
                 .setParameter(1, playerId)
                 .executeUpdate();
+        entityManager.createNativeQuery("delete from player_avatar where player_id = ?1")
+                .setParameter(1, playerId)
+                .executeUpdate();
         Player.deleteById(playerId);
+    }
+
+    @Transactional
+    public Long setAvatar(UUID playerId, byte[] image) {
+        PlayerAvatar avatar = new PlayerAvatar();
+        avatar.playerId = playerId;
+        avatar.image = image;
+        avatar.persist();
+        Player player = Player.findById(playerId);
+        player.avatarUpdatedAt = Instant.now();
+        return player.avatarVersion();
     }
 
     @Transactional

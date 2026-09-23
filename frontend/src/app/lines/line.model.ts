@@ -8,6 +8,7 @@ export interface LineSummary {
 export interface Player {
   id: string;
   name: string;
+  avatarVersion: number | null;
 }
 
 export interface CatalogRef {

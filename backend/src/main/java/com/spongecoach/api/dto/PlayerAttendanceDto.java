@@ -7,6 +7,7 @@ import java.util.UUID;
 public record PlayerAttendanceDto(
         UUID playerId,
         String playerName,
+        Long avatarVersion,
         List<UUID> lineIds,
         String status,
         String declineMessage) {

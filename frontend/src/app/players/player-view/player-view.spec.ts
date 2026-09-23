@@ -17,13 +17,14 @@ const CARMELA: PlayerDetail = {
   lines: [{ id: 'line-a', name: 'Kiwi', color: '#4c8c3d' }],
   skills: [{ skillId: SKILL.id, name: SKILL.name, color: SKILL.color, rating: 60 }],
   developmentGoals: [GOAL],
+  avatarVersion: null,
 };
 
 describe('PlayerView', () => {
   let httpMock: HttpTestingController;
   let harness: RouterTestingHarness;
 
-  async function render(playerId = 'p-1', found = true) {
+  async function render(playerId = 'p-1', found = true, detail: PlayerDetail = CARMELA) {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -36,7 +37,7 @@ describe('PlayerView', () => {
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(`/players/${playerId}`);
     if (found) {
-      httpMock.expectOne(`/api/players/${playerId}`).flush(CARMELA);
+      httpMock.expectOne(`/api/players/${playerId}`).flush(detail);
       httpMock.expectOne('/api/player-skills').flush([SKILL, SKILL_2]);
       httpMock.expectOne('/api/player-development-goals').flush([GOAL, GOAL_2]);
     } else {
@@ -129,5 +130,87 @@ describe('PlayerView', () => {
     harness.detectChanges();
 
     expect(el.textContent).toContain('Kommunikation');
+  });
+
+  describe('Avatar painter', () => {
+    beforeEach(() => {
+      // jsdom has no canvas: a context that swallows every call is enough to host the painter.
+      const ctx = new Proxy({}, { get: () => jest.fn(() => ({})) });
+      jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never);
+      jest.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,' + btoa('png'));
+    });
+
+    afterEach(() => jest.restoreAllMocks());
+
+    function clickButton(el: HTMLElement, label: string) {
+      [...el.querySelectorAll('button')].find((b) => b.textContent?.trim() === label)!.click();
+    }
+
+    // spec: ui.avatar-painter-opens
+    it('opens the painter from the Avatar', async () => {
+      const el = await render();
+      expect(el.querySelector('app-avatar-painter')).toBeNull();
+
+      (el.querySelector('[aria-label="Profilbild malen"]') as HTMLButtonElement).click();
+      harness.detectChanges();
+
+      expect(el.querySelector('[role="dialog"]')?.textContent).toContain('Profilbild malen');
+    });
+
+    // spec: ui.avatar-save
+    it('uploads the painting as a PNG, closes the painter and shows the new Avatar', async () => {
+      const el = await render();
+      (el.querySelector('[aria-label="Profilbild malen"]') as HTMLButtonElement).click();
+      harness.detectChanges();
+
+      clickButton(el, 'Speichern');
+      await harness.fixture.whenStable();
+
+      const put = httpMock.expectOne('/api/players/p-1/avatar');
+      expect(put.request.method).toBe('PUT');
+      expect(put.request.headers.get('Content-Type')).toBe('image/png');
+      expect(put.request.body).toBeInstanceOf(Blob);
+      put.flush({ ...CARMELA, avatarVersion: 7 });
+      harness.detectChanges();
+
+      expect(el.querySelector('app-avatar-painter')).toBeNull();
+      expect(el.querySelector('.page-head img')?.getAttribute('src')).toBe('/api/players/p-1/avatar?v=7');
+    });
+
+    // spec: ui.avatar-save
+    it('keeps the painter open with an error when the upload fails', async () => {
+      const el = await render();
+      (el.querySelector('[aria-label="Profilbild malen"]') as HTMLButtonElement).click();
+      harness.detectChanges();
+
+      clickButton(el, 'Speichern');
+      await harness.fixture.whenStable();
+      httpMock
+        .expectOne('/api/players/p-1/avatar')
+        .flush({ error: 'bad_request' }, { status: 400, statusText: 'Bad Request' });
+      harness.detectChanges();
+
+      expect(el.querySelector('app-avatar-painter [role="alert"]')?.textContent).toContain(
+        'Profilbild konnte nicht gespeichert werden',
+      );
+    });
+
+    // spec: ui.avatar-remove
+    it('removes the Avatar and shows the initials again', async () => {
+      const el = await render('p-1', true, { ...CARMELA, avatarVersion: 7 });
+      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (el.querySelector('[aria-label="Profilbild malen"]') as HTMLButtonElement).click();
+      harness.detectChanges();
+
+      clickButton(el, 'Entfernen');
+      const del = httpMock.expectOne('/api/players/p-1/avatar');
+      expect(del.request.method).toBe('DELETE');
+      del.flush(null, { status: 204, statusText: 'No Content' });
+      harness.detectChanges();
+
+      expect(el.querySelector('app-avatar-painter')).toBeNull();
+      expect(el.querySelector('.page-head img')).toBeNull();
+      expect(el.querySelector('.page-head app-player-avatar')?.textContent?.trim()).toBe('C');
+    });
   });
 });

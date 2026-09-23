@@ -1,6 +1,7 @@
 package com.spongecoach.domain;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -11,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +30,10 @@ public class Player extends PanacheEntityBase {
 
     public String name;
 
+    /** When the painted Avatar was last saved; null while the Player shows initials (ADR-0016). */
+    @Column(name = "avatar_updated_at")
+    public Instant avatarUpdatedAt;
+
     /** Includes soft-deleted Lines; callers filter. */
     @ManyToMany(mappedBy = "players", fetch = FetchType.LAZY)
     @OrderBy("name asc")
@@ -43,6 +49,11 @@ public class Player extends PanacheEntityBase {
 
     public static List<Player> listAllOrderedByName() {
         return list("order by name asc");
+    }
+
+    /** Cache-busting token for the Avatar image URL; null means no Avatar, show initials. */
+    public Long avatarVersion() {
+        return avatarUpdatedAt == null ? null : avatarUpdatedAt.toEpochMilli();
     }
 
     public List<Line> activeLines() {

@@ -131,7 +131,11 @@
         @for (player of line.players; track player.id) {
           <div class="roster-row">
             <a class="player-link" [routerLink]="['/players', player.id]">
-              <app-player-avatar [name]="player.name" />
+              <app-player-avatar
+                [name]="player.name"
+                [playerId]="player.id"
+                [avatarVersion]="player.avatarVersion"
+              />
               <span class="player-name">{{ player.name }}</span>
             </a>
             <button

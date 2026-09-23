@@ -1,0 +1,300 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 20, 25, 0.55);
+  overflow-y: auto;
+}
+
+.painter {
+  width: min(100%, 48rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.4rem;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.painter-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.painter-head h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin: 0 0 0.2rem;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.segmented button {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  border: none;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.painter-body {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.stage-wrap {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+/* The stage shows the saved square; the guide's giant shadow dims everything outside the circle. */
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: var(--accent-soft);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.tool-fill .canvas {
+  cursor: cell;
+}
+
+.crop-guide {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 0 100vmax rgba(15, 20, 25, 0.42);
+  pointer-events: none;
+}
+
+.hint {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.controls {
+  flex: 1 1 14rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.previews {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.preview {
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+}
+
+.preview.lg {
+  width: 5rem;
+  height: 5rem;
+}
+
+.preview.sm {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tool,
+.size,
+.btn {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
+}
+
+.tool-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.tool[aria-pressed='true'],
+.size[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.size {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.size-dot {
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(1.9rem, 1fr));
+  gap: 0.35rem;
+}
+
+.swatch {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatch[aria-pressed='true'] {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.swatch.custom {
+  background: conic-gradient(#d93b3b, #f2c94c, #4f7a3f, #6ec3f0, #5b5ea6, #b1467a, #d93b3b);
+  overflow: hidden;
+}
+
+.swatch.custom input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+}
+
+.btn:hover:not(:disabled),
+.tool:hover,
+.size:hover {
+  border-color: var(--ink-soft);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+}
+
+.btn.danger {
+  color: var(--danger-ink);
+}
+
+.error {
+  margin: 1rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.painter-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

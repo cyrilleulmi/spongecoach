@@ -95,7 +95,12 @@
           [class.status-pending]="row.status === 'PENDING'"
         >
           <a class="player-link" [routerLink]="['/players', row.playerId]">
-            <app-player-avatar [name]="row.playerName" size="sm" />
+            <app-player-avatar
+              [name]="row.playerName"
+              [playerId]="row.playerId"
+              [avatarVersion]="row.avatarVersion"
+              size="sm"
+            />
             <span class="player-name">{{ row.playerName }}</span>
           </a>
           <span class="line-badges">

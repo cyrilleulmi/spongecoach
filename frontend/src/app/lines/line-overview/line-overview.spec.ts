@@ -9,7 +9,7 @@ import { LineDetail } from '../line.model';
 const LINE_A = { id: 'line-a', name: 'Kiwi', playerCount: 1 };
 const LINE_B = { id: 'line-b', name: 'Bäri', playerCount: 0 };
 const PLAYERS = [
-  { id: 'player-1', name: 'Carmela' },
+  { id: 'player-1', name: 'Carmela', avatarVersion: null },
   { id: 'player-2', name: 'Debi' },
 ];
 const SKILL = { id: 'skill-1', name: 'Passgenauigkeit', color: '#2c7a68' };
@@ -20,7 +20,7 @@ function detailFor(line: { id: string; name: string }): LineDetail {
   return {
     id: line.id,
     name: line.name,
-    players: [{ id: 'player-1', name: 'Carmela' }],
+    players: [{ id: 'player-1', name: 'Carmela', avatarVersion: null }],
     skills: [{ skillId: SKILL.id, name: SKILL.name, color: SKILL.color, rating: 60 }],
     developmentGoals: [GOAL],
   };

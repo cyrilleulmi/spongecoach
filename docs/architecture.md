@@ -36,6 +36,7 @@ Team 1─* Line ─*─* Player            (line_player: a Player may be on seve
 Player ─*── PlayerSkillRating ──* PlayerSkill   payload: rating 0-100, overwritten (ADR-0015)
 Player ─*─* PlayerDevelopmentGoal               (player_player_development_goal)
                                      Player lists are separate from the Line Skill/goal lists
+Player 1──0..1 PlayerAvatar          (player_avatar: painted PNG bytes; version = player.avatar_updated_at, ADR-0016)
          Line ─*── LineSkill ──* Skill      payload: rating 0-100, overwritten, no history
 Team 1─* Iteration 1─* Event
          Event ──* EventType
@@ -79,6 +80,7 @@ Player dropped from one of two attending Lines keeps their single answer through
 | PUT | `/api/players/{id}` | `{developmentGoalIds?}` — replaces the set wholesale |
 | GET/PUT/DELETE | `/api/players/{id}/skills[/{skillId}]` | `PUT {rating}` 0-100, upserts; Player skills only, a Line Skill id is 404 |
 | GET/POST/PUT | `/api/player-skills`, `/api/player-development-goals` | the Player lists, with a color (ADR-0015) |
+| GET/PUT/DELETE | `/api/players/{id}/avatar` | the painted Avatar as `image/png`; `PUT` takes a square PNG ≤ 512 px / 200 KB, returns the Player detail; `GET ?v=<avatarVersion>` is cached immutable; every Player read (list, detail, Line roster, Event attendance) carries `avatarVersion`, null for initials (ADR-0016) |
 | GET | `/api/event-types` | seeded Training / Match |
 | GET/POST/PUT | `/api/skills`, `/api/development-goals` | shared catalogs with a color |
 | GET | `/api/iterations` | **the timeline**: Iterations by position, Events nested by datetime, each with `focusAttachments`, `lines`, `attendance` |
@@ -109,10 +111,13 @@ Team-Übersicht · Blöcke · Spieler.
   Roster icons under the dial show each Player's answer (not linked — too small a target);
   attendance rows in the event detail link to the player screen. The **next** Event is the first, in
   Iteration-then-datetime order, whose datetime has not passed.
-- **`/players`** — every Player with an initials avatar (`PlayerAvatar`), name and clickable Line
-  badges (`LineBadge`). **`/players/:id`** — that Player's Player skill Ratings (optimistic, like
-  Lines) and Player development goals (full-set save); new ones are created here and associated
-  straight away. A 404 renders "Spieler nicht gefunden".
+- **`/players`** — every Player with their Avatar (`PlayerAvatar`: the painted image, or initials
+  when there is none or it fails to load), name and clickable Line badges (`LineBadge`).
+  **`/players/:id`** — that Player's Player skill Ratings (optimistic, like Lines) and Player
+  development goals (full-set save); new ones are created here and associated straight away. A 404
+  renders "Spieler nicht gefunden". Clicking the Avatar opens `AvatarPainter`, a modal canvas
+  (brush, spray, fill, eraser, undo) with a circle guide over the saved square; its pixel math lives
+  in `paint-engine.ts` so it is testable without a canvas (ADR-0016).
 - **Read-only past Events** are a frontend default, not a backend rule (ADR-0012): an Event whose
   datetime has passed renders disabled, and the coach can lift the lock per Event with "Trotzdem
   bearbeiten". The lock returns when another Event is selected.

@@ -1,5 +1,7 @@
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
+import { CurrentUserService } from '../../auth/current-user.service';
+import { CurrentUser } from '../../auth/user.model';
 import { EventDetail } from './event-detail';
 import { DialLine } from '../dial-palette';
 import { PlayerAttendance, TimelineEvent } from '../iteration.model';
@@ -67,9 +69,20 @@ const PAST_TRAINING: TimelineEvent = {
 
 const ALL_EVENTS: TimelineEvent[] = [OTHER_TRAINING, TRAINING, MATCH, PAST_TRAINING];
 
+/** Carmela as a Player: on line-a only. */
+const CARMELA: CurrentUser = {
+  id: 'u-carmela',
+  name: 'Carmela',
+  role: 'PLAYER',
+  teamId: 'team',
+  playerId: 'p-1',
+  lineIds: ['line-a'],
+};
+
 describe('EventDetail', () => {
-  async function render(event: TimelineEvent, isNext = false) {
+  async function render(event: TimelineEvent, isNext = false, me: CurrentUser | null = null) {
     await TestBed.configureTestingModule({ imports: [EventDetail], providers: [provideRouter([])] }).compileComponents();
+    TestBed.inject(CurrentUserService).me.set(me);
     const fixture = TestBed.createComponent(EventDetail);
     fixture.componentRef.setInput('event', event);
     fixture.componentRef.setInput('events', ALL_EVENTS);
@@ -167,11 +180,12 @@ describe('EventDetail', () => {
   });
 
   // spec: ui.event-readonly-when-done
-  it('disables the focus fields, date, and delete button for a past event', async () => {
+  it('shows a past event read-only: no Focus fields, plain answers, date and delete disabled', async () => {
     const fixture = await render(PAST_TRAINING);
 
-    const inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
-    expect(inputs[0].disabled).toBe(true);
+    // No Line has a Focus on it, and none can be set, so there is nothing to show.
+    expect(fixture.nativeElement.querySelectorAll('.focus-input, .focus-text').length).toBe(0);
+    expect(fixture.nativeElement.querySelectorAll('.attendance-select').length).toBe(0);
     expect((fixture.nativeElement.querySelector('.detail-date input') as HTMLInputElement).disabled).toBe(true);
     expect((fixture.nativeElement.querySelector('.delete-btn') as HTMLButtonElement).disabled).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('liegt in der Vergangenheit');
@@ -188,13 +202,13 @@ describe('EventDetail', () => {
 
     (fixture.nativeElement.querySelector('.link-btn') as HTMLButtonElement).click();
     fixture.detectChanges();
-    let inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
-    expect(inputs[0].disabled).toBe(false);
+    expect(fixture.nativeElement.querySelectorAll('.focus-input').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('.attendance-select').length).toBe(3);
 
     (fixture.nativeElement.querySelector('.link-btn') as HTMLButtonElement).click();
     fixture.detectChanges();
-    inputs = fixture.nativeElement.querySelectorAll('.focus-input') as NodeListOf<HTMLTextAreaElement>;
-    expect(inputs[0].disabled).toBe(true);
+    expect(fixture.nativeElement.querySelectorAll('.focus-input').length).toBe(0);
+    expect(fixture.nativeElement.querySelectorAll('.attendance-select').length).toBe(0);
   });
 
   // spec: ui.future-event-editable
@@ -263,10 +277,19 @@ describe('EventDetail', () => {
     expect(changes).toEqual([{ playerId: 'p-2', status: 'DECLINED', declineMessage: 'Krank' }]);
   });
 
-  it('disables attendance controls for a past event', async () => {
+  it("preselects each Player's stored answer in their dropdown", async () => {
+    const fixture = await render(TRAINING);
+    const selects = Array.from(fixture.nativeElement.querySelectorAll('.attendance-select')) as HTMLSelectElement[];
+    // Rows are grouped by Line, then name: Carmela, Debi (line-a), Rahel (line-b).
+    expect(selects.map((s) => s.value)).toEqual(['ATTENDING', 'PENDING', 'DECLINED']);
+  });
+
+  it('shows answers and decline reasons as plain text for a past event', async () => {
     const fixture = await render(PAST_TRAINING);
-    const select = fixture.nativeElement.querySelector('.attendance-select') as HTMLSelectElement;
-    expect(select.disabled).toBe(true);
+    const answers = Array.from(fixture.nativeElement.querySelectorAll('.attendance-answer')) as HTMLElement[];
+    expect(answers.map((a) => a.textContent?.trim())).toEqual(['Zugesagt', 'Keine Antwort', 'Abgesagt']);
+    expect(fixture.nativeElement.querySelector('.decline-message')?.textContent?.trim()).toBe('Verletzt');
+    expect(fixture.nativeElement.querySelector('.decline-message-input')).toBeNull();
   });
 
   it('for a match, shows an editable name that emits rename on change', async () => {
@@ -280,5 +303,45 @@ describe('EventDetail', () => {
     input.dispatchEvent(new Event('change'));
 
     expect(renames).toEqual(['Testspiel gegen Bern']);
+  });
+  // spec: ui.player-edits-own-on-event
+  it("lets a Player set only their own Lines' Focus and their own answer, and nothing else on the Event", async () => {
+    const fixture = await render(TRAINING, false, CARMELA);
+    const el = fixture.nativeElement as HTMLElement;
+
+    // line-a (Carmela's) is a field; line-b has no Focus and isn't hers, so it shows nothing.
+    const focusInputs = Array.from(el.querySelectorAll('.focus-input')) as HTMLTextAreaElement[];
+    expect(focusInputs.map((i) => i.getAttribute('aria-label'))).toEqual(['Fokus für Kiwi setzen']);
+    expect(el.querySelectorAll('.focus-text').length).toBe(0);
+    expect(el.querySelectorAll('.same-focus-btn').length).toBe(0); // only line-b has one to offer
+
+    const selects = Array.from(el.querySelectorAll('.attendance-select')) as HTMLSelectElement[];
+    expect(selects.map((s) => s.getAttribute('aria-label'))).toEqual(['Anwesenheit für Carmela setzen']);
+    expect(el.querySelectorAll('.attendance-answer').length).toBe(2);
+
+    expect((el.querySelector('input[type="datetime-local"]') as HTMLInputElement).disabled).toBe(true);
+    expect(el.querySelector('.delete-btn')).toBeNull();
+  });
+
+  // spec: ui.player-done-event-locked
+  it('keeps a done Event locked for a Player, with no way to lift it', async () => {
+    const fixture = await render(PAST_TRAINING, false, CARMELA);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.textContent).toContain('kann nur noch von Trainern geändert werden');
+    expect(el.querySelector('.link-btn')).toBeNull();
+    expect(el.querySelectorAll('.focus-input').length).toBe(0);
+    expect(el.querySelectorAll('.attendance-select').length).toBe(0);
+  });
+
+  it("shows another Line's Focus to a Player as plain text", async () => {
+    const onLineB: CurrentUser = { ...CARMELA, id: 'u-rahel', playerId: 'p-2', lineIds: ['line-b'] };
+    const fixture = await render(TRAINING, false, onLineB);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.focus-text')?.textContent?.trim()).toBe('Fokus A'); // line-a
+    expect(Array.from(el.querySelectorAll('.focus-input')).map((i) => i.getAttribute('aria-label'))).toEqual([
+      'Fokus für Bäri setzen',
+    ]);
   });
 });

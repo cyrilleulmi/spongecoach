@@ -1,5 +1,6 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CurrentUserService } from '../../auth/current-user.service';
 import { CatalogRef } from '../../lines/line.model';
 import { PlayerAvatar } from '../../players/player-avatar/player-avatar';
 import { AttendanceStatus, PlayerAttendance, TimelineEvent } from '../iteration.model';
@@ -19,8 +20,12 @@ export interface AttendanceChange {
  * The detail panel for the selected event: its per-Line Focus (a free-text field, with a "same
  * focus again" shortcut to repeat that Line's most recent earlier Focus text — ADR-0014), its
  * date, a Match's name, and a delete control. Once the event's date is in the past it's read-only
- * by default — the backend still allows the write, but the coach must explicitly choose "edit
+ * by default — the backend still allows a coach the write, but they must explicitly choose "edit
  * anyway" to avoid accidental changes to a done event.
+ *
+ * What a User may touch follows their Role (ADR-0017): a coach everything; a Player only the Focus
+ * of their own Lines and their own attendance, and never on a done event — the backend refuses a
+ * Player that write, so there is no "edit anyway" for them.
  */
 @Component({
   selector: 'app-event-detail',
@@ -43,6 +48,9 @@ export class EventDetail {
   readonly dateChange = output<string>();
   readonly rename = output<string>();
   readonly deleteEvent = output<string>();
+
+  private readonly currentUser = inject(CurrentUserService);
+  protected readonly isCoach = this.currentUser.isCoach;
 
   /** Lifts the default read-only state for a done event, for the current selection only. */
   protected readonly editAnyway = signal(false);
@@ -72,6 +80,25 @@ export class EventDetail {
   });
 
   protected readonly readonly = computed(() => this.isDone() && !this.editAnyway());
+
+  protected readonly statusOptions: { value: AttendanceStatus; label: string }[] = [
+    { value: 'PENDING', label: 'Keine Antwort' },
+    { value: 'ATTENDING', label: 'Zugesagt' },
+    { value: 'DECLINED', label: 'Abgesagt' },
+  ];
+
+  protected statusLabel(status: AttendanceStatus): string {
+    return this.statusOptions.find((o) => o.value === status)?.label ?? status;
+  }
+
+  /** Editable fields are inputs; anything else is shown as plain text, or not at all if empty. */
+  protected canEditFocus(lineId: string): boolean {
+    return !this.readonly() && this.currentUser.canEditLine(lineId);
+  }
+
+  protected canAnswerFor(playerId: string): boolean {
+    return !this.readonly() && this.currentUser.canEditPlayer(playerId);
+  }
 
   protected readonly title = computed(() => {
     const event = this.event();

@@ -13,7 +13,7 @@
         [value]="ev.name ?? ''"
         placeholder="Gegner"
         aria-label="Name des Matches"
-        [disabled]="readonly()"
+        [disabled]="readonly() || !isCoach()"
         (change)="rename.emit($any($event.target).value)"
       />
     }
@@ -23,7 +23,7 @@
       <input
         type="datetime-local"
         [value]="ev.scheduledOn.slice(0, 16)"
-        [disabled]="readonly()"
+        [disabled]="readonly() || !isCoach()"
         (change)="onDateInput($any($event.target).value)"
       />
     </label>
@@ -36,11 +36,16 @@
 
     @if (isDone()) {
       <p class="detail-hint done-hint">
-        <strong>Dieses Ereignis liegt in der Vergangenheit</strong> und ist standardmässig
-        schreibgeschützt.
-        <button type="button" class="link-btn" (click)="toggleEditAnyway()">
-          {{ readonly() ? 'Trotzdem bearbeiten' : 'Schreibschutz wieder aktivieren' }}
-        </button>
+        @if (isCoach()) {
+          <strong>Dieses Ereignis liegt in der Vergangenheit</strong> und ist standardmässig
+          schreibgeschützt.
+          <button type="button" class="link-btn" (click)="toggleEditAnyway()">
+            {{ readonly() ? 'Trotzdem bearbeiten' : 'Schreibschutz wieder aktivieren' }}
+          </button>
+        } @else {
+          <strong>Dieses Ereignis liegt in der Vergangenheit</strong> und kann nur noch von
+          Trainern geändert werden.
+        }
       </p>
     }
 
@@ -52,7 +57,7 @@
             <span class="attendance-count" [attr.aria-label]="'Zusagen für ' + line.name">
               {{ lineAttendanceCount(line.id).attending }}/{{ lineAttendanceCount(line.id).total }}
             </span>
-            @if (!readonly() && !focusTextFor(line.id) && lastFocusFor(line.id); as lastFocus) {
+            @if (canEditFocus(line.id) && !focusTextFor(line.id) && lastFocusFor(line.id); as lastFocus) {
               <button
                 type="button"
                 class="same-focus-btn"
@@ -69,18 +74,21 @@
               </button>
             }
           </div>
-          <div class="focus-input-wrap" [attr.data-replicated-value]="focusDraftFor(line.id)">
-            <textarea
-              class="focus-input"
-              rows="1"
-              placeholder="Fokus setzen"
-              [attr.aria-label]="'Fokus für ' + line.name + ' setzen'"
-              [value]="focusTextFor(line.id)"
-              [disabled]="readonly()"
-              (input)="onFocusDraft(line.id, $any($event.target).value)"
-              (change)="onFocusInput(line.id, $any($event.target).value)"
-            ></textarea>
-          </div>
+          @if (canEditFocus(line.id)) {
+            <div class="focus-input-wrap" [attr.data-replicated-value]="focusDraftFor(line.id)">
+              <textarea
+                class="focus-input"
+                rows="1"
+                placeholder="Fokus setzen"
+                [attr.aria-label]="'Fokus für ' + line.name + ' setzen'"
+                [value]="focusTextFor(line.id)"
+                (input)="onFocusDraft(line.id, $any($event.target).value)"
+                (change)="onFocusInput(line.id, $any($event.target).value)"
+              ></textarea>
+            </div>
+          } @else if (focusTextFor(line.id); as focus) {
+            <p class="focus-text">{{ focus }}</p>
+          }
         </li>
       }
     </ul>
@@ -108,27 +116,32 @@
               <span class="line-badge" [style.background]="lineColor(lineId)">{{ lineName(lineId) }}</span>
             }
           </span>
-          <select
-            class="attendance-select"
-            [attr.aria-label]="'Anwesenheit für ' + row.playerName + ' setzen'"
-            [value]="row.status"
-            [disabled]="readonly()"
-            (change)="onAttendanceStatusSelect(row, $any($event.target).value)"
-          >
-            <option value="PENDING">Keine Antwort</option>
-            <option value="ATTENDING">Zugesagt</option>
-            <option value="DECLINED">Abgesagt</option>
-          </select>
-          @if (row.status === 'DECLINED') {
-            <input
-              type="text"
-              class="decline-message-input"
-              placeholder="Grund (optional)"
-              [attr.aria-label]="'Absagegrund für ' + row.playerName"
-              [value]="row.declineMessage ?? ''"
-              [disabled]="readonly()"
-              (change)="onDeclineMessageChange(row, $any($event.target).value)"
-            />
+          @if (canAnswerFor(row.playerId)) {
+            <select
+              class="attendance-select"
+              [attr.aria-label]="'Anwesenheit für ' + row.playerName + ' setzen'"
+              [value]="row.status"
+              (change)="onAttendanceStatusSelect(row, $any($event.target).value)"
+            >
+              @for (option of statusOptions; track option.value) {
+                <option [value]="option.value" [selected]="option.value === row.status">{{ option.label }}</option>
+              }
+            </select>
+            @if (row.status === 'DECLINED') {
+              <input
+                type="text"
+                class="decline-message-input"
+                placeholder="Grund (optional)"
+                [attr.aria-label]="'Absagegrund für ' + row.playerName"
+                [value]="row.declineMessage ?? ''"
+                (change)="onDeclineMessageChange(row, $any($event.target).value)"
+              />
+            }
+          } @else {
+            <span class="attendance-answer">{{ statusLabel(row.status) }}</span>
+            @if (row.status === 'DECLINED' && row.declineMessage) {
+              <span class="decline-message">{{ row.declineMessage }}</span>
+            }
           }
         </li>
       } @empty {
@@ -136,9 +149,11 @@
       }
     </ul>
 
-    <button type="button" class="delete-btn" [disabled]="readonly()" (click)="deleteEvent.emit(ev.id)">
-      {{ isTraining() ? 'Training löschen' : 'Match löschen' }}
-    </button>
+    @if (isCoach()) {
+      <button type="button" class="delete-btn" [disabled]="readonly()" (click)="deleteEvent.emit(ev.id)">
+        {{ isTraining() ? 'Training löschen' : 'Match löschen' }}
+      </button>
+    }
   </div>
 } @else {
   <div class="detail-card empty">Kein Ereignis ausgewählt.</div>

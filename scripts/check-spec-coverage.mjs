@@ -21,6 +21,7 @@ const cucumberReport = join(repoRoot, 'backend', 'build', 'cucumber-report.json'
 /** Features run by Cucumber. Must match SpecTest's `features` list. */
 const CUCUMBER_FEATURES = new Set([
   'attendance.feature',
+  'authorization.feature',
   'catalogs.feature',
   'focus-planning.feature',
   'lines.feature',

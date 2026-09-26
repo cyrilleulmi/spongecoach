@@ -161,6 +161,15 @@ select:disabled {
   border-radius: 0.4rem;
 }
 
+/* A Focus the User may not edit: plain text, not a disabled field (ADR-0017). */
+.focus-text {
+  margin: 0;
+  font-size: 0.92rem;
+  padding: 0.2rem 0.1rem;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
 .focus-input {
   width: 100%;
   min-width: 0;
@@ -226,38 +235,20 @@ select:disabled {
   font-size: 0.82rem;
 }
 
-/* Slim, single-line rows — everything about one Player fits on one row; a row that still
- * overflows a narrow pane scrolls horizontally rather than wrapping. Status color-codes the row
- * (border + tint) so attending/declined/pending reads at a glance without checking the select. */
+/* One grid per row — Player, Line badges, answer — so the answer column lines up whatever the
+ * badges' width; a decline reason goes on a second line under the badges and answer. Status
+ * color-codes the row (border + tint) so attending/declined/pending reads at a glance. */
 .attendance-row {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 6.5rem;
   align-items: center;
-  gap: 0.4rem;
+  column-gap: 0.4rem;
+  row-gap: 0.25rem;
   width: 100%;
   min-width: 0;
   padding: 0.2rem 0.5rem 0.45rem;
   border-radius: 0.35rem;
   border-left: 3px solid var(--line);
-  overflow-x: auto;
-
-  /* Thin, unobtrusive scrollbar for the rare row that still overflows (e.g. a long decline
-   * reason) — a full-size native scrollbar here reads as a layout glitch, not a control. */
-  scrollbar-width: thin;
-  scrollbar-color: var(--line) transparent;
-}
-
-.attendance-row::-webkit-scrollbar {
-  height: 4px;
-}
-
-.attendance-row::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.attendance-row::-webkit-scrollbar-thumb {
-  background: var(--line);
-  border-radius: 999px;
 }
 
 .attendance-row.status-attending {
@@ -301,9 +292,9 @@ select:disabled {
 
 .line-badges {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.25rem;
-  flex: none;
+  min-width: 0;
 }
 
 .line-badge {
@@ -316,7 +307,7 @@ select:disabled {
 }
 
 .attendance-select {
-  flex: none;
+  width: 100%;
   min-width: 0;
   font-family: inherit;
   font-size: 0.7rem;
@@ -327,9 +318,17 @@ select:disabled {
   color: var(--ink);
 }
 
-.decline-message-input {
-  flex: 1 1 8rem;
-  min-width: 4rem;
+/* Read-only answer: plain text in the same column the select would take. */
+.attendance-answer {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  padding: 0.16rem 0.25rem;
+}
+
+.decline-message-input,
+.decline-message {
+  grid-column: 2 / -1;
+  min-width: 0;
   font-family: inherit;
   font-size: 0.72rem;
   padding: 0.18rem 0.35rem;
@@ -337,6 +336,14 @@ select:disabled {
   border-radius: 0.35rem;
   background: var(--surface);
   color: var(--ink);
+}
+
+.decline-message {
+  border-color: transparent;
+  background: none;
+  color: var(--ink-soft);
+  font-style: italic;
+  overflow-wrap: anywhere;
 }
 
 .delete-btn {

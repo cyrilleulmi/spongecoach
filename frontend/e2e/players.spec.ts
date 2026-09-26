@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { stubUsers } from './users';
 
 const KIWI = { id: '11111111-1111-1111-1111-111111111111', name: 'Kiwi', color: '#4c8c3d' };
 const BAERI = { id: '12121212-1212-1212-1212-121212121212', name: 'Bäri', color: '#8b5e34' };
@@ -8,6 +9,7 @@ const SKILL = { id: '88888888-8888-8888-8888-888888888888', name: 'Schusstechnik
 const GOAL = { id: '99999999-9999-9999-9999-999999999999', name: 'Mehr Abschlüsse suchen', color: '#b1467a' };
 
 async function mockApi(page: Page) {
+  await stubUsers(page);
   let rating = 60;
   let avatar: { version: number; png: Buffer } | null = null;
 

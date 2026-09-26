@@ -11,21 +11,30 @@
 } @else if (detail(); as player) {
   <header class="page-head">
     <div class="identity">
-      <button
-        type="button"
-        class="avatar-button"
-        aria-label="Profilbild malen"
-        title="Profilbild malen"
-        (click)="openPainter()"
-      >
+      @if (canEdit()) {
+        <button
+          type="button"
+          class="avatar-button"
+          aria-label="Profilbild malen"
+          title="Profilbild malen"
+          (click)="openPainter()"
+        >
+          <app-player-avatar
+            [name]="player.name"
+            [playerId]="player.id"
+            [avatarVersion]="player.avatarVersion"
+            size="lg"
+          />
+          <span class="avatar-edit" aria-hidden="true">🖌️</span>
+        </button>
+      } @else {
         <app-player-avatar
           [name]="player.name"
           [playerId]="player.id"
           [avatarVersion]="player.avatarVersion"
           size="lg"
         />
-        <span class="avatar-edit" aria-hidden="true">🖌️</span>
-      </button>
+      }
       <div>
         <a class="eyebrow back" routerLink="/players">&larr; Spieler</a>
         <h1>{{ player.name }}</h1>
@@ -45,7 +54,9 @@
     <div class="card skills">
       <div class="section-title">
         <h2>Skills</h2>
-        <button class="btn" type="button" (click)="toggleManage('skills')">Verwalten</button>
+        @if (canEdit()) {
+          <button class="btn" type="button" (click)="toggleManage('skills')">Verwalten</button>
+        }
       </div>
       @if (player.skills.length === 0) {
         <p class="empty">Noch keine Skills.</p>
@@ -60,11 +71,12 @@
           <app-rating-bar
             [rating]="skill.rating"
             [color]="skill.color"
+            [disabled]="!canEdit()"
             (levelChange)="setRating(skill.skillId, $event)"
           />
         </div>
       }
-      @if (openSection() === 'skills') {
+      @if (canEdit() && openSection() === 'skills') {
         <div class="manage-box">
           <form class="create-row" (submit)="$event.preventDefault(); createSkill()">
             <input
@@ -88,7 +100,9 @@
     <div class="card goals">
       <div class="section-title">
         <h2>Ziele</h2>
-        <button class="btn" type="button" (click)="toggleManage('goals')">Verwalten</button>
+        @if (canEdit()) {
+          <button class="btn" type="button" (click)="toggleManage('goals')">Verwalten</button>
+        }
       </div>
       @if (player.developmentGoals.length === 0) {
         <p class="empty">Noch keine Ziele.</p>
@@ -99,7 +113,7 @@
           <span class="goal-name">{{ goal.name }}</span>
         </div>
       }
-      @if (openSection() === 'goals') {
+      @if (canEdit() && openSection() === 'goals') {
         <div class="manage-box">
           <form class="create-row" (submit)="$event.preventDefault(); createGoal()">
             <input

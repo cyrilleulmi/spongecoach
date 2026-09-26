@@ -1,6 +1,7 @@
 package com.spongecoach.spec.support;
 
 import io.cucumber.java.After;
+import io.cucumber.java.Before;
 import io.quarkiverse.cucumber.ScenarioScope;
 import jakarta.inject.Inject;
 
@@ -15,8 +16,18 @@ public class Hooks {
     @Inject
     ScenarioWorld world;
 
+    @Inject
+    Session session;
+
+    @Before
+    public void actAsSysAdmin() {
+        session.actAs(Session.SEEDED_SYS_ADMIN);
+    }
+
     @After
     public void tearDown() {
+        // Cleanup goes through TestData, not HTTP, but no later scenario should inherit this User.
+        session.actAsNobody();
         world.runCleanups();
     }
 }

@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { stubUsers } from './users';
 
 const LINE_ID = '11111111-1111-1111-1111-111111111111';
 const SKILL_ID = '22222222-2222-2222-2222-222222222222';
@@ -12,6 +13,7 @@ const TEAM_PLAYERS = [
 ];
 
 async function mockApi(page: Page) {
+  await stubUsers(page);
   let rating = 60;
   let rosterIds: string[] = [CARMELA_ID];
   const skills = [{ id: SKILL_ID, name: 'Passgenauigkeit', color: '#2c7a68' }];

@@ -3,6 +3,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { CurrentUserService } from '../../auth/current-user.service';
+import { CurrentUser } from '../../auth/user.model';
 import { LineOverview } from './line-overview';
 import { LineDetail } from '../line.model';
 
@@ -29,12 +31,14 @@ function detailFor(line: { id: string; name: string }): LineDetail {
 describe('LineOverview', () => {
   let httpMock: HttpTestingController;
 
-  async function render() {
+  /** `opens` is the Line the screen should select first — the User's own, or the first. */
+  async function render(me: CurrentUser | null = null, opens = LINE_A) {
     await TestBed.configureTestingModule({
       imports: [LineOverview],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
+    TestBed.inject(CurrentUserService).me.set(me);
 
     const fixture = TestBed.createComponent(LineOverview);
     fixture.detectChanges();
@@ -43,7 +47,7 @@ describe('LineOverview', () => {
     httpMock.expectOne('/api/players').flush(PLAYERS);
     httpMock.expectOne('/api/skills').flush([SKILL]);
     httpMock.expectOne('/api/development-goals').flush([GOAL, GOAL_2]);
-    httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
+    httpMock.expectOne(`/api/lines/${opens.id}`).flush(detailFor(opens));
 
     await fixture.whenStable();
     return fixture;
@@ -380,5 +384,42 @@ describe('LineOverview', () => {
 
     httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
     await fixture.whenStable();
+  });
+  // spec: ui.player-line-access
+  it('shows a Player a Line they are not on read-only, and their own Line editable, with no Line lifecycle menu', async () => {
+    const debi: CurrentUser = {
+      id: 'u-debi', name: 'Debi', role: 'PLAYER', teamId: 'team', playerId: 'player-2', lineIds: ['line-b'],
+    };
+    const fixture = await render(debi, LINE_B);
+    const el = fixture.nativeElement as HTMLElement;
+    fixture.detectChanges();
+    const manageButtons = () =>
+      Array.from(el.querySelectorAll('.section-title .btn')).filter((b) => b.textContent?.trim() === 'Verwalten');
+
+    // line-b, Debi's own, opens first and is editable.
+    expect(manageButtons().length).toBe(3);
+    expect((el.querySelector('.seg') as HTMLButtonElement).disabled).toBe(false);
+    expect(el.querySelector('[aria-label="Block-Aktionen"]')).toBeNull();
+
+    const kiwi = Array.from(el.querySelectorAll('.line-switch button')).find((b) => b.textContent?.trim() === 'Kiwi');
+    (kiwi as HTMLButtonElement).click();
+    httpMock.expectOne('/api/lines/line-a').flush(detailFor(LINE_A));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(manageButtons().length).toBe(0);
+    expect(el.querySelector('.roster-row .remove')).toBeNull();
+    expect((el.querySelector('.seg') as HTMLButtonElement).disabled).toBe(true);
+    expect(el.querySelector('[aria-label="Block-Aktionen"]')).toBeNull();
+  });
+
+  // spec: ui.opens-own-line
+  it("opens the User's own Line — the first of them if several — else the first Line", async () => {
+    const onBoth: CurrentUser = {
+      id: 'u-x', name: 'X', role: 'PLAYER', teamId: 'team', playerId: 'player-9', lineIds: ['line-b', 'line-a'],
+    };
+    // The first Line in screen order that the User is on: Kiwi (line-a) is listed before Bäri.
+    const fixture = await render(onBoth, LINE_A);
+    expect(fixture.nativeElement.querySelector('.line-switch button.active')?.textContent?.trim()).toBe('Kiwi');
   });
 });

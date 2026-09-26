@@ -100,6 +100,15 @@ public class FocusSteps {
         world.setResponse(setAttachments(attachments));
     }
 
+    @When("the coach sets {string}'s Focus alone to {string}")
+    public void theCoachSetsOneLinesFocusAlone(String lineName, String focusText) {
+        world.setResponse(given()
+                .contentType(ContentType.JSON)
+                .body(Map.of("focus", focusText))
+                .when().put("/api/events/" + world.id(Kind.EVENT, "Einheit 1")
+                        + "/focus/" + world.id(Kind.LINE, lineName)));
+    }
+
     @When("the coach attaches a Focus for a line id that does not exist")
     public void theCoachAttachesAFocusForAnUnknownLine() {
         world.setResponse(given()

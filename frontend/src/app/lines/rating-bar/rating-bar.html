@@ -5,6 +5,7 @@
       type="button"
       [style.background]="segment <= level() ? color() : 'var(--line-soft)'"
       [attr.aria-label]="'Bewertung auf ' + segment + ' von 5 setzen'"
+      [disabled]="disabled()"
       (click)="setLevel(segment)"
     ></button>
   }

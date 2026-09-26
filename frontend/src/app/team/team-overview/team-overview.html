@@ -36,10 +36,12 @@
         />
       }
 
-      <div class="iteration-tools">
-        <button type="button" class="btn" (click)="renaming.set(!renaming())">Umbenennen</button>
-        <button type="button" class="btn danger" (click)="deleteIteration()">Iteration löschen</button>
-      </div>
+      @if (isCoach()) {
+        <div class="iteration-tools">
+          <button type="button" class="btn" (click)="renaming.set(!renaming())">Umbenennen</button>
+          <button type="button" class="btn danger" (click)="deleteIteration()">Iteration löschen</button>
+        </div>
+      }
     </div>
 
     <div class="legend">
@@ -59,10 +61,12 @@
           [nextEventId]="nextEventId()"
           (select)="onSelectEvent($event)"
         />
-        <div class="add-event-row">
-          <button type="button" class="btn" (click)="addEventOfType('Training')">＋ Training</button>
-          <button type="button" class="btn" (click)="addEventOfType('Match')">＋ Match</button>
-        </div>
+        @if (isCoach()) {
+          <div class="add-event-row">
+            <button type="button" class="btn" (click)="addEventOfType('Training')">＋ Training</button>
+            <button type="button" class="btn" (click)="addEventOfType('Match')">＋ Match</button>
+          </div>
+        }
       </div>
 
       <aside class="detail-pane">
@@ -83,13 +87,15 @@
     <p class="empty-state">Noch keine Iterationen angelegt.</p>
   }
 
-  <form class="add-iteration" (submit)="$event.preventDefault(); addIteration()">
-    <input
-      type="text"
-      placeholder="Neue Iteration"
-      [value]="newIterationName()"
-      (input)="newIterationName.set($any($event.target).value)"
-    />
-    <button type="submit" class="btn">Iteration anlegen</button>
-  </form>
+  @if (isCoach()) {
+    <form class="add-iteration" (submit)="$event.preventDefault(); addIteration()">
+      <input
+        type="text"
+        placeholder="Neue Iteration"
+        [value]="newIterationName()"
+        (input)="newIterationName.set($any($event.target).value)"
+      />
+      <button type="submit" class="btn">Iteration anlegen</button>
+    </form>
+  }
 </div>

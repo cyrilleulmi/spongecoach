@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { stubUsers } from './users';
 
 const LINE_A = '11111111-1111-1111-1111-111111111111';
 const LINE_B = '22222222-2222-2222-2222-222222222222';
@@ -18,12 +19,21 @@ const ATTENDING_LINES = [
   { id: LINE_B, name: 'Bäri', color: '#8b5e34' },
 ];
 
-const ATTENDANCE = [
+interface AttendanceRow {
+  playerId: string;
+  playerName: string;
+  lineIds: string[];
+  status: string;
+  declineMessage: string | null;
+}
+
+const ATTENDANCE: AttendanceRow[] = [
   { playerId: PLAYER_1, playerName: 'Carmela', lineIds: [LINE_A], status: 'PENDING', declineMessage: null },
   { playerId: PLAYER_2, playerName: 'Rahel', lineIds: [LINE_B], status: 'ATTENDING', declineMessage: null },
 ];
 
-async function mockApi(page: Page) {
+async function mockApi(page: Page, attendance: AttendanceRow[] = ATTENDANCE) {
+  await stubUsers(page);
   let ev1Attachments: { lineId: string; lineName: string; focus: string }[] = [
     { lineId: LINE_A, lineName: 'Kiwi', focus: 'Spielaufbau' },
   ];
@@ -42,7 +52,7 @@ async function mockApi(page: Page) {
           scheduledOn: EV_1_AT,
           focusAttachments: ev1Attachments,
           lines: ATTENDING_LINES,
-          attendance: ATTENDANCE,
+          attendance,
         },
         {
           id: EV_2,
@@ -52,7 +62,7 @@ async function mockApi(page: Page) {
           scheduledOn: EV_2_AT,
           focusAttachments: [],
           lines: ATTENDING_LINES,
-          attendance: ATTENDANCE,
+          attendance,
         },
       ],
     },
@@ -86,18 +96,39 @@ async function mockApi(page: Page) {
     }),
   );
 
-  await page.route(`**/api/events/${EV_1}`, async (route) => {
-    const body = route.request().postDataJSON();
-    ev1Attachments = (body.focusAttachments as { lineId: string; focus: string }[]).map((a) => ({
-      lineId: a.lineId,
-      lineName: a.lineId === LINE_A ? 'Kiwi' : 'Bäri',
-      focus: a.focus,
-    }));
+  // One Line's Focus at a time (ADR-0017); a null focus clears it.
+  await page.route(`**/api/events/${EV_1}/focus/*`, async (route) => {
+    const lineId = route.request().url().split('/').pop()!;
+    const { focus } = route.request().postDataJSON() as { focus: string | null };
+    ev1Attachments = ev1Attachments.filter((a) => a.lineId !== lineId);
+    if (focus) {
+      ev1Attachments.push({ lineId, lineName: lineId === LINE_A ? 'Kiwi' : 'Bäri', focus });
+    }
     await route.fulfill({ json: iterations()[0].events[0] });
   });
 }
 
 test.describe('Team overview timeline', () => {
+  // spec: ui.attendance-aligned
+  test('lines up every answer in one column, whatever the Line badges beside it', async ({ page }) => {
+    await mockApi(page, [
+      ...ATTENDANCE,
+      { playerId: 'cccccccc-0000-0000-0000-000000000003', playerName: 'Sophie', lineIds: [LINE_A, LINE_B], status: 'DECLINED', declineMessage: 'Ferien' },
+    ]);
+    await page.goto('/team');
+
+    const selects = page.locator('.attendance-select');
+    await expect(selects).toHaveCount(3);
+    const lefts = await selects.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
+    expect(new Set(lefts).size).toBe(1);
+
+    // The reason sits below the answer, not beside it.
+    const sophie = page.locator('.attendance-row', { hasText: 'Sophie' });
+    const selectBox = (await sophie.locator('.attendance-select').boundingBox())!;
+    const reasonBox = (await sophie.locator('.decline-message-input').boundingBox())!;
+    expect(reasonBox.y).toBeGreaterThan(selectBox.y + selectBox.height - 1);
+  });
+
   test('shows one iteration with numbered trainings closing on a named match', async ({ page }) => {
     await mockApi(page);
     await page.goto('/team');

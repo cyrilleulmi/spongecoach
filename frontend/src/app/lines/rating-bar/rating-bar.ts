@@ -8,6 +8,8 @@ import { Component, computed, input, output } from '@angular/core';
 export class RatingBar {
   readonly rating = input.required<number>();
   readonly color = input.required<string>();
+  /** Shown but not clickable — for a User who may not edit this Rating (ADR-0017). */
+  readonly disabled = input(false);
   readonly levelChange = output<number>();
 
   protected readonly segments = [1, 2, 3, 4, 5];

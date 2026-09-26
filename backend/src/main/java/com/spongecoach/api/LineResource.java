@@ -6,6 +6,7 @@ import com.spongecoach.api.dto.LineSkillDto;
 import com.spongecoach.api.dto.LineSummaryDto;
 import com.spongecoach.api.dto.LineUpdateRequest;
 import com.spongecoach.api.dto.RatingRequest;
+import com.spongecoach.auth.Access;
 import com.spongecoach.domain.DevelopmentGoal;
 import com.spongecoach.domain.Event;
 import com.spongecoach.domain.EventAttendance;
@@ -18,6 +19,7 @@ import com.spongecoach.domain.LineSkillId;
 import com.spongecoach.domain.Player;
 import com.spongecoach.domain.Skill;
 import com.spongecoach.domain.Team;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -50,6 +52,9 @@ public class LineResource {
         "#4c8c3d", "#8b5e34", "#6a4c93", "#c9702c", "#3b6ea5", "#b1467a", "#8a7a2e", "#2c7a68",
     };
 
+    @Inject
+    Access access;
+
     @GET
     public List<LineSummaryDto> list() {
         return Line.listAllOrderedByName().stream().map(LineSummaryDto::from).toList();
@@ -68,9 +73,11 @@ public class LineResource {
         if (request == null || request.name() == null || request.name().isBlank()) {
             throw new BadRequestException("name must not be blank");
         }
+        Team team = Team.theTeam();
+        access.requireCoach(team);
         Line line = new Line();
         line.id = UUID.randomUUID();
-        line.team = Team.theTeam();
+        line.team = team;
         line.name = request.name().trim();
         line.color = COLOR_PALETTE[(int) (Line.count() % COLOR_PALETTE.length)];
         line.persist();
@@ -82,6 +89,7 @@ public class LineResource {
     @Transactional
     public Response delete(@PathParam("lineId") UUID lineId) {
         Line line = findLineOrThrow(lineId);
+        access.requireCoach(line.team);
         line.deletedAt = Instant.now();
         return Response.noContent().build();
     }
@@ -98,6 +106,7 @@ public class LineResource {
     @Transactional
     public LineSummaryDto restore(@PathParam("lineId") UUID lineId) {
         Line line = findDeletedLineOrThrow(lineId);
+        access.requireCoach(line.team);
         line.deletedAt = null;
         return LineSummaryDto.from(line);
     }
@@ -107,6 +116,7 @@ public class LineResource {
     @Transactional
     public LineDetailDto update(@PathParam("lineId") UUID lineId, LineUpdateRequest request) {
         Line line = findLineOrThrow(lineId);
+        access.requireLineMember(line);
         if (request.name() != null) {
             line.name = request.name();
         }
@@ -148,6 +158,7 @@ public class LineResource {
             throw new BadRequestException("rating must be between 0 and 100");
         }
         Line line = findLineOrThrow(lineId);
+        access.requireLineMember(line);
         Skill skill = findSkillOrThrow(skillId);
 
         LineSkill lineSkill = LineSkill.find(lineId, skillId);
@@ -166,7 +177,7 @@ public class LineResource {
     @Path("/{lineId}/skills/{skillId}")
     @Transactional
     public Response removeSkill(@PathParam("lineId") UUID lineId, @PathParam("skillId") UUID skillId) {
-        findLineOrThrow(lineId);
+        access.requireLineMember(findLineOrThrow(lineId));
         LineSkill lineSkill = LineSkill.find(lineId, skillId);
         if (lineSkill == null) {
             throw new NotFoundException("Line " + lineId + " is not associated with skill " + skillId);

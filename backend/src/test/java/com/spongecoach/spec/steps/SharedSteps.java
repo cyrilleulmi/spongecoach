@@ -5,7 +5,10 @@ import io.cucumber.java.en.Then;
 import io.quarkiverse.cucumber.ScenarioScope;
 import jakarta.inject.Inject;
 
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
 
 /**
  * The outcomes many scenarios end on, phrased once. Codes come from
@@ -30,6 +33,21 @@ public class SharedSteps {
     @Then("the response is a not-found error envelope")
     public void theResponseIsANotFoundErrorEnvelope() {
         world.response().then().statusCode(404).body("error", equalTo("not_found"));
+    }
+
+    @Then("the request succeeds")
+    public void theRequestSucceeds() {
+        world.response().then().statusCode(both(greaterThanOrEqualTo(200)).and(lessThan(300)));
+    }
+
+    @Then("the request is refused as unauthenticated")
+    public void theRequestIsRefusedAsUnauthenticated() {
+        world.response().then().statusCode(401).body("error", equalTo("unauthenticated"));
+    }
+
+    @Then("the request is refused as forbidden")
+    public void theRequestIsRefusedAsForbidden() {
+        world.response().then().statusCode(403).body("error", equalTo("forbidden"));
     }
 
     @Then("the request is rejected as a scheduling conflict")

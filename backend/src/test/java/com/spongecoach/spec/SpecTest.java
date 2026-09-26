@@ -24,6 +24,7 @@ import io.quarkiverse.cucumber.CucumberQuarkusTest;
                 "../docs/spec/focus-planning.feature",
                 "../docs/spec/attendance.feature",
                 "../docs/spec/players.feature",
+                "../docs/spec/authorization.feature",
         },
         glue = "com.spongecoach.spec",
         tags = "not @unverified",

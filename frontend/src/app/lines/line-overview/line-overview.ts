@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { CurrentUserService } from '../../auth/current-user.service';
 import { PlayerAvatar } from '../../players/player-avatar/player-avatar';
 import { ChipItem, ManageChips } from '../manage-chips/manage-chips';
 import { RatingBar } from '../rating-bar/rating-bar';
@@ -33,6 +34,11 @@ type ManageSection = 'skills' | 'goals';
 export class LineOverview implements OnInit {
   private readonly api = inject(LineApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly currentUser = inject(CurrentUserService);
+
+  /** Creating, deleting and restoring Lines is for coaches; editing one is for them and its Players. */
+  protected readonly isCoach = this.currentUser.isCoach;
+  protected readonly canEdit = computed(() => this.currentUser.canEditLine(this.selectedLineId()));
 
   protected readonly lines = signal<LineSummary[]>([]);
   protected readonly selectedLineId = signal<string | null>(null);
@@ -95,7 +101,12 @@ export class LineOverview implements OnInit {
         this.skillCatalog.set(skills);
         this.goalCatalog.set(goals);
         const requested = this.route.snapshot.queryParamMap.get('line');
-        const initial = lines.find((l) => l.id === requested) ?? lines[0];
+        // A link names its Line; otherwise open the first Line the User is on, else the first Line.
+        const ownLineIds = this.currentUser.me()?.lineIds ?? [];
+        const initial =
+          lines.find((l) => l.id === requested) ??
+          lines.find((l) => ownLineIds.includes(l.id)) ??
+          lines[0];
         if (initial) {
           this.selectLine(initial.id);
         }
@@ -234,7 +245,7 @@ export class LineOverview implements OnInit {
       return;
     }
     this.api.updateLineAssociations(lineId, { playerIds: [...staged] }).subscribe({
-      next: () => this.selectLine(lineId),
+      next: () => this.afterRosterChange(lineId),
       error: () => this.errorMessage.set('Kader konnte nicht aktualisiert werden.'),
     });
   }
@@ -251,9 +262,17 @@ export class LineOverview implements OnInit {
     }
     const ids = this.toggledIds(this.associatedPlayerIds(), playerId);
     this.api.updateLineAssociations(lineId, { playerIds: ids }).subscribe({
-      next: () => this.selectLine(lineId),
+      next: () => this.afterRosterChange(lineId),
       error: () => this.errorMessage.set('Kader konnte nicht aktualisiert werden.'),
     });
+  }
+
+  /** A Player who took themselves off this Line may no longer edit it, so the User is re-read. */
+  private afterRosterChange(lineId: string): void {
+    this.selectLine(lineId);
+    if (this.currentUser.me()) {
+      this.currentUser.refresh();
+    }
   }
 
   private setsEqual(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {

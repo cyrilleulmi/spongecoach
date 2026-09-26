@@ -6,6 +6,7 @@ import com.spongecoach.api.dto.EventUpdateRequest;
 import com.spongecoach.api.dto.IterationCreateRequest;
 import com.spongecoach.api.dto.IterationDto;
 import com.spongecoach.api.dto.IterationUpdateRequest;
+import com.spongecoach.auth.Access;
 import com.spongecoach.domain.Event;
 import com.spongecoach.domain.EventAttendance;
 import com.spongecoach.domain.EventAttendanceId;
@@ -16,6 +17,7 @@ import com.spongecoach.domain.Iteration;
 import com.spongecoach.domain.Line;
 import com.spongecoach.domain.Player;
 import com.spongecoach.domain.Team;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -47,6 +49,9 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class IterationResource {
 
+    @Inject
+    Access access;
+
     @GET
     public List<IterationDto> list() {
         return Iteration.listAllOrderedByPosition().stream().map(IterationDto::from).toList();
@@ -64,9 +69,11 @@ public class IterationResource {
         if (request == null || request.name() == null || request.name().isBlank()) {
             throw new BadRequestException("name must not be blank");
         }
+        Team team = Team.theTeam();
+        access.requireCoach(team);
         Iteration iteration = new Iteration();
         iteration.id = UUID.randomUUID();
-        iteration.team = Team.theTeam();
+        iteration.team = team;
         iteration.name = request.name().trim();
         iteration.position = request.position() != null ? request.position() : nextIterationPosition();
         iteration.persist();
@@ -84,6 +91,7 @@ public class IterationResource {
     public IterationDto update(
             @PathParam("iterationId") UUID iterationId, IterationUpdateRequest request) {
         Iteration iteration = findIterationOrThrow(iterationId);
+        access.requireCoach(iteration.team);
         if (request.name() != null) {
             iteration.name = request.name();
         }
@@ -98,6 +106,7 @@ public class IterationResource {
     @Transactional
     public Response delete(@PathParam("iterationId") UUID iterationId) {
         Iteration iteration = findIterationOrThrow(iterationId);
+        access.requireCoach(iteration.team);
         iteration.delete();
         return Response.noContent().build();
     }
@@ -108,6 +117,7 @@ public class IterationResource {
     public Response addEvent(
             @PathParam("iterationId") UUID iterationId, EventCreateRequest request) {
         Iteration iteration = findIterationOrThrow(iterationId);
+        access.requireCoach(iteration.team);
         Event event = persistEvent(iteration, request);
         return Response.status(Response.Status.CREATED).entity(EventDto.from(event)).build();
     }
@@ -119,7 +129,7 @@ public class IterationResource {
             @PathParam("iterationId") UUID iterationId,
             @PathParam("eventId") UUID eventId,
             EventUpdateRequest request) {
-        findIterationOrThrow(iterationId);
+        access.requireCoach(findIterationOrThrow(iterationId).team);
         Event event = findEventInIterationOrThrow(iterationId, eventId);
         if (request.eventTypeId() != null) {
             event.eventType = findEventTypeOrThrow(request.eventTypeId());
@@ -144,6 +154,7 @@ public class IterationResource {
     public Response deleteEvent(
             @PathParam("iterationId") UUID iterationId, @PathParam("eventId") UUID eventId) {
         Iteration iteration = findIterationOrThrow(iterationId);
+        access.requireCoach(iteration.team);
         Event event = findEventInIterationOrThrow(iterationId, eventId);
         iteration.events.remove(event);
         event.delete();

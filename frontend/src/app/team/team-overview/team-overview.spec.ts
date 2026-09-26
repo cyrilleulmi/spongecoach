@@ -2,6 +2,8 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { CurrentUserService } from '../../auth/current-user.service';
+import { CurrentUser } from '../../auth/user.model';
 import { TeamOverview } from './team-overview';
 import { Iteration } from '../iteration.model';
 
@@ -57,17 +59,18 @@ function iterations(): Iteration[] {
 describe('TeamOverview', () => {
   let httpMock: HttpTestingController;
 
-  async function render() {
+  async function render(me: CurrentUser | null = null, data: Iteration[] = iterations()) {
     await TestBed.configureTestingModule({
       imports: [TeamOverview],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
+    TestBed.inject(CurrentUserService).me.set(me);
 
     const fixture = TestBed.createComponent(TeamOverview);
     fixture.detectChanges();
 
-    httpMock.expectOne('/api/iterations').flush(iterations());
+    httpMock.expectOne('/api/iterations').flush(data);
     httpMock.expectOne('/api/event-types').flush(EVENT_TYPES);
     httpMock.expectOne('/api/lines').flush(LINES);
 
@@ -87,6 +90,25 @@ describe('TeamOverview', () => {
     expect(fixture.nativeElement.querySelectorAll('.d-node').length).toBe(2);
   });
 
+  // spec: ui.opens-on-next-event
+  it('opens on the Iteration holding the next Event, not the first one', async () => {
+    const [prep, season] = iterations();
+    const pastPrep = { ...prep, events: prep.events.map((e) => ({ ...e, scheduledOn: '2020-01-01T18:00' })) };
+    const upcomingSeason = { ...season, events: [{ ...prep.events[0], id: 'ev-9', scheduledOn: '2099-09-01T18:00' }] };
+    const fixture = await render(null, [pastPrep, upcomingSeason]);
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Iteration 2 von 2');
+    expect(fixture.nativeElement.querySelector('.d-node.current')).not.toBeNull();
+  });
+
+  it('opens on the latest Iteration once every Event has passed', async () => {
+    const [prep, season] = iterations();
+    const pastPrep = { ...prep, events: prep.events.map((e) => ({ ...e, scheduledOn: '2020-01-01T18:00' })) };
+    const fixture = await render(null, [pastPrep, season]);
+    expect(fixture.nativeElement.textContent).toContain('Iteration 2 von 2');
+  });
+
   // spec: ui.next-event-marked
   it('marks the first not-yet-past event as the next one', async () => {
     const fixture = await render();
@@ -96,7 +118,7 @@ describe('TeamOverview', () => {
   });
 
   // spec: ui.set-focus-from-detail
-  it('when a line focus is changed, PUTs the merged attachment set and reloads', async () => {
+  it("when a line focus is changed, PUTs that Line's Focus alone and reloads", async () => {
     const fixture = await render();
 
     // ev-1 is the default selection (it is "next"); change Bäri's focus.
@@ -104,14 +126,9 @@ describe('TeamOverview', () => {
     lineBInput.value = 'Abschlussübungen 2-auf-1';
     lineBInput.dispatchEvent(new Event('change'));
 
-    const put = httpMock.expectOne('/api/events/ev-1');
+    const put = httpMock.expectOne('/api/events/ev-1/focus/line-b');
     expect(put.request.method).toBe('PUT');
-    expect(put.request.body).toEqual({
-      focusAttachments: [
-        { lineId: 'line-a', focus: 'Fokus A' },
-        { lineId: 'line-b', focus: 'Abschlussübungen 2-auf-1' },
-      ],
-    });
+    expect(put.request.body).toEqual({ focus: 'Abschlussübungen 2-auf-1' });
     put.flush({ ...iterations()[0].events[0], focusAttachments: [] });
 
     httpMock.expectOne('/api/iterations').flush(iterations());
@@ -133,9 +150,9 @@ describe('TeamOverview', () => {
     expect(sameFocusButtons.length).toBe(1); // only line-a has an earlier focus
     sameFocusButtons[0].click();
 
-    const put = httpMock.expectOne('/api/events/ev-2');
+    const put = httpMock.expectOne('/api/events/ev-2/focus/line-a');
     expect(put.request.method).toBe('PUT');
-    expect(put.request.body).toEqual({ focusAttachments: [{ lineId: 'line-a', focus: 'Fokus A' }] });
+    expect(put.request.body).toEqual({ focus: 'Fokus A' });
     put.flush({ ...iterations()[0].events[1], focusAttachments: [{ lineId: 'line-a', lineName: 'Kiwi', focus: 'Fokus A' }] });
 
     httpMock.expectOne('/api/iterations').flush(iterations());
@@ -188,5 +205,18 @@ describe('TeamOverview', () => {
     fixture.detectChanges();
 
     expect((fixture.nativeElement.textContent as string)).toContain('Iteration 3 von 3');
+  });
+  // spec: ui.player-cannot-plan-timeline
+  it('hides Iteration and Event planning from a Player', async () => {
+    const carmela: CurrentUser = {
+      id: 'u-carmela', name: 'Carmela', role: 'PLAYER', teamId: 'team', playerId: 'p-1', lineIds: ['line-a'],
+    };
+    const fixture = await render(carmela);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.iteration-tools')).toBeNull();
+    expect(el.querySelector('.add-event-row')).toBeNull();
+    expect(el.querySelector('.add-iteration')).toBeNull();
+    expect(el.querySelector('app-iteration-selector')).not.toBeNull();
   });
 });

@@ -1,9 +1,11 @@
 package com.spongecoach.spec.support;
 
+import com.spongecoach.domain.AppUser;
 import com.spongecoach.domain.Event;
 import com.spongecoach.domain.Iteration;
 import com.spongecoach.domain.Line;
 import com.spongecoach.domain.Player;
+import com.spongecoach.domain.Role;
 import com.spongecoach.support.TestData;
 import io.quarkiverse.cucumber.ScenarioScope;
 import jakarta.inject.Inject;
@@ -133,6 +135,21 @@ public class Fixtures {
         world.register(Kind.EVENT, spokenName, event.id, actualName);
         // Its Iteration's cleanup takes the Event with it, so nothing extra is queued here.
         return event.id;
+    }
+
+    /**
+     * A User of the given Role in the Team, acting as the named Player when one is given. A Player
+     * user shares its Player's spoken name, so "Carmela" is both.
+     */
+    public UUID user(String spokenName, Role role, String playerSpokenName) {
+        if (world.knows(Kind.USER, spokenName)) {
+            return world.id(Kind.USER, spokenName);
+        }
+        UUID playerId = playerSpokenName == null ? null : world.id(Kind.PLAYER, playerSpokenName);
+        AppUser user = testData.createUser(world.uniquify(spokenName), role, playerId);
+        world.register(Kind.USER, spokenName, user.id, user.name);
+        world.onCleanup(() -> testData.deleteUser(user.id));
+        return user.id;
     }
 
     public TestData testData() {

@@ -22,6 +22,9 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
         if (exception instanceof ConflictException conflict) {
             return error(Response.Status.CONFLICT, "scheduling_conflict", conflict.getMessage());
         }
+        if (exception instanceof AccessDeniedException accessDenied) {
+            return error(Response.Status.FORBIDDEN, "forbidden", accessDenied.getMessage());
+        }
         if (exception instanceof WebApplicationException webApplicationException) {
             Response response = webApplicationException.getResponse();
             return error(

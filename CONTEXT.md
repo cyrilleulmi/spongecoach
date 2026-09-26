@@ -13,6 +13,13 @@ The single club this MVP serves. No multi-team support.
 A group of Players who train and play together. A Line's roster is a selection of the Team's Players — the same Player may be on more than one Line (ADR-0008).
 _Avoid_: Block (German term, code/API stays English), squad
 
+**User**:
+Someone using the app, with exactly one Role. Seeded only; picked from a dropdown in the header until there is authentication (ADR-0017). A Player-Role User acts as one Player; a Coach may also be a Player.
+_Avoid_: account, login (there is none yet)
+
+**Role**:
+What a User may change — every User may read everything. **SysAdmin**: everything. **Coach**: everything in their Team, including done Events. **Player**: their own Player, the Lines they are on, those Lines' Focus per Event, and their own attendance, the last two only before the Event (ADR-0017).
+
 **Player**:
 A member of the Team, associated with zero or more Lines. Team-scoped like the Skill/Development goal/Focus catalogs; created by seed only in v1 (no create-Player endpoint or UI). Carries their own Player ratings and Player development goals (ADR-0015); shown with their Avatar, or their initials while they have none.
 
@@ -45,7 +52,7 @@ A development target. Shared catalog, not owned per-Line: a Line associates with
 _Avoid_: Goal (reserved — would collide with a scored goal if that concept is ever modeled; out of scope for this MVP)
 
 **Focus**:
-Free text a coach sets per Line per Event (via that Event's Line-Focus-Event link — see Event), naming what that Line works on for that Training or Match. Not a catalog — there's nothing to associate a Line with outside an Event, and no id to reuse; "same focus again" is a plain copy of a Line's most recent earlier Focus text, not a reference (ADR-0014). Setting an Event's attachments replaces the whole set; leaving a Line out of the set clears its Focus for that Event.
+Free text a coach — or a Player on that Line — sets per Line per Event (via that Event's Line-Focus-Event link — see Event), naming what that Line works on for that Training or Match. Not a catalog — there's nothing to associate a Line with outside an Event, and no id to reuse; "same focus again" is a plain copy of a Line's most recent earlier Focus text, not a reference (ADR-0014). Setting an Event's attachments replaces the whole set; leaving a Line out of the set clears its Focus for that Event.
 
 **Iteration**:
 A named group of Events, ordered relative to other Iterations. The unit a coach plans around (e.g. a training block or phase).

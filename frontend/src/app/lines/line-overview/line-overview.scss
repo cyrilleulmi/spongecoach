@@ -398,3 +398,8 @@ h3 {
   flex: 1;
 }
 
+
+.dot:disabled {
+  cursor: default;
+  transform: none;
+}

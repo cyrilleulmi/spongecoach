@@ -14,7 +14,8 @@ backend/   Quarkus + Hibernate Panache (active-record). REST resources map strai
 Postgres   docker-compose for dev; Quarkus Dev Services (Testcontainers) for tests.
 ```
 
-Single hardcoded Team, no auth in v1. UUID primary keys everywhere (ADR-0002).
+Single hardcoded Team. No authentication yet, but Roles are enforced: the User is picked in a header
+dropdown and sent as a cookie (ADR-0017). UUID primary keys everywhere (ADR-0002).
 
 ## Backend layers
 
@@ -24,6 +25,11 @@ Single hardcoded Team, no auth in v1. UUID primary keys everywhere (ADR-0002).
 - `api/dto/` — records with static `from(entity)` factories. Read DTOs denormalise names
   (`FocusAttachmentDto` carries `lineName` alongside the free-text `focus`) so the timeline is one
   call, no N+1.
+- `auth/` — `UserCookieFilter` resolves the `spongecoach-user` cookie into a request-scoped
+  `CurrentUser` (401 `unauthenticated` if missing or unknown; `GET /api/users` is exempt).
+  `Access` holds every write rule: resources call it after loading the row, so an unknown id is
+  still 404 and a refused write is 403 `forbidden`. Reads are never checked (ADR-0017). Which Role
+  may call which endpoint is in [permissions.md](permissions.md).
 - `domain/` — Panache entities with public fields and static finders. Join tables that carry a
   payload are entities (`LineSkill`, `LineFocusEvent`, `EventAttendance`); join tables that do not
   are `@ManyToMany` (`line_player`, `event_line`).
@@ -44,6 +50,7 @@ Team 1─* Iteration 1─* Event
          Event ──* EventLinePlayer   (event_line_player: snapshot of each attending Line's roster)
          Event ──* EventAttendance   (one answer per (Event, Player): PENDING|ATTENDING|DECLINED)
          Event ──* LineFocusEvent    (at most one per (Event, Line); `focus` is free text, ADR-0014)
+AppUser ──0..1 Team, ──0..1 Player  (app_user: role SYS_ADMIN|COACH|PLAYER; seeded only, ADR-0017)
 ```
 
 Soft delete (`deleted_at`) on Line, Skill, DevelopmentGoal, PlayerSkill, PlayerDevelopmentGoal (ADR-0004). `Line.color` is assigned
@@ -67,6 +74,8 @@ Player dropped from one of two attending Lines keeps their single answer through
 
 | Method | Path | Notes |
 |---|---|---|
+| GET | `/api/users` | the seeded Users for the header dropdown; the one call that needs no User |
+| GET | `/api/me` | the current User, with `role`, `playerId` and the active `lineIds` their Player is on |
 | GET | `/api/lines` | active Lines, name order, with `playerCount` and `color` |
 | GET | `/api/lines/{id}` | roster, Skill ratings and Development goals inline |
 | POST | `/api/lines` | `{name}`; assigns the next palette color |
@@ -88,7 +97,8 @@ Player dropped from one of two attending Lines keeps their single answer through
 | PUT/DELETE | `/api/iterations/{id}` | delete cascades to its Events |
 | POST | `/api/iterations/{id}/events` | `{eventTypeId, name?, scheduledOn}`; takes the attendance snapshot |
 | PUT/DELETE | `/api/iterations/{it}/events/{ev}` | reschedule / rename / delete |
-| PUT | `/api/events/{id}` | `{eventTypeId?, name?, scheduledOn?, focusAttachments?}` — `focusAttachments` is `[{lineId, focus}]` free text; a non-null value **replaces the whole set** |
+| PUT | `/api/events/{id}` | `{eventTypeId?, name?, scheduledOn?, focusAttachments?}` — `focusAttachments` is `[{lineId, focus}]` free text; a non-null value **replaces the whole set**. Coach only |
+| PUT | `/api/events/{id}/focus/{lineId}` | `{focus}` — one attending Line's Focus alone; blank or null clears it. What the frontend uses |
 | PUT | `/api/events/{id}/attendance/{playerId}` | `{status, declineMessage?}`; the message is kept only while `DECLINED` |
 
 `scheduledOn` is mandatory and unique within its Iteration (ADR-0011); a collision returns **409
@@ -99,12 +109,13 @@ Player dropped from one of two attending Lines keeps their single answer through
 Four routes: `/team` (default), `/lines`, `/players`, `/players/:id`. The header nav reads
 Team-Übersicht · Blöcke · Spieler.
 
-- **`/lines`** — one Line at a time; `?line=<id>` preselects one (unknown id → first Line), which
-  is how a Line badge elsewhere jumps here. Roster rows link to the player screen. Ratings are optimistic with rollback; every other association
+- **`/lines`** — one Line at a time; `?line=<id>` preselects one, which is how a Line badge
+  elsewhere jumps here; otherwise it opens the first Line the User is on, else the first Line. Roster rows link to the player screen. Ratings are optimistic with rollback; every other association
   edit sends the full id array and refetches. The roster dialog stages changes and commits once on
   "Fertig". New Skills / Development goals are created from here and auto-associated (ADR-0009).
   Focus is not managed here (ADR-0014) — it's set per Event from `/team`.
-- **`/team`** — the Iteration timeline. Each Event is a dial with one slice per *snapshotted*
+- **`/team`** — the Iteration timeline, opened on the Iteration holding the next Event (the latest
+  one once all have passed). Each Event is a dial with one slice per *snapshotted*
   attending Line, lit in that Line's color when the Line has a Focus set — so a dial reads as
   "how much of this session is planned". A Line's Focus is a plain text field in the event detail
   panel; "same focus again" copies that Line's most recent earlier Focus text into it (ADR-0014).
@@ -118,9 +129,16 @@ Team-Übersicht · Blöcke · Spieler.
   renders "Spieler nicht gefunden". Clicking the Avatar opens `AvatarPainter`, a modal canvas
   (brush, spray, fill, eraser, undo) with a circle guide over the saved square; its pixel math lives
   in `paint-engine.ts` so it is testable without a canvas (ADR-0016).
-- **Read-only past Events** are a frontend default, not a backend rule (ADR-0012): an Event whose
-  datetime has passed renders disabled, and the coach can lift the lock per Event with "Trotzdem
-  bearbeiten". The lock returns when another Event is selected.
+- **Read-only past Events** are a frontend default for coaches (ADR-0012): an Event whose
+  datetime has passed renders read-only, and a coach can lift the lock per Event with "Trotzdem
+  bearbeiten". The lock returns when another Event is selected. For a Player it is a backend rule,
+  so there is no lift (ADR-0017).
+- **Users** — `UserSwitcher` in the header lists the Users by Role; choosing one writes the cookie
+  and reloads. `CurrentUserService` loads the User before any screen renders and answers "may I
+  edit this?" (`isCoach`, `canEditLine`, `canEditPlayer`) by the same rules as `Access`; screens
+  hide or disable what the backend would refuse. In the event detail, a Focus or answer the User
+  can't change is plain text, not a disabled field, and an empty Focus they can't set isn't shown.
+  Attendance rows are a grid, so the answers line up whatever the Line badges' width.
 
 UI copy is German; every domain term in code, API and docs stays English ([glossary.md](glossary.md)).
 
@@ -137,6 +155,7 @@ tied to them by `// spec:` marker comments. ADR-0013 records why the two layers 
 ## Known gaps
 
 - Playwright e2e stubs the API in the browser; no e2e runs against the real backend.
-- Backend does not enforce read-only past Events — the frontend does, deliberately.
+- Backend does not enforce read-only past Events for coaches — the frontend does, deliberately. It does for Players.
+- No authentication: anyone who reaches the app can pick any User (ADR-0017).
 - `Line.count()` drives the palette index and counts soft-deleted Lines, so colors can repeat
   before all eight are used.

@@ -4,6 +4,8 @@ import com.spongecoach.api.dto.AttendanceUpdateRequest;
 import com.spongecoach.api.dto.EventDto;
 import com.spongecoach.api.dto.EventUpdateRequest;
 import com.spongecoach.api.dto.FocusAttachmentRequest;
+import com.spongecoach.api.dto.FocusRequest;
+import com.spongecoach.auth.Access;
 import com.spongecoach.domain.AttendanceStatus;
 import com.spongecoach.domain.Event;
 import com.spongecoach.domain.EventAttendance;
@@ -14,6 +16,7 @@ import com.spongecoach.domain.Line;
 import com.spongecoach.domain.LineFocusEvent;
 import com.spongecoach.domain.LineFocusEventId;
 import com.spongecoach.domain.Player;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.NotFoundException;
@@ -29,9 +32,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Editing a single Event by id. The team-overview timeline attaches/clears a Line's Focus for an
- * Event here via {@code focusAttachments} — a full replacement of the event's set, one Focus per
- * Line (an empty list clears them all). Event fields (type/name/date) may also be set. A
+ * Editing a single Event by id. A coach may replace the Event's whole set of Focus attachments via
+ * {@code focusAttachments} — one Focus per Line, an empty list clears them all — and set its own
+ * fields (type/name/date). One Line's Focus alone is set via {@code /focus/{lineId}}, which is what
+ * a Player on that Line may use (ADR-0017). A
  * {@code scheduledOn} change must land on a datetime not already used by another Event in the same
  * Iteration (ADR-0011); a collision is rejected with 409.
  */
@@ -40,11 +44,15 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class EventResource {
 
+    @Inject
+    Access access;
+
     @PUT
     @Path("/{eventId}")
     @Transactional
     public EventDto update(@PathParam("eventId") UUID eventId, EventUpdateRequest request) {
         Event event = findEventOrThrow(eventId);
+        access.requireCoach(event.iteration.team);
 
         if (request.eventTypeId() != null) {
             event.eventType = findEventTypeOrThrow(request.eventTypeId());
@@ -67,6 +75,46 @@ public class EventResource {
     }
 
     /**
+     * Sets or clears one Line's Focus for the Event, leaving every other Line's alone. The Line must
+     * be one of the Event's attending Lines.
+     */
+    @PUT
+    @Path("/{eventId}/focus/{lineId}")
+    @Transactional
+    public EventDto setFocus(
+            @PathParam("eventId") UUID eventId, @PathParam("lineId") UUID lineId, FocusRequest request) {
+        Event event = findEventOrThrow(eventId);
+        Line line = Line.findById(lineId);
+        if (line == null) {
+            throw new NotFoundException("Line " + lineId + " not found");
+        }
+        if (event.lines.stream().noneMatch(l -> l.id.equals(lineId))) {
+            throw new BadRequestException("Line " + lineId + " is not attending event " + eventId);
+        }
+        access.requireFocus(event, line);
+
+        String focus = request == null ? null : blankToNull(request.focus());
+        LineFocusEvent attachment = LineFocusEvent.find(eventId, lineId);
+        if (focus == null) {
+            if (attachment != null) {
+                event.focusAttachments.remove(attachment);
+                attachment.delete();
+            }
+            return EventDto.from(event);
+        }
+        if (attachment == null) {
+            attachment = new LineFocusEvent();
+            attachment.id = new LineFocusEventId(eventId, lineId);
+            attachment.event = event;
+            attachment.line = line;
+            event.focusAttachments.add(attachment);
+        }
+        attachment.focus = focus;
+        attachment.persist();
+        return EventDto.from(event);
+    }
+
+    /**
      * Sets one Player's attendance answer for the Event. The Player must already be on the
      * Event's snapshot ({@code event_line_player}) — attendance can't be set for someone who
      * isn't on any attending Line for it. A non-{@code DECLINED} status always clears any
@@ -84,6 +132,7 @@ public class EventResource {
             throw new NotFoundException(
                     "Player " + playerId + " is not on event " + eventId + "'s attendance list");
         }
+        access.requireAttendance(event, playerId);
         if (request == null || request.status() == null) {
             throw new BadRequestException("status must not be null");
         }

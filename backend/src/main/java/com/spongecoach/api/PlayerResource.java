@@ -5,12 +5,14 @@ import com.spongecoach.api.dto.PlayerSkillRatingDto;
 import com.spongecoach.api.dto.PlayerSummaryDto;
 import com.spongecoach.api.dto.PlayerUpdateRequest;
 import com.spongecoach.api.dto.RatingRequest;
+import com.spongecoach.auth.Access;
 import com.spongecoach.domain.Player;
 import com.spongecoach.domain.PlayerAvatar;
 import com.spongecoach.domain.PlayerDevelopmentGoal;
 import com.spongecoach.domain.PlayerSkill;
 import com.spongecoach.domain.PlayerSkillRating;
 import com.spongecoach.domain.PlayerSkillRatingId;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -42,6 +44,9 @@ public class PlayerResource {
     private static final int AVATAR_MAX_BYTES = 200 * 1024;
     private static final int AVATAR_MAX_SIDE = 512;
 
+    @Inject
+    Access access;
+
     @GET
     @Transactional
     public List<PlayerSummaryDto> list() {
@@ -61,6 +66,7 @@ public class PlayerResource {
     @Transactional
     public PlayerDetailDto update(@PathParam("playerId") UUID playerId, PlayerUpdateRequest request) {
         Player player = findPlayerOrThrow(playerId);
+        access.requireSelf(player);
         if (request.developmentGoalIds() != null) {
             player.developmentGoals = new ArrayList<>(
                     request.developmentGoalIds().stream().map(this::findGoalOrThrow).toList());
@@ -84,6 +90,7 @@ public class PlayerResource {
             throw new BadRequestException("rating must be between 0 and 100");
         }
         Player player = findPlayerOrThrow(playerId);
+        access.requireSelf(player);
         PlayerSkill skill = findSkillOrThrow(skillId);
 
         PlayerSkillRating rating = PlayerSkillRating.find(playerId, skillId);
@@ -102,7 +109,7 @@ public class PlayerResource {
     @Path("/{playerId}/skills/{skillId}")
     @Transactional
     public Response removeSkill(@PathParam("playerId") UUID playerId, @PathParam("skillId") UUID skillId) {
-        findPlayerOrThrow(playerId);
+        access.requireSelf(findPlayerOrThrow(playerId));
         PlayerSkillRating rating = PlayerSkillRating.find(playerId, skillId);
         if (rating == null) {
             throw new NotFoundException("Player " + playerId + " is not rated on skill " + skillId);
@@ -137,8 +144,9 @@ public class PlayerResource {
     @Consumes(PNG)
     @Transactional
     public PlayerDetailDto setAvatar(@PathParam("playerId") UUID playerId, byte[] image) {
-        validateAvatar(image);
         Player player = findPlayerOrThrow(playerId);
+        access.requireSelf(player);
+        validateAvatar(image);
         PlayerAvatar avatar = PlayerAvatar.findById(playerId);
         if (avatar == null) {
             avatar = new PlayerAvatar();
@@ -156,6 +164,7 @@ public class PlayerResource {
     @Transactional
     public Response removeAvatar(@PathParam("playerId") UUID playerId) {
         Player player = findPlayerOrThrow(playerId);
+        access.requireSelf(player);
         PlayerAvatar.deleteById(playerId);
         player.avatarUpdatedAt = null;
         return Response.noContent().build();

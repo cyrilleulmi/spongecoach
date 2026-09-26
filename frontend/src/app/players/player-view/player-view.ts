@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { CurrentUserService } from '../../auth/current-user.service';
 import { CatalogRef } from '../../lines/line.model';
 import { LineBadge } from '../../lines/line-badge/line-badge';
 import { ChipItem, ManageChips } from '../../lines/manage-chips/manage-chips';
@@ -25,9 +26,12 @@ type ManageSection = 'skills' | 'goals';
 export class PlayerView implements OnInit {
   private readonly api = inject(PlayerApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly currentUser = inject(CurrentUserService);
 
   protected readonly detail = signal<PlayerDetail | null>(null);
   protected readonly notFound = signal(false);
+  /** A coach edits every Player; a Player only themselves (ADR-0017). */
+  protected readonly canEdit = computed(() => this.currentUser.canEditPlayer(this.detail()?.id));
   protected readonly skillCatalog = signal<CatalogRef[]>([]);
   protected readonly goalCatalog = signal<CatalogRef[]>([]);
   protected readonly errorMessage = signal<string | null>(null);

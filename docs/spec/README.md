@@ -4,7 +4,7 @@ This folder is the **behavioural source of truth** for SpongeCoach: what the app
 language, independent of Java/TypeScript. `CONTEXT.md` defines the *words*; `docs/adr/` records the
 *decisions*; these `.feature` files record the *behaviour*.
 
-The six backend feature files are **run** by Cucumber against the real HTTP API. `ui.feature` is
+The seven backend feature files are **run** by Cucumber against the real HTTP API. `ui.feature` is
 not — it is proven by the frontend suites and traced by marker comment. ADR-0013 records why.
 
 ## Layers
@@ -17,6 +17,7 @@ not — it is proven by the frontend suites and traced by marker comment. ADR-00
 | `focus-planning.feature` | The Line-Focus-Event link | `FocusSteps.java` |
 | `attendance.feature` | Attendance snapshot and answers | `AttendanceSteps.java` |
 | `players.feature` | Player list/detail, Player ratings and development goals | `PlayerSteps.java` |
+| `authorization.feature` | Users, Roles, who may change what | `AuthorizationSteps.java` |
 | `ui.feature` | Screen behaviour a coach sees | `frontend/src/app/**/*.spec.ts`, `frontend/e2e/*.spec.ts` |
 
 Backend scenarios are black-box over the HTTP API: a `Given` is fixture state, a `When` is one
@@ -35,7 +36,8 @@ executes the feature files listed in its `@CucumberOptions`, with step definitio
 | `steps/*Steps` | One class per feature file, named after it |
 | `support/ScenarioWorld` | What the scenario's spoken names refer to, the last response, the undo stack |
 | `support/Fixtures` | Creates what a `Given` describes, and queues its removal |
-| `support/Hooks` | Runs the undo stack after each scenario |
+| `support/Hooks` | Starts each scenario as the seeded SysAdmin, runs the undo stack after it |
+| `support/Session` | Which User the scenario's requests act as (the `spongecoach-user` cookie) |
 
 Scenarios name fixtures the way `CONTEXT.md` does — the Line "Kiwi", the Skill "Passgenauigkeit".
 Every scenario in the run shares one database, so `Fixtures` writes each row under a uniquified name

@@ -1,7 +1,8 @@
 Feature: Planning a Focus per Line per Event
   A Focus is free text set per Line per Event — a three-way Line-Focus-Event link (ADR-0010): at
-  most one Focus per Line per Event, not a reusable catalog entry. The team overview writes the
-  whole set of an Event's attachments in one call, so clearing is just sending less.
+  most one Focus per Line per Event, not a reusable catalog entry. A coach may write the whole set
+  of an Event's attachments in one call, so clearing is just sending less; one Line's Focus can also
+  be set on its own, which is how the team overview writes it and all a Player may do (ADR-0017).
 
   Background:
     Given an Event "Einheit 1" attended by the Lines "Kiwi" and "Bäri"
@@ -36,6 +37,26 @@ Feature: Planning a Focus per Line per Event
       Given "Kiwi" has the Focus "Spielaufbau aus der tiefen Zone" for "Einheit 1"
       When the coach renames "Einheit 1" to "Testspiel gegen Bern"
       Then its attachments are unchanged
+
+  Rule: One Line's Focus can be set on its own
+
+    @spec:focus.set-one-line-alone
+    Scenario: Setting one Line's Focus by itself leaves the others alone
+      Given both Lines have a Focus set
+      When the coach sets "Bäri"'s Focus alone to "Abschlussübungen 2-auf-1"
+      Then "Kiwi" keeps the Focus it had
+
+    @spec:focus.clear-one-line-alone
+    Scenario: Setting one Line's Focus to blank text clears it
+      Given both Lines have a Focus set
+      When the coach sets "Bäri"'s Focus alone to ""
+      Then "Bäri" has no Focus for this Event any more
+
+    @spec:focus.one-line-not-attending
+    Scenario: Setting the Focus of a Line that is not attending
+      Given a Line "Lama" created after the Event
+      When the coach sets "Lama"'s Focus alone to "Spielaufbau aus der tiefen Zone"
+      Then the request is rejected as a bad request
 
   Rule: An attachment needs a real, attending Line and non-blank text
 

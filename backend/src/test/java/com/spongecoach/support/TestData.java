@@ -1,5 +1,6 @@
 package com.spongecoach.support;
 
+import com.spongecoach.domain.AppUser;
 import com.spongecoach.domain.AttendanceStatus;
 import com.spongecoach.domain.DevelopmentGoal;
 import com.spongecoach.domain.Event;
@@ -20,6 +21,7 @@ import com.spongecoach.domain.PlayerDevelopmentGoal;
 import com.spongecoach.domain.PlayerSkill;
 import com.spongecoach.domain.PlayerSkillRating;
 import com.spongecoach.domain.PlayerSkillRatingId;
+import com.spongecoach.domain.Role;
 import com.spongecoach.domain.Skill;
 import com.spongecoach.domain.Team;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -67,6 +69,24 @@ public class TestData {
         player.name = name;
         player.persist();
         return player;
+    }
+
+    /** A User in the Team (a SysAdmin in none), acting as the given Player if not null. */
+    @Transactional
+    public AppUser createUser(String name, Role role, UUID playerId) {
+        AppUser user = new AppUser();
+        user.id = UUID.randomUUID();
+        user.name = name;
+        user.role = role;
+        user.teamId = role == Role.SYS_ADMIN ? null : Team.theTeam().id;
+        user.playerId = playerId;
+        user.persist();
+        return user;
+    }
+
+    @Transactional
+    public void deleteUser(UUID userId) {
+        AppUser.deleteById(userId);
     }
 
     @Transactional

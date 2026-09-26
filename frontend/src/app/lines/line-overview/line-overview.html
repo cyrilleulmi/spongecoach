@@ -19,31 +19,33 @@
         </button>
       }
     </div>
-    <div class="line-menu">
-      <button
-        type="button"
-        class="btn icon-btn"
-        aria-haspopup="menu"
-        aria-label="Block-Aktionen"
-        [attr.aria-expanded]="menuOpen()"
-        (click)="toggleMenu($event)"
-      >
-        &hellip;
-      </button>
-      @if (menuOpen()) {
-        <div class="menu" role="menu" (click)="$event.stopPropagation()">
-          <button type="button" role="menuitem" (click)="openCreateLineDialog()">Neuen Block anlegen</button>
-          @if (detail(); as line) {
-            <button type="button" role="menuitem" (click)="openDeleteLineDialog()">
-              "{{ line.name }}" löschen
+    @if (isCoach()) {
+      <div class="line-menu">
+        <button
+          type="button"
+          class="btn icon-btn"
+          aria-haspopup="menu"
+          aria-label="Block-Aktionen"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="toggleMenu($event)"
+        >
+          &hellip;
+        </button>
+        @if (menuOpen()) {
+          <div class="menu" role="menu" (click)="$event.stopPropagation()">
+            <button type="button" role="menuitem" (click)="openCreateLineDialog()">Neuen Block anlegen</button>
+            @if (detail(); as line) {
+              <button type="button" role="menuitem" (click)="openDeleteLineDialog()">
+                "{{ line.name }}" löschen
+              </button>
+            }
+            <button type="button" role="menuitem" (click)="openRestoreLineDialog()">
+              Gelöschte Blöcke verwalten
             </button>
-          }
-          <button type="button" role="menuitem" (click)="openRestoreLineDialog()">
-            Gelöschte Blöcke verwalten
-          </button>
-        </div>
-      }
-    </div>
+          </div>
+        }
+      </div>
+    }
     <app-theme-toggle />
   </div>
 </header>
@@ -118,7 +120,9 @@
     <div class="card roster">
       <div class="section-title">
         <h2>Kader</h2>
-        <button class="btn" type="button" (click)="openRosterDialog()">Verwalten</button>
+        @if (canEdit()) {
+          <button class="btn" type="button" (click)="openRosterDialog()">Verwalten</button>
+        }
       </div>
       <div class="tile-stat">
         <span class="num">{{ line.players.length }}</span>
@@ -138,14 +142,16 @@
               />
               <span class="player-name">{{ player.name }}</span>
             </a>
-            <button
-              class="remove"
-              type="button"
-              [attr.aria-label]="player.name + ' aus dem Kader entfernen'"
-              (click)="togglePlayer(player.id)"
-            >
-              ×
-            </button>
+            @if (canEdit()) {
+              <button
+                class="remove"
+                type="button"
+                [attr.aria-label]="player.name + ' aus dem Kader entfernen'"
+                (click)="togglePlayer(player.id)"
+              >
+                ×
+              </button>
+            }
           </div>
         }
       </div>
@@ -169,7 +175,9 @@
     <div class="card skills">
       <div class="section-title">
         <h2>Skills</h2>
-        <button class="btn" type="button" (click)="toggleManage('skills')">Verwalten</button>
+        @if (canEdit()) {
+          <button class="btn" type="button" (click)="toggleManage('skills')">Verwalten</button>
+        }
       </div>
       @if (line.skills.length === 0) {
         <p class="empty">Noch keine Skills verknüpft.</p>
@@ -182,6 +190,7 @@
               type="button"
               [style.background]="skill.color"
               [attr.aria-label]="'Farbe für ' + skill.name + ' wählen'"
+              [disabled]="!canEdit()"
               (click)="toggleColorEdit(skill.skillId)"
             ></button>
             <span class="skill-name">{{ skill.name }}</span>
@@ -197,12 +206,15 @@
           <app-rating-bar
             [rating]="skill.rating"
             [color]="skill.color"
+            [disabled]="!canEdit()"
             (levelChange)="setRating(skill.skillId, $event)"
           />
         </div>
       }
-      <p class="hint">Auf den Farbpunkt klicken, um eine Farbe zu wählen.</p>
-      @if (openSection() === 'skills') {
+      @if (canEdit()) {
+        <p class="hint">Auf den Farbpunkt klicken, um eine Farbe zu wählen.</p>
+      }
+      @if (canEdit() && openSection() === 'skills') {
         <div class="manage-box">
           <form class="create-row" (submit)="$event.preventDefault(); createSkill()">
             <input
@@ -226,7 +238,9 @@
     <div class="card goals">
       <div class="section-title">
         <h2>Ziele</h2>
-        <button class="btn" type="button" (click)="toggleManage('goals')">Verwalten</button>
+        @if (canEdit()) {
+          <button class="btn" type="button" (click)="toggleManage('goals')">Verwalten</button>
+        }
       </div>
       @if (line.developmentGoals.length === 0) {
         <p class="empty">Noch keine Ziele.</p>
@@ -238,6 +252,7 @@
             type="button"
             [style.background]="goal.color"
             [attr.aria-label]="'Farbe für ' + goal.name + ' wählen'"
+            [disabled]="!canEdit()"
             (click)="toggleColorEdit(goal.id)"
           ></button>
           <span class="goal-name">{{ goal.name }}</span>
@@ -250,7 +265,7 @@
           />
         }
       }
-      @if (openSection() === 'goals') {
+      @if (canEdit() && openSection() === 'goals') {
         <div class="manage-box">
           <form class="create-row" (submit)="$event.preventDefault(); createGoal()">
             <input

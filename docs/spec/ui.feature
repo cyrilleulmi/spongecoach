@@ -3,7 +3,8 @@ Feature: What the coach sees
   — and each Line's Focus text per Event — are planned; "Blöcke" (`/lines`), where a Line's roster,
   ratings and Development goals are managed; and "Spieler" (`/players`, `/players/:id`), the Player
   list and each Player's own Ratings and Development goals. UI copy is German; domain terms in code
-  and API stay English (docs/glossary.md).
+  and API stay English (docs/glossary.md). "The coach" below is any User who may make that change;
+  what a Player sees differently is its own Rule (ADR-0017).
 
   Rule: The line screen edits one Line at a time
 
@@ -11,6 +12,12 @@ Feature: What the coach sees
     Scenario: The first Line is selected on arrival
       When the coach opens the line screen
       Then the first Line is selected and its roster, Skills and Development goals are shown
+
+    @spec:ui.opens-own-line
+    Scenario: A User on a Line lands on it
+      Given the User is on one or more Lines
+      When they open the line screen
+      Then the first of their Lines is selected, not the first Line overall
 
     @spec:ui.switch-line-refetches
     Scenario: Switching Line loads that Line's detail
@@ -58,7 +65,13 @@ Feature: What the coach sees
     @spec:ui.timeline-renders-iteration
     Scenario: The timeline shows the current Iteration's Events as dials
       When the coach opens the team overview
-      Then the first Iteration's Events are drawn in datetime order
+      Then the shown Iteration's Events are drawn in datetime order
+
+    @spec:ui.opens-on-next-event
+    Scenario: The timeline opens where the next Event is
+      When the coach opens the team overview
+      Then the Iteration holding the next Event is shown, or the latest Iteration once every Event
+      has passed
 
     @spec:ui.next-event-marked
     Scenario: The next Event is marked
@@ -85,7 +98,8 @@ Feature: What the coach sees
     @spec:ui.event-readonly-when-done
     Scenario: An Event whose datetime has passed cannot be edited
       When the coach selects a done Event
-      Then its name, datetime, Focus text fields, attendance controls and delete button are all disabled
+      Then its name, datetime and delete button are disabled, each Focus and answer is plain text, and
+      a Line with no Focus shows no field at all
 
     @spec:ui.edit-anyway
     Scenario: The coach can lift the lock per Event
@@ -100,15 +114,20 @@ Feature: What the coach sees
 
   Rule: Planning an Event from the detail panel
 
+    @spec:ui.attendance-aligned
+    Scenario: Answers line up
+      Then every attendance row's answer sits in the same column, however many or long its Line
+      badges are, with a decline reason on a line of its own below
+
     @spec:ui.set-focus-from-detail
     Scenario: Setting a Line's Focus for the selected Event
       When the coach types a Focus into a Line's text field and it loses focus
-      Then the Event's whole attachment set is saved with that change and the timeline reloads
+      Then that Line's Focus alone is saved and the timeline reloads
 
     @spec:ui.clear-focus-from-detail
     Scenario: Clearing a Line's Focus
       When the coach empties a Line's Focus text field
-      Then that Line's attachment is dropped from the saved set
+      Then that Line's Focus is cleared
 
     @spec:ui.same-focus-again
     Scenario: Repeating a Line's most recent Focus
@@ -249,6 +268,53 @@ Feature: What the coach sees
     Scenario: A Line badge opens that Line
       When the coach clicks a Line badge on a Player
       Then the line screen opens with that Line selected
+
+  Rule: Who is using the app decides what can be changed (ADR-0017)
+
+    @spec:ui.user-switcher
+    Scenario: Picking the User from the header
+      Then the header has a dropdown of every User, grouped Admin, Trainer, Spieler, and choosing one
+      reloads the app as that User
+
+    @spec:ui.default-user
+    Scenario: The first visit
+      Given no User has been chosen in this browser
+      When the app opens
+      Then the SysAdmin is chosen and remembered
+
+    @spec:ui.no-screen-without-user
+    Scenario: No screen before a User is known
+      Then no screen is shown until the User is loaded, and if the Users cannot be loaded the app says so
+
+    @spec:ui.player-line-access
+    Scenario: A Player on the line screen
+      Given a Player is using the app
+      Then a Line they are not on is shown read-only, a Line they are on can be edited, and creating,
+      deleting and restoring Lines is not offered
+
+    @spec:ui.player-profile-access
+    Scenario: A Player on the player screen
+      Given a Player is using the app
+      Then another Player is shown read-only, and on their own screen they can rate, set goals and paint their Avatar
+
+    @spec:ui.player-edits-own-on-event
+    Scenario: A Player on an Event still to come
+      Given a Player is using the app
+      When they select an Event whose datetime has not passed
+      Then only their own Lines' Focus fields and their own answer are fields; other Lines' Focus and
+      other Players' answers are plain text, an empty Focus they cannot set is not shown, and the
+      Event's name, datetime and delete button cannot be changed
+
+    @spec:ui.player-done-event-locked
+    Scenario: A Player on a done Event
+      Given a Player is using the app
+      When they select an Event whose datetime has passed
+      Then nothing can be changed, and "Trotzdem bearbeiten" is not offered
+
+    @spec:ui.player-cannot-plan-timeline
+    Scenario: A Player cannot plan the timeline
+      Given a Player is using the app
+      Then renaming and deleting Iterations, creating Iterations and adding Events are not offered
 
   Rule: Shell
 

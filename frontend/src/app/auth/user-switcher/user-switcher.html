@@ -1,0 +1,16 @@
+<label class="user-switcher">
+  <span class="label">Benutzer</span>
+  <select
+    aria-label="Benutzer wechseln"
+    [value]="currentUser.me()?.id ?? ''"
+    (change)="onSelect($any($event.target).value)"
+  >
+    @for (group of groups(); track group.label) {
+      <optgroup [label]="group.label">
+        @for (user of group.users; track user.id) {
+          <option [value]="user.id" [selected]="user.id === currentUser.me()?.id">{{ user.name }}</option>
+        }
+      </optgroup>
+    }
+  </select>
+</label>

@@ -3,5 +3,10 @@
   <a routerLink="/team" routerLinkActive="active" ariaCurrentWhenActive="page">Team-Übersicht</a>
   <a routerLink="/lines" routerLinkActive="active" ariaCurrentWhenActive="page">Blöcke</a>
   <a routerLink="/players" routerLinkActive="active" ariaCurrentWhenActive="page">Spieler</a>
+  <app-user-switcher class="nav-end" />
 </nav>
-<router-outlet />
+@if (currentUser.me()) {
+  <router-outlet />
+} @else if (currentUser.loadFailed()) {
+  <p class="app-error" role="alert">Benutzer konnten nicht geladen werden. Läuft das Backend?</p>
+}

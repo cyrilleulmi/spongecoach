@@ -3,6 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { CurrentUserService } from '../../auth/current-user.service';
+import { CurrentUser } from '../../auth/user.model';
 import { PlayerView } from './player-view';
 import { PlayerDetail } from '../player.model';
 
@@ -24,7 +26,12 @@ describe('PlayerView', () => {
   let httpMock: HttpTestingController;
   let harness: RouterTestingHarness;
 
-  async function render(playerId = 'p-1', found = true, detail: PlayerDetail = CARMELA) {
+  async function render(
+    playerId = 'p-1',
+    found = true,
+    detail: PlayerDetail = CARMELA,
+    me: CurrentUser | null = null,
+  ) {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -33,6 +40,7 @@ describe('PlayerView', () => {
       ],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
+    TestBed.inject(CurrentUserService).me.set(me);
 
     harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(`/players/${playerId}`);
@@ -212,5 +220,24 @@ describe('PlayerView', () => {
       expect(el.querySelector('.page-head img')).toBeNull();
       expect(el.querySelector('.page-head app-player-avatar')?.textContent?.trim()).toBe('C');
     });
+  });
+  // spec: ui.player-profile-access
+  it('shows a Player someone else read-only, and themselves editable', async () => {
+    const asPlayer = (playerId: string): CurrentUser => ({
+      id: 'u-' + playerId, name: 'x', role: 'PLAYER', teamId: 'team', playerId, lineIds: [],
+    });
+    const manageButtons = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('.section-title .btn')).filter((b) => b.textContent?.trim() === 'Verwalten');
+
+    const other = await render('p-1', true, CARMELA, asPlayer('p-2'));
+    expect(manageButtons(other).length).toBe(0);
+    expect(other.querySelector('.avatar-button')).toBeNull();
+    expect((other.querySelector('.seg') as HTMLButtonElement).disabled).toBe(true);
+
+    TestBed.inject(CurrentUserService).me.set(asPlayer('p-1'));
+    harness.detectChanges();
+    expect(manageButtons(other).length).toBe(2);
+    expect(other.querySelector('.avatar-button')).not.toBeNull();
+    expect((other.querySelector('.seg') as HTMLButtonElement).disabled).toBe(false);
   });
 });

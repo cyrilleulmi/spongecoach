@@ -3,11 +3,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AttendanceStatus, EventDraft, EventType, Iteration, TimelineEvent } from './iteration.model';
 
-interface FocusAttachmentInput {
-  lineId: string;
-  focus: string;
-}
-
 @Injectable({ providedIn: 'root' })
 export class IterationApiService {
   private readonly http = inject(HttpClient);
@@ -57,12 +52,10 @@ export class IterationApiService {
     return this.http.delete<void>(`/api/iterations/${iterationId}/events/${eventId}`);
   }
 
-  /** Replace an event's full set of per-Line Focus attachments (empty clears them all). */
-  setFocusAttachments(
-    eventId: string,
-    focusAttachments: FocusAttachmentInput[],
-  ): Observable<TimelineEvent> {
-    return this.http.put<TimelineEvent>(`/api/events/${eventId}`, { focusAttachments });
+  /** Sets one Line's Focus for an event, leaving the other Lines' alone; null clears it. A Player
+   * may do this for their own Lines, which the whole-set write would not allow (ADR-0017). */
+  setFocus(eventId: string, lineId: string, focus: string | null): Observable<TimelineEvent> {
+    return this.http.put<TimelineEvent>(`/api/events/${eventId}/focus/${lineId}`, { focus });
   }
 
   /** Sets one Player's attendance answer for an Event. A non-DECLINED status clears any decline

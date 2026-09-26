@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
+import { CurrentUserService } from '../../auth/current-user.service';
 import { LineApiService } from '../../lines/line-api.service';
 import { LineSummary } from '../../lines/line.model';
 import { ThemeToggle } from '../../theme/theme-toggle/theme-toggle';
@@ -25,6 +26,9 @@ import { IterationApiService } from '../iteration-api.service';
 export class TeamOverview implements OnInit {
   private readonly api = inject(IterationApiService);
   private readonly lineApi = inject(LineApiService);
+
+  /** Planning the timeline — Iterations and Events — is for coaches (ADR-0017). */
+  protected readonly isCoach = inject(CurrentUserService).isCoach;
 
   protected readonly iterations = signal<Iteration[]>([]);
   protected readonly eventTypes = signal<EventType[]>([]);
@@ -118,6 +122,7 @@ export class TeamOverview implements OnInit {
         this.iterations.set(iterations);
         this.eventTypes.set(eventTypes);
         this.lineList.set(lines);
+        this.iterationIndex.set(this.entryIterationIndex(iterations));
         this.loading.set(false);
       },
       error: () => {
@@ -125,6 +130,14 @@ export class TeamOverview implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  /** Where the timeline opens: the Iteration holding the next Event, else the latest Iteration once
+   * every Event has passed. */
+  private entryIterationIndex(iterations: Iteration[]): number {
+    const nextId = this.nextEventId();
+    const index = iterations.findIndex((it) => it.events.some((e) => e.id === nextId));
+    return index >= 0 ? index : Math.max(0, iterations.length - 1);
   }
 
   private reload(selectEventId?: string | null): void {
@@ -157,13 +170,7 @@ export class TeamOverview implements OnInit {
     if (!event) {
       return;
     }
-    const attachments = event.focusAttachments
-      .filter((a) => a.lineId !== change.lineId)
-      .map((a) => ({ lineId: a.lineId, focus: a.focus }));
-    if (change.focus) {
-      attachments.push({ lineId: change.lineId, focus: change.focus });
-    }
-    this.api.setFocusAttachments(event.id, attachments).subscribe({
+    this.api.setFocus(event.id, change.lineId, change.focus).subscribe({
       next: () => this.reload(event.id),
       error: () => this.errorMessage.set('Fokus konnte nicht gesetzt werden.'),
     });

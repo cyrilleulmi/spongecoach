@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.spongecoach.api.dto.DrillAnswersRequest;
 import com.spongecoach.api.dto.DrillChatRequest;
 import com.spongecoach.api.dto.DrillDetailDto;
+import com.spongecoach.api.dto.DrillDrawnRequest;
 import com.spongecoach.api.dto.DrillScriptRequest;
 import com.spongecoach.api.dto.DrillSummaryDto;
 import com.spongecoach.api.dto.DrillUpdateRequest;
@@ -47,13 +48,15 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * Drills animated from tactic-board photos (ADR-0018). Every User may read them; every write is a
- * Coach's, because most of them start a paid interpreter job (ADR-0019). Those jobs run in the
- * background: the request marks the Drill PENDING and answers 202, and the frontend polls the
- * detail until the status moves on.
+ * Drills, animated from tactic-board photos or drawn by hand (ADR-0018, ADR-0020). Every User may
+ * read them. Whatever starts a paid interpreter job (uploading photos, answers, chat, retry) is a
+ * Coach's (ADR-0019); everything else, drawing and editing by hand, photos, deleting and restoring,
+ * is any team member's. Interpreter jobs run in the background: the request marks the Drill PENDING
+ * and answers 202, and the frontend polls the detail until the status moves on.
  */
 @Path("/api/drills")
 @Produces(MediaType.APPLICATION_JSON)
@@ -74,8 +77,19 @@ public class DrillResource {
     @Transactional
     public List<DrillSummaryDto> list() {
         return Drill.listActive().stream()
-                .map(drill -> DrillSummaryDto.from(drill, DrillSketch.count("drill.id", drill.id)))
+                .map(DrillResource::summary)
                 .toList();
+    }
+
+    @GET
+    @Path("/deleted")
+    @Transactional
+    public List<DrillSummaryDto> listDeleted() {
+        return Drill.listDeleted().stream().map(DrillResource::summary).toList();
+    }
+
+    private static DrillSummaryDto summary(Drill drill) {
+        return DrillSummaryDto.from(drill, DrillSketch.count("drill.id = ?1 and deletedAt is null", drill.id));
     }
 
     @GET
@@ -118,7 +132,7 @@ public class DrillResource {
         access.requireCoach(team);
         String trimmedName = requireName(name);
         SketchRelation relation = parseRelation(sketchRelation);
-        List<byte[]> images = readSketches(sketches);
+        List<byte[]> images = readSketches(sketches, 0);
 
         Instant now = Instant.now();
         Drill drill = new Drill();
@@ -145,12 +159,48 @@ public class DrillResource {
         return Response.accepted(DrillDetailDto.from(drill)).build();
     }
 
+    /**
+     * Creates a Drill drawn by hand: a playable script, no photos, no interpreter job. It is ready
+     * at once, as version 1, a hand edit (ADR-0020).
+     */
+    @POST
+    @Path("/drawn")
+    @Transactional
+    public Response createDrawn(DrillDrawnRequest request) {
+        Team team = Team.theTeam();
+        access.requireTeamMember(team);
+        if (request == null) {
+            throw new BadRequestException("body is required");
+        }
+        String trimmedName = requireName(request.name());
+        if (request.script() == null) {
+            throw new BadRequestException("script is required");
+        }
+        DrillScript script = parseScript(request.script());
+        requirePlayable(script, Set.of());
+
+        Instant now = Instant.now();
+        Drill drill = new Drill();
+        drill.id = UUID.randomUUID();
+        drill.team = team;
+        drill.name = trimmedName;
+        // The column is not null; a drawn Drill has no photos to relate.
+        drill.sketchRelation = SketchRelation.PROGRESSION;
+        drill.status = DrillStatus.READY;
+        drill.createdAt = now;
+        drill.updatedAt = now;
+        drill.tags = findTags(request.tagIds() == null ? List.of() : request.tagIds());
+        drill.persist();
+        DrillJobs.newVersion(drill, script, DrillScriptSource.EDIT, request.changeSummary());
+        return Response.status(Response.Status.CREATED).entity(DrillDetailDto.from(drill)).build();
+    }
+
     @PUT
     @Path("/{drillId}")
     @Transactional
     public DrillDetailDto update(@PathParam("drillId") UUID drillId, DrillUpdateRequest request) {
         Drill drill = findOrThrow(drillId);
-        access.requireCoach(drill.team);
+        access.requireTeamMember(drill.team);
         if (request == null) {
             throw new BadRequestException("body is required");
         }
@@ -227,6 +277,9 @@ public class DrillResource {
         Drill drill = findOrThrow(drillId);
         access.requireCoach(drill.team);
         requireNotBusy(drill);
+        if (drill.activeSketches().isEmpty() && drill.messages.isEmpty()) {
+            throw new BadRequestException("Drill " + drillId + " was drawn by hand: there is nothing to interpret");
+        }
         return startJob(drill);
     }
 
@@ -236,16 +289,13 @@ public class DrillResource {
     @Transactional
     public DrillDetailDto saveScript(@PathParam("drillId") UUID drillId, DrillScriptRequest request) {
         Drill drill = findOrThrow(drillId);
-        access.requireCoach(drill.team);
+        access.requireTeamMember(drill.team);
         requireNotBusy(drill);
         if (request == null || request.script() == null) {
             throw new BadRequestException("script is required");
         }
         DrillScript script = parseScript(request.script());
-        List<String> errors = DrillScriptValidator.validate(script, drill.sketches.size());
-        if (!errors.isEmpty()) {
-            throw new BadRequestException("script is not playable: " + String.join("; ", errors));
-        }
+        requirePlayable(script, drill.knownSketchPositions());
         DrillJobs.newVersion(drill, script, DrillScriptSource.EDIT, request.changeSummary());
         drill.status = DrillStatus.READY;
         drill.error = null;
@@ -260,7 +310,7 @@ public class DrillResource {
     @Transactional
     public DrillDetailDto revert(@PathParam("drillId") UUID drillId, @PathParam("version") int version) {
         Drill drill = findOrThrow(drillId);
-        access.requireCoach(drill.team);
+        access.requireTeamMember(drill.team);
         requireNotBusy(drill);
         DrillScriptVersion earlier = DrillScriptVersion.find(drillId, version);
         if (earlier == null) {
@@ -285,9 +335,101 @@ public class DrillResource {
     @Transactional
     public Response delete(@PathParam("drillId") UUID drillId) {
         Drill drill = findOrThrow(drillId);
-        access.requireCoach(drill.team);
+        access.requireTeamMember(drill.team);
         drill.deletedAt = Instant.now();
         return Response.noContent().build();
+    }
+
+    /** Brings a deleted Drill back to the list, as it was. */
+    @POST
+    @Path("/{drillId}/restore")
+    @Consumes(MediaType.WILDCARD)
+    @Transactional
+    public DrillSummaryDto restore(@PathParam("drillId") UUID drillId) {
+        Drill drill = Drill.findById(drillId);
+        if (drill == null || drill.deletedAt == null) {
+            throw new NotFoundException("no deleted Drill " + drillId);
+        }
+        access.requireTeamMember(drill.team);
+        drill.deletedAt = null;
+        return summary(drill);
+    }
+
+    /**
+     * Adds photos to a Drill, drawn or photographed. Starts no job: the coach may ask Claude to work
+     * them in afterwards, through the chat. A new photo takes the next position after every one ever
+     * used, so a removed photo's position is never reused (ADR-0020).
+     */
+    @POST
+    @Path("/{drillId}/sketches")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Transactional
+    public DrillDetailDto addSketches(
+            @PathParam("drillId") UUID drillId,
+            @RestForm("sketches") List<FileUpload> sketches,
+            @RestForm("notes") List<String> notes) {
+        Drill drill = findOrThrow(drillId);
+        access.requireTeamMember(drill.team);
+        requireNotBusy(drill);
+        List<byte[]> images = readSketches(sketches, drill.activeSketches().size());
+        int position = drill.sketches.stream().mapToInt(sketch -> sketch.position).max().orElse(0);
+        for (int i = 0; i < images.size(); i++) {
+            DrillSketch sketch = new DrillSketch();
+            sketch.id = UUID.randomUUID();
+            sketch.drill = drill;
+            sketch.position = ++position;
+            sketch.image = images.get(i);
+            String note = notes != null && i < notes.size() ? notes.get(i) : null;
+            sketch.note = note == null || note.isBlank() ? null : note.trim();
+            sketch.persist();
+            drill.sketches.add(sketch);
+        }
+        drill.updatedAt = Instant.now();
+        return DrillDetailDto.from(drill);
+    }
+
+    /** Soft delete of a photo: it leaves the Drill but its position and image stay. */
+    @DELETE
+    @Path("/{drillId}/sketches/{position}")
+    @Transactional
+    public DrillDetailDto deleteSketch(@PathParam("drillId") UUID drillId, @PathParam("position") int position) {
+        Drill drill = findOrThrow(drillId);
+        access.requireTeamMember(drill.team);
+        requireNotBusy(drill);
+        DrillSketch sketch = findSketch(drill, position);
+        if (sketch.deletedAt != null) {
+            throw new NotFoundException("Drill " + drillId + " has no sketch " + position);
+        }
+        sketch.deletedAt = Instant.now();
+        drill.updatedAt = Instant.now();
+        return DrillDetailDto.from(drill);
+    }
+
+    @POST
+    @Path("/{drillId}/sketches/{position}/restore")
+    @Consumes(MediaType.WILDCARD)
+    @Transactional
+    public DrillDetailDto restoreSketch(@PathParam("drillId") UUID drillId, @PathParam("position") int position) {
+        Drill drill = findOrThrow(drillId);
+        access.requireTeamMember(drill.team);
+        requireNotBusy(drill);
+        DrillSketch sketch = findSketch(drill, position);
+        if (sketch.deletedAt == null) {
+            throw new NotFoundException("Drill " + drillId + " has no deleted sketch " + position);
+        }
+        if (drill.activeSketches().size() >= MAX_SKETCHES) {
+            throw new BadRequestException("at most " + MAX_SKETCHES + " sketches");
+        }
+        sketch.deletedAt = null;
+        drill.updatedAt = Instant.now();
+        return DrillDetailDto.from(drill);
+    }
+
+    private static DrillSketch findSketch(Drill drill, int position) {
+        return drill.sketches.stream()
+                .filter(candidate -> candidate.position == position)
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Drill " + drill.id + " has no sketch " + position));
     }
 
     private Response startJob(Drill drill) {
@@ -336,6 +478,13 @@ public class DrillResource {
         }
     }
 
+    private static void requirePlayable(DrillScript script, Set<Integer> sketchPositions) {
+        List<String> errors = DrillScriptValidator.validate(script, sketchPositions);
+        if (!errors.isEmpty()) {
+            throw new BadRequestException("script is not playable: " + String.join("; ", errors));
+        }
+    }
+
     private static String requireName(String name) {
         if (name == null || name.isBlank()) {
             throw new BadRequestException("name must not be empty");
@@ -358,12 +507,15 @@ public class DrillResource {
         }
     }
 
-    /** JPEGs by signature, 1 to {@link #MAX_SKETCHES} of them, each at most {@link #MAX_SKETCH_BYTES}. */
-    private static List<byte[]> readSketches(List<FileUpload> uploads) {
+    /**
+     * JPEGs by signature, at least one, and at most {@link #MAX_SKETCHES} on the Drill once they are
+     * added, each at most {@link #MAX_SKETCH_BYTES}.
+     */
+    private static List<byte[]> readSketches(List<FileUpload> uploads, int alreadyThere) {
         if (uploads == null || uploads.isEmpty()) {
             throw new BadRequestException("at least one sketch is required");
         }
-        if (uploads.size() > MAX_SKETCHES) {
+        if (alreadyThere + uploads.size() > MAX_SKETCHES) {
             throw new BadRequestException("at most " + MAX_SKETCHES + " sketches");
         }
         List<byte[]> images = new ArrayList<>();

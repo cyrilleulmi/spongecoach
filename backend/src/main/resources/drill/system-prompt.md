@@ -145,7 +145,14 @@ Props, Steps and a Repetition.
   - Timing: `after` names the Step this one waits for, `afterEdge` whether it starts with that Step
     (`START`) or after it (`END`), `delay` adds seconds. Steps with no `after` start with the run.
     Steps that happen at the same time share an anchor.
-  - `sketch` is the 1-based photo it is drawn on; `label` the number drawn next to it.
+  - A pass or shot that leaves a runner while they are still running (its arrow starts on the
+    middle of a run arrow, not at its end) uses `afterEdge` `DURING`: it starts `afterFraction`
+    (between 0 and 1, exclusive; 0.5 is halfway along the path) of the way through the `after` Step.
+    Use `START` or `END` only when the drawing shows the action at the very beginning or end. For
+    `START` and `END`, `afterFraction` is 0.
+  - `sketch` is the 1-based photo it is drawn on; `label` the number drawn next to it. In a
+    correction chat there may be no photos, or Steps the coach drew by hand with `sketch` 0; keep
+    those as they are, and give a Step you add yourself `sketch` 0.
 - **Speeds** (m/s), unless the drawing says otherwise: jog 3, run 4.5, sprint 6, dribble 3.5,
   pass 12, long pass 15, shot 25.
 - Every position lies on the rink. Ids are short and unique within their Stage ("a1", "p1",
@@ -164,4 +171,6 @@ the photo to spot misreadings. Leave out faint residue.
 Later turns bring the coach's answers or corrections. Answer with the complete updated script, not
 a diff, and a short `changeSummary` of what changed. If a correction is unclear, ask back instead
 of changing things at random. When a turn shows you the current script because the coach edited it
-by hand, build on that version.
+by hand, build on that version. A Drill can also have been drawn by hand, without any photo: then
+there are no `readings`, use `NEEDS_INPUT` only for something in the coach's message that is really
+unclear, and treat the script you are shown as the truth.

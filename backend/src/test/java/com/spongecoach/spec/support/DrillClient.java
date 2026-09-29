@@ -70,6 +70,44 @@ public class DrillClient {
         return upload(spokenName, sketches, List.of(), List.of(), null);
     }
 
+    /** Draws a Drill by hand: the given script. Registered and queued for removal once created. */
+    public Response draw(String spokenName, Object script) {
+        String actualName = fixtures.drillName(spokenName);
+        Response response = given().contentType(ContentType.JSON)
+                .body(Map.of("name", actualName, "tagIds", List.of(), "script", script, "changeSummary", "Gezeichnet"))
+                .when().post("/api/drills/drawn");
+        if (response.statusCode() == 201) {
+            fixtures.registerDrill(spokenName, UUID.fromString(response.path("id")), actualName);
+        }
+        return response;
+    }
+
+    public Response draw(String spokenName) {
+        return draw(spokenName, TestScripts.drawn("Doppelpass"));
+    }
+
+    public Response addSketch(String spokenName, String note) {
+        return given().multiPart("sketches", "sketch.jpg", Jpegs.sketch(), "image/jpeg")
+                .multiPart("notes", note)
+                .when().post("/api/drills/" + id(spokenName) + "/sketches");
+    }
+
+    public Response removeSketch(String spokenName, int position) {
+        return given().when().delete("/api/drills/" + id(spokenName) + "/sketches/" + position);
+    }
+
+    public Response restoreSketch(String spokenName, int position) {
+        return given().when().post("/api/drills/" + id(spokenName) + "/sketches/" + position + "/restore");
+    }
+
+    public Response restore(String spokenName) {
+        return given().when().post("/api/drills/" + id(spokenName) + "/restore");
+    }
+
+    public Response listDeleted() {
+        return given().when().get("/api/drills/deleted");
+    }
+
     public Response read(String spokenName) {
         return given().when().get("/api/drills/" + id(spokenName));
     }

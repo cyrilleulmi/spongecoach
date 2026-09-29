@@ -9,6 +9,12 @@ import { testDrill, testStage } from '../drill-fixtures';
 import { DrillDetail } from '../drill.model';
 import { DrillView, POLL_MS } from './drill-view';
 
+// Decoding and re-encoding a photo needs a real canvas; the maths is covered in image-prep.spec.ts.
+jest.mock('../image-prep', () => ({
+  ...jest.requireActual('../image-prep'),
+  prepareSketch: jest.fn(async () => new Blob(['jpeg'], { type: 'image/jpeg' })),
+}));
+
 describe('DrillView', () => {
   let httpMock: HttpTestingController;
 
@@ -225,16 +231,84 @@ describe('DrillView', () => {
     expect(el(fixture, 'app-drill-editor .error').textContent).toContain('off the rink');
   });
 
-  // spec: ui.drill-player-read-only
-  it('lets a Player watch, but offers no answering, correcting, editing, renaming or deleting', async () => {
+  // spec: ui.drill-player-draws
+  it('lets a Player watch and edit by hand, but offers nothing that starts Claude', async () => {
     const question = { id: 'q1', text: 'Wer ist das?', options: ['A'], sketch: 1, symbolIds: [] };
     const fixture = await render(testDrill({ status: 'NEEDS_INPUT', openQuestions: [question] }), 'PLAYER');
 
     expect(el(fixture, 'app-rink-player')).not.toBeNull();
     expect(el(fixture, '.player-questions').textContent).toContain('Wer ist das?');
-    for (const selector of ['app-drill-questions', '.chat-input', '.edit-button', '.rename-button', '.delete-button', '.undo']) {
+    for (const selector of ['app-drill-questions', '.chat-input', '.retry', '.work-in-photos']) {
       expect(el(fixture, selector)).toBeNull();
     }
+    for (const selector of ['.edit-button', '.rename-button', '.delete-button', '.add-photos', '.remove-sketch']) {
+      expect(el(fixture, selector)).not.toBeNull();
+    }
+  });
+
+  // spec: ui.drill-player-draws
+  it('lets a Player go back to an earlier version', async () => {
+    const fixture = await render(
+      testDrill({
+        currentVersion: 2,
+        versions: [
+          { version: 2, source: 'EDIT', changeSummary: 'Von Hand angepasst', createdAt: '' },
+          { version: 1, source: 'AI', changeSummary: null, createdAt: '' },
+        ],
+      }),
+      'PLAYER',
+    );
+
+    el(fixture, '.undo').click();
+
+    httpMock.expectOne({ method: 'POST', url: '/api/drills/d-1/revert/1' }).flush(testDrill({ currentVersion: 3 }));
+  });
+
+  // spec: ui.drill-photos
+  it('removes a photo, lists it under the removed ones, and restores it', async () => {
+    const fixture = await render(testDrill());
+
+    el(fixture, '.remove-sketch').click();
+    httpMock.expectOne({ method: 'DELETE', url: '/api/drills/d-1/sketches/1' }).flush(
+      testDrill({ sketches: [], deletedSketches: [testDrill().sketches[0]] }),
+    );
+    fixture.detectChanges();
+
+    expect(el(fixture, '.no-photos')).not.toBeNull();
+    expect(el(fixture, '.removed-sketches summary').textContent).toContain('Gelöschte Fotos (1)');
+    el(fixture, '.restore-sketch').click();
+    httpMock.expectOne({ method: 'POST', url: '/api/drills/d-1/sketches/1/restore' }).flush(testDrill());
+    fixture.detectChanges();
+
+    expect(el(fixture, '.removed-sketches')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.sketch')).toHaveLength(1);
+  });
+
+  // spec: ui.drill-photos
+  it('adds photos without starting Claude, then offers a Coach to have Claude work them in', async () => {
+    const fixture = await render(testDrill());
+    const input = el(fixture, '.file-input') as HTMLInputElement;
+    Object.defineProperty(input, 'files', { value: [new File(['x'], 'neu.jpg', { type: 'image/jpeg' })], configurable: true });
+
+    input.dispatchEvent(new Event('change'));
+    await new Promise((resolve) => setTimeout(resolve));
+    const request = httpMock.expectOne({ method: 'POST', url: '/api/drills/d-1/sketches' });
+    expect((request.request.body as FormData).getAll('sketches')).toHaveLength(1);
+    request.flush(testDrill({ sketches: [...testDrill().sketches, { position: 2, note: null, reading: null }] }));
+    fixture.detectChanges();
+
+    el(fixture, '.work-in-photos').click();
+    const chat = httpMock.expectOne('/api/drills/d-1/chat');
+    expect(chat.request.body.message).toContain('das neue Foto 2');
+    chat.flush(testDrill({ status: 'PENDING' }));
+  });
+
+  // spec: ui.drill-list
+  it('says a Drill without photos was drawn by hand', async () => {
+    const fixture = await render(testDrill({ sketches: [], deletedSketches: [] }));
+
+    expect(el(fixture, '.tag--drawn').textContent).toContain('gezeichnet');
+    expect(el(fixture, '.no-photos')).not.toBeNull();
   });
 
   it('says so when the Drill does not exist', async () => {

@@ -8,7 +8,8 @@
     <h1>Übungen</h1>
   </div>
   <div class="head-actions">
-    @if (currentUser.isCoach()) {
+    @if (currentUser.canEditDrills()) {
+      <button type="button" class="button restore-open" (click)="openRestoreDialog()">Gelöschte Übungen</button>
       <a class="primary-action" routerLink="/uebungen/neu">Neue Übung</a>
     }
     <app-theme-toggle />
@@ -35,8 +36,8 @@
   @if (loaded() && drills().length === 0) {
     <p class="empty">
       Noch keine Übungen.
-      @if (currentUser.isCoach()) {
-        Fotografiere eine Übung auf der Taktiktafel und lade sie hoch.
+      @if (currentUser.canEditDrills()) {
+        Zeichne eine Übung selbst oder lade Fotos der Taktiktafel hoch.
       }
     </p>
   } @else if (loaded() && visible().length === 0) {
@@ -48,7 +49,7 @@
       <li class="drill-row">
         <a class="drill-link" [routerLink]="['/uebungen', drill.id]">
           <span class="drill-name">{{ drill.name }}</span>
-          <span class="drill-meta">{{ drill.sketchCount }} {{ drill.sketchCount === 1 ? 'Foto' : 'Fotos' }}</span>
+          <span class="drill-meta">{{ photoLabel(drill.sketchCount) }}</span>
         </a>
         <span class="drill-tags">
           @for (tag of drill.tags; track tag.id) {
@@ -60,3 +61,21 @@
     }
   </ul>
 </div>
+
+<dialog #restoreDialog class="restore-dialog" (click)="$event.target === restoreDialog ? closeRestoreDialog() : null">
+  <div class="restore-dialog-inner">
+    <div class="restore-title">
+      <h2>Gelöschte Übungen</h2>
+      <button type="button" class="button" (click)="closeRestoreDialog()">Fertig</button>
+    </div>
+    @if (deleted().length === 0) {
+      <p class="empty">Keine gelöschten Übungen.</p>
+    }
+    @for (drill of deleted(); track drill.id) {
+      <div class="restore-row">
+        <span class="restore-name">{{ drill.name }}</span>
+        <button type="button" class="button restore-drill" (click)="restore(drill.id)">Wiederherstellen</button>
+      </div>
+    }
+  </div>
+</dialog>

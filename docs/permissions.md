@@ -54,23 +54,33 @@ and a SysAdmin may do everything.
 | `PUT /api/events/{id}/focus/{lineId}` | one Line's Focus | ✓ | ✓ | *own Line, not done* | `requireFocus` |
 | `PUT /api/events/{id}/attendance/{playerId}` | an answer | ✓ | ✓ | *self, not done* | `requireAttendance` |
 | `POST /api/drills` | upload a Drill (starts an interpreter job) | ✓ | ✓ | ✗ | `requireCoach` |
-| `PUT /api/drills/{id}` | rename, retag a Drill | ✓ | ✓ | ✗ | `requireCoach` |
+| `POST /api/drills/drawn` | create a Drill drawn by hand (no interpreter) | ✓ | ✓ | ✓ | `requireTeamMember` |
+| `PUT /api/drills/{id}` | rename, retag a Drill | ✓ | ✓ | ✓ | `requireTeamMember` |
 | `POST /api/drills/{id}/answers` | answer Clarifying questions (starts a job) | ✓ | ✓ | ✗ | `requireCoach` |
 | `POST /api/drills/{id}/chat` | send a correction (starts a job) | ✓ | ✓ | ✗ | `requireCoach` |
 | `POST /api/drills/{id}/retry` | interpret again (starts a job) | ✓ | ✓ | ✗ | `requireCoach` |
-| `PUT /api/drills/{id}/script` | save a hand-edited script | ✓ | ✓ | ✗ | `requireCoach` |
-| `POST /api/drills/{id}/revert/{version}` | make an earlier version current | ✓ | ✓ | ✗ | `requireCoach` |
-| `DELETE /api/drills/{id}` | delete a Drill (soft) | ✓ | ✓ | ✗ | `requireCoach` |
+| `PUT /api/drills/{id}/script` | save a hand-edited script | ✓ | ✓ | ✓ | `requireTeamMember` |
+| `POST /api/drills/{id}/revert/{version}` | make an earlier version current | ✓ | ✓ | ✓ | `requireTeamMember` |
+| `POST /api/drills/{id}/sketches` | add photos (starts no job) | ✓ | ✓ | ✓ | `requireTeamMember` |
+| `DELETE /api/drills/{id}/sketches/{n}` | remove a photo (soft) | ✓ | ✓ | ✓ | `requireTeamMember` |
+| `POST /api/drills/{id}/sketches/{n}/restore` | restore a removed photo | ✓ | ✓ | ✓ | `requireTeamMember` |
+| `DELETE /api/drills/{id}` | delete a Drill (soft) | ✓ | ✓ | ✓ | `requireTeamMember` |
+| `POST /api/drills/{id}/restore` | restore a deleted Drill | ✓ | ✓ | ✓ | `requireTeamMember` |
 
 "Coach ✓" always means *within their own Team*. With one hardcoded Team, that is every row today.
 
-Drills are Coach-only for writes because every one of them can start a paid interpreter job
-(ADR-0018, ADR-0019); a Player may still watch every Drill.
+Only the Drill writes that start a paid interpreter job are Coach-only: uploading photos, answers,
+chat and retry (ADR-0018, ADR-0019). Everything that costs nothing (drawing, editing the script,
+photos, deleting and restoring) is any team member's, Player included (ADR-0020). "Team member"
+means SysAdmin, or a Coach or Player whose `team_id` is the Drill's Team. With one Team there is no
+other Team's Player to prove the refusal with; the scenarios cover the Role split instead.
 
 ## Frontend mirror
 
 `CurrentUserService` answers the same questions: `isCoach`, `canEditLine(lineId)`,
-`canEditPlayer(playerId)`. The drill screens use `isCoach` for every Drill control. `EventDetail` adds the done-Event rule. A control the User can't use is
+`canEditPlayer(playerId)`, `canEditDrills()` (any team member: draw, edit, photos, delete, restore).
+The drill screens use `isCoach` only for the controls that start an interpreter job (photo upload
+with Claude, answers, chat, retry) and `canEditDrills` for the rest. `EventDetail` adds the done-Event rule. A control the User can't use is
 hidden, or shown as plain text. The frontend never grants what the backend refuses.
 
 ## Changing this

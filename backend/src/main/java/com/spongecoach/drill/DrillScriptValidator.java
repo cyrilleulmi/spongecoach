@@ -1,6 +1,7 @@
 package com.spongecoach.drill;
 
 import com.spongecoach.drill.DrillScript.Actor;
+import com.spongecoach.drill.DrillScript.Edge;
 import com.spongecoach.drill.DrillScript.Part;
 import com.spongecoach.drill.DrillScript.Point;
 import com.spongecoach.drill.DrillScript.Prop;
@@ -30,8 +31,11 @@ public final class DrillScriptValidator {
     private DrillScriptValidator() {
     }
 
-    /** @param sketchCount how many sketches the Drill has, for checking sketch references */
-    public static List<String> validate(DrillScript script, int sketchCount) {
+    /**
+     * @param sketchPositions the sketch positions a reference may name. A Step may also name 0: it
+     *     was drawn by hand, on no sketch (ADR-0020).
+     */
+    public static List<String> validate(DrillScript script, Set<Integer> sketchPositions) {
         List<String> errors = new ArrayList<>();
         if (script == null || script.stages() == null || script.stages().isEmpty()) {
             errors.add("script: needs at least one stage");
@@ -48,9 +52,9 @@ public final class DrillScriptValidator {
                 errors.add(where + ": area and repetition mode are required");
             }
             for (Integer sketch : nonNull(stage.sketches())) {
-                checkSketch(errors, where, sketch == null ? 0 : sketch, sketchCount);
+                checkSketch(errors, where, sketch == null ? 0 : sketch, sketchPositions, false);
             }
-            validateStage(errors, where, stage, sketchCount);
+            validateStage(errors, where, stage, sketchPositions);
             for (Actor actor : nonNull(stage.actors())) {
                 Actor earlier = actorsById.putIfAbsent(actor.id(), actor);
                 if (earlier != null && (earlier.kind() != actor.kind() || earlier.side() != actor.side())) {
@@ -61,7 +65,7 @@ public final class DrillScriptValidator {
         return errors;
     }
 
-    private static void validateStage(List<String> errors, String where, Stage stage, int sketchCount) {
+    private static void validateStage(List<String> errors, String where, Stage stage, Set<Integer> sketchPositions) {
         Set<String> actorIds = new HashSet<>();
         for (Actor actor : nonNull(stage.actors())) {
             if (blank(actor.id()) || !actorIds.add(actor.id())) {
@@ -109,14 +113,14 @@ public final class DrillScriptValidator {
             }
         }
         for (Step step : nonNull(stage.steps())) {
-            validateStep(errors, where + ", step " + step.id(), step, partsById.keySet(), stepsById, sketchCount);
+            validateStep(errors, where + ", step " + step.id(), step, partsById.keySet(), stepsById, sketchPositions);
         }
         checkNoCycle(errors, where, stepsById);
     }
 
     private static void validateStep(
             List<String> errors, String where, Step step, Set<String> partIds, Map<String, Step> stepsById,
-            int sketchCount) {
+            Set<Integer> sketchPositions) {
         if (!partIds.contains(step.partId())) {
             errors.add(where + ": unknown part " + step.partId());
         }
@@ -162,10 +166,18 @@ public final class DrillScriptValidator {
                 errors.add(where + ": waits for unknown step " + step.after());
             }
         }
+        if (step.afterEdge() == Edge.DURING) {
+            if (blank(step.after())) {
+                errors.add(where + ": DURING needs a step to happen during");
+            }
+            if (!(step.afterFraction() > 0 && step.afterFraction() < 1)) {
+                errors.add(where + ": afterFraction must be between 0 and 1, exclusive");
+            }
+        }
         if (!(step.delay() >= 0)) {
             errors.add(where + ": delay must not be negative");
         }
-        checkSketch(errors, where, step.sketch(), sketchCount);
+        checkSketch(errors, where, step.sketch(), sketchPositions, true);
         for (Point point : path) {
             checkPoint(errors, where + " path", point);
         }
@@ -200,9 +212,13 @@ public final class DrillScriptValidator {
         }
     }
 
-    private static void checkSketch(List<String> errors, String where, int sketch, int sketchCount) {
-        if (sketch < 1 || sketch > sketchCount) {
-            errors.add(where + ": sketch " + sketch + " does not exist (the drill has " + sketchCount + ")");
+    private static void checkSketch(
+            List<String> errors, String where, int sketch, Set<Integer> sketchPositions, boolean drawnByHandAllowed) {
+        if (sketch == 0 && drawnByHandAllowed) {
+            return;
+        }
+        if (!sketchPositions.contains(sketch)) {
+            errors.add(where + ": sketch " + sketch + " does not exist (the drill has " + sketchPositions + ")");
         }
     }
 

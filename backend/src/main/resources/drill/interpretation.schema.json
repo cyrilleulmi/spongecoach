@@ -148,7 +148,7 @@
     "step": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "partId", "type", "path", "targetPartId", "after", "afterEdge", "delay", "speed", "duration", "sketch", "label"],
+      "required": ["id", "partId", "type", "path", "targetPartId", "after", "afterEdge", "afterFraction", "delay", "speed", "duration", "sketch", "label"],
       "properties": {
         "id": { "type": "string" },
         "partId": { "type": "string" },
@@ -160,11 +160,12 @@
         },
         "targetPartId": { "type": "string", "description": "PASS: the receiving Part. Empty otherwise." },
         "after": { "type": "string", "description": "The Step this one waits for; empty to start with the run." },
-        "afterEdge": { "type": "string", "enum": ["START", "END"], "description": "Start with that Step (START) or after it (END)." },
+        "afterEdge": { "type": "string", "enum": ["START", "END", "DURING"], "description": "Start with that Step (START), after it (END) or part-way through it (DURING)." },
+        "afterFraction": { "type": "number", "description": "DURING only: how far through that Step, between 0 and 1 exclusive. 0 otherwise." },
         "delay": { "type": "number", "description": "Seconds after that moment." },
         "speed": { "type": "number", "description": "m/s for RUN, DRIBBLE, PASS, SHOT; 0 for ROAM and WAIT." },
         "duration": { "type": "number", "description": "Seconds for ROAM and WAIT; 0 otherwise." },
-        "sketch": { "type": "integer", "description": "1-based position of the sketch it is drawn on." },
+        "sketch": { "type": "integer", "description": "1-based position of the sketch it is drawn on; 0 for a Step added by hand." },
         "label": { "type": "string", "description": "The number drawn next to it; empty if none." }
       }
     },

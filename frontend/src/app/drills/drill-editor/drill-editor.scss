@@ -18,14 +18,204 @@ h3 {
   color: var(--ink-soft);
 }
 
+/* Every control a finger has to hit is at least 44 px tall (WCAG 2.5.5, and a phone at the rink). */
+$touch: 2.75rem;
+
+:host {
+  display: block;
+  /* Room for the tool bar that sticks to the bottom of the screen. */
+  padding-bottom: 0.5rem;
+}
+
 .editor-bar {
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.4rem 0;
+  background: var(--paper, #fff);
+}
+
+.bar-actions {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.bar-actions .button {
+  min-height: $touch;
+  min-width: $touch;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
+}
+
+.icon-label {
+  display: none;
+}
+
+.stage-bar {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.2rem;
+}
+
+.stage-tab {
+  flex: none;
+  min-height: $touch;
+  padding: 0 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.stage-tab--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.stage-add {
+  border-style: dashed;
+}
+
+.hint-note {
+  margin: 0.4rem 0 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.4rem;
+  background: var(--line-soft);
+  font-size: 0.85rem;
+}
+
+.draft-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.draft-bar .button {
+  min-height: $touch;
+  flex: 1;
+}
+
+/* The tool bar: one row you scroll sideways, always in reach of the thumb. */
+.toolbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow-x: auto;
+  margin: 0.8rem -0.25rem 0;
+  padding: 0.45rem 0.25rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+  background: var(--surface, #fff);
+  border-top: 1px solid var(--line);
+  scrollbar-width: none;
+}
+
+.tool-group {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding-left: 0.5rem;
+  margin-left: 0.15rem;
+  border-left: 1px solid var(--line);
+}
+
+.tool {
+  flex: none;
+  min-width: $touch;
+  min-height: $touch;
+  padding: 0 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tool--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.timeline-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+
+.sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.sheet-close {
+  display: none;
+}
+
+.grip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1.1rem;
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: rgba(0, 0, 0, 0.28);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.assumption-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.assumption-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.photos legend {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  padding: 0;
+  margin-bottom: 0.2rem;
 }
 
 .mode-switch {
+  flex: none;
   display: inline-flex;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -36,7 +226,8 @@ h3 {
   border: none;
   background: var(--surface);
   color: var(--ink-soft);
-  padding: 0.35rem 0.9rem;
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
@@ -102,13 +293,21 @@ h3 {
 }
 
 .timeline-row {
-  display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
-  gap: 0.5rem;
+  display: flex;
   align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
+/* The labels stay put while the bars scroll sideways underneath. */
 .timeline-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  flex: none;
+  width: 6.5rem;
+  padding: 0 0.3rem;
+  background: var(--surface, #fff);
   font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
@@ -117,20 +316,29 @@ h3 {
 
 .timeline-track {
   position: relative;
-  height: 1.1rem;
+  flex: none;
+  height: $touch;
   background: var(--line-soft);
   border-radius: 0.3rem;
 }
 
 .timeline-bar {
   position: absolute;
-  top: 0.15rem;
-  height: 0.8rem;
+  top: 0.3rem;
+  height: calc(#{$touch} - 0.6rem);
+  min-width: 2.25rem;
   border: none;
-  border-radius: 0.25rem;
+  border-radius: 0.3rem;
   background: #2f6db5;
   cursor: pointer;
   padding: 0;
+  /* An unselected bar lets you scroll the timeline; a selected one is dragged. */
+  touch-action: pan-x;
+}
+
+.timeline-bar--selected {
+  touch-action: none;
+  cursor: grab;
 }
 
 .timeline-bar--pass {
@@ -174,8 +382,76 @@ h3 {
   min-width: 0;
 }
 
+.panel select,
+.panel input[type='text'],
+.panel input[type='number'] {
+  min-height: 2.5rem;
+}
+
+.panel .button {
+  min-height: 2.5rem;
+}
+
+@media (min-width: 52rem) {
+  .icon-label {
+    display: inline;
+  }
+}
+
 @media (max-width: 52rem) {
+  /* minmax(0, …), or the widest thing in a column (the timeline) stretches it past the screen. */
   .editor {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rink-column,
+  .panel-column {
+    min-width: 0;
+  }
+
+  .panel label {
+    grid-template-columns: 6rem minmax(0, 1fr);
+  }
+
+  /* The selected item's form is a sheet over the bottom of the screen, above the tool bar. */
+  .sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(#{$touch} + 1.1rem + env(safe-area-inset-bottom, 0px));
+    z-index: 35;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding: 0.6rem 0.75rem 0.75rem;
+    background: var(--surface, #fff);
+    border-top: 1px solid var(--line);
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  }
+
+  .sheet-close {
+    position: sticky;
+    top: 0;
+    align-self: flex-end;
+    display: block;
+    z-index: 2;
+    min-width: $touch;
+    min-height: $touch;
+    border: none;
+    border-radius: 50%;
+    background: var(--line-soft);
+    color: var(--ink);
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  .sheet .panel {
+    border: none;
+    padding: 0;
+  }
+
+  /* Leave room under the last panel for the sheet and the tool bar. */
+  .panel-column {
+    padding-bottom: 6rem;
   }
 }

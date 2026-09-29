@@ -62,17 +62,45 @@ describe('DrillList', () => {
     expect(goalieChip.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('offers a coach to upload a new Drill', async () => {
+  it('offers a coach to make a new Drill', async () => {
     const fixture = await render('COACH');
 
     expect(fixture.nativeElement.querySelector('.primary-action')?.getAttribute('href')).toBe('/uebungen/neu');
   });
 
-  // spec: ui.drill-player-read-only
-  it('lists the Drills for a Player without offering an upload', async () => {
+  // spec: ui.drill-player-draws
+  it('offers a Player a new Drill too, since drawing one costs nothing', async () => {
     const fixture = await render('PLAYER');
 
     expect(fixture.nativeElement.querySelectorAll('.drill-row')).toHaveLength(2);
-    expect(fixture.nativeElement.querySelector('.primary-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.primary-action')?.getAttribute('href')).toBe('/uebungen/neu');
+  });
+
+  // spec: ui.drill-list
+  it('says "gezeichnet" for a Drill with no photos', async () => {
+    const fixture = await render();
+    const list = fixture.componentInstance as unknown as { drills: { set(drills: DrillSummary[]): void } };
+
+    list.drills.set([{ ...DRILLS[0], sketchCount: 0 }]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.drill-meta')?.textContent?.trim()).toBe('gezeichnet');
+  });
+
+  // spec: ui.drill-restore
+  it('lists the deleted Drills and brings one back into the list', async () => {
+    const fixture = await render();
+    fixture.nativeElement.querySelector('.restore-open').click();
+    httpMock.expectOne('/api/drills/deleted').flush([{ ...DRILLS[1], id: 'd-3', name: 'Acht', updatedAt: '2026-09-27T12:00:00Z' }]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.restore-name')?.textContent?.trim()).toBe('Acht');
+    fixture.nativeElement.querySelector('.restore-drill').click();
+    httpMock.expectOne({ method: 'POST', url: '/api/drills/d-3/restore' }).flush({ ...DRILLS[1], id: 'd-3', name: 'Acht', updatedAt: '2026-09-27T12:00:00Z' });
+    fixture.detectChanges();
+
+    const names = Array.from(fixture.nativeElement.querySelectorAll('.drill-name')).map((n) => (n as HTMLElement).textContent?.trim());
+    expect(names).toEqual(['Acht', 'Slalom', 'Bresil']);
+    expect(fixture.nativeElement.querySelector('.restore-drill')).toBeNull();
   });
 });

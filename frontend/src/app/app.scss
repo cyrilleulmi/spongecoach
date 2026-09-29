@@ -51,3 +51,28 @@
   background: var(--danger-bg);
   color: var(--danger-ink);
 }
+
+/* A phone: the links wrap under the brand and the user switcher, so the page is never wider than the
+   screen (which would make the phone zoom the whole app out and shrink every touch target). */
+@media (max-width: 40rem) {
+  .app-nav {
+    flex-wrap: wrap;
+    gap: 0 1rem;
+    padding: 0.25rem 1rem;
+  }
+
+  .app-nav .brand {
+    order: 1;
+    margin-right: auto;
+  }
+
+  .app-nav .nav-end {
+    order: 2;
+    margin-left: 0;
+  }
+
+  .app-nav a {
+    order: 3;
+    padding: 0.7rem 0;
+  }
+}

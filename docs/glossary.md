@@ -54,8 +54,11 @@ _Avoid_: appointment, item
 An exercise drawn on a tactic board and animated by the app (ADR-0018).
 _Avoid_: Übung (in code/API)
 
+**Drawn drill** (German: *gezeichnete Übung*):
+A Drill made in the animator from nothing, with no photos and no interpreter. Its Steps name sketch 0.
+
 **Drill sketch** (German: *Skizze* / *Foto*):
-One photo of the tactic board belonging to a Drill.
+One photo of the tactic board belonging to a Drill. Can be removed and restored; its position is never reused.
 
 **Drill tag** (German: *Tag*):
 A label from a fixed list on a Drill, e.g. *Mit Gegenspielern*, *Wiederholung spiegelverkehrt*.
@@ -69,7 +72,7 @@ A figure in the animation. Not a Player: the UI may say *Spieler*, code never sa
 **Part** (no German pairing — internal concept, not shown in the UI):
 What an Actor does in one run; handed to another Actor in a seamless loop.
 
-**Step** (German: *Schritt*): run (*Laufweg*), dribble (*Dribbling*), pass (*Pass*), shot (*Schuss*), roam (*Bewegung*), wait (*Warten*).
+**Step** (German: *Schritt*): run (*Laufweg*), dribble (*Dribbling*), pass (*Pass*), shot (*Schuss*), roam (*Bewegung*), wait (*Warten*). It starts at the run's beginning, after another Step, with it, or *during* it (*währenddessen*).
 
 **Repetition** (German: *Wiederholung*): replay (*neu starten*), seamless (*nahtlos*), mirrored (*spiegelverkehrt*).
 

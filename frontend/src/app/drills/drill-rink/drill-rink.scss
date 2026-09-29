@@ -163,24 +163,81 @@
   cursor: grab;
 }
 
-.handle circle {
+/* The invisible touch target around a handle; the dot is only what you see. */
+.handle .hit {
+  fill: transparent;
+  stroke: none;
+}
+
+.handle .dot {
   fill: var(--side-a);
   fill-opacity: 0.85;
   stroke: #fff;
   stroke-width: 0.08;
 }
 
-.handle--waypoint circle {
+.handle--waypoint .dot {
   fill: #fff;
   stroke: var(--side-a);
   stroke-width: 0.1;
 }
 
-.handle--prop circle {
+.handle--prop .dot {
   fill: #f07b22;
 }
 
-.handle--selected circle {
+.handle--selected .dot {
   stroke: #f5a623;
   stroke-width: 0.16;
+}
+
+/* Drawing: the whole rink takes the finger, so nothing underneath grabs it. */
+.rink--drawing .handle {
+  pointer-events: none;
+}
+
+.ghost {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.ghost circle {
+  fill: var(--side-neutral);
+  stroke: var(--path);
+  stroke-width: 0.08;
+  stroke-dasharray: 0.2 0.15;
+}
+
+.ghost--a circle {
+  fill: var(--side-a);
+}
+
+.ghost--b circle {
+  fill: var(--side-b);
+}
+
+.ghost text {
+  fill: #fff;
+  font-size: 0.42px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.stroke {
+  fill: none;
+  stroke: #f5a623;
+  stroke-width: 0.14;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.stroke--draft {
+  stroke-dasharray: 0.3 0.2;
+}
+
+.stroke-dot {
+  fill: #f5a623;
+  pointer-events: none;
 }

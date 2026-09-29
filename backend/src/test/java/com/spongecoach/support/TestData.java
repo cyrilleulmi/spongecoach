@@ -514,6 +514,20 @@ public class TestData {
         return drill == null ? null : drill.status;
     }
 
+    /** Deletes a Drill the way the API does (ADR-0004), for scenarios that start from a deleted one. */
+    @Transactional
+    public void softDeleteDrill(UUID drillId) {
+        Drill drill = Drill.findById(drillId);
+        drill.deletedAt = Instant.now();
+    }
+
+    /** Removes a Drill's photo the way the API does, for scenarios that start from a removed one. */
+    @Transactional
+    public void softDeleteSketch(UUID drillId, int position) {
+        Drill drill = Drill.findById(drillId);
+        drill.sketches.stream().filter(sketch -> sketch.position == position).forEach(sketch -> sketch.deletedAt = Instant.now());
+    }
+
     /** Removes a Drill and everything under it, soft-deleted or not. */
     @Transactional
     public void deleteDrill(UUID drillId) {

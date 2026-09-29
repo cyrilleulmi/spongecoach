@@ -4,6 +4,9 @@
  * documents may carry null instead, so readers treat both alike.
  */
 
+/** Up to this many active photos per Drill (ADR-0018); the backend refuses more. */
+export const MAX_SKETCHES = 12;
+
 export type DrillStatus = 'PENDING' | 'NEEDS_INPUT' | 'READY' | 'FAILED';
 export type SketchRelation = 'PROGRESSION' | 'CONTINUOUS' | 'MIXED';
 
@@ -29,6 +32,8 @@ export interface DrillDetail {
   sketchRelation: SketchRelation;
   tags: DrillTag[];
   sketches: DrillSketch[];
+  /** Removed photos; they can be restored, and script versions may still refer to them (ADR-0020). */
+  deletedSketches: DrillSketch[];
   currentVersion: number | null;
   script: DrillScript | null;
   versions: DrillVersion[];
@@ -96,7 +101,8 @@ export type Area = 'FULL' | 'HALF';
 export type ActorKind = 'PLAYER' | 'GOALIE' | 'COACH';
 export type Side = 'A' | 'B' | 'NEUTRAL';
 export type StepType = 'RUN' | 'DRIBBLE' | 'PASS' | 'SHOT' | 'ROAM' | 'WAIT';
-export type Edge = 'START' | 'END';
+/** `DURING`: part-way through the anchor Step, at `afterFraction` (ADR-0020). */
+export type Edge = 'START' | 'END' | 'DURING';
 export type RepetitionMode = 'REPLAY' | 'SEAMLESS';
 export type PropKind = 'CONE' | 'POLE' | 'SMALL_GOAL' | 'OTHER';
 
@@ -147,9 +153,12 @@ export interface Step {
   targetPartId: string | null;
   after: string | null;
   afterEdge: Edge | null;
+  /** For `DURING`: how far through `after` this Step starts, between 0 and 1 exclusive; 0 otherwise. */
+  afterFraction: number;
   delay: number;
   speed: number;
   duration: number;
+  /** The photo it is drawn on (1-based); 0 when it was drawn by hand. */
   sketch: number;
   label: string;
 }

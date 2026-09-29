@@ -4,7 +4,20 @@
       <button type="button" class="mode" [class.mode--on]="!preview()" (click)="preview.set(false)">Bearbeiten</button>
       <button type="button" class="mode" [class.mode--on]="preview()" (click)="preview.set(true)">Vorschau</button>
     </div>
-    <button type="button" class="button undo" (click)="undo()" [disabled]="!dirty()">Rückgängig</button>
+    <span class="bar-actions">
+      <button type="button" class="button icon undo" (click)="undo()" [disabled]="!canUndo()" aria-label="Rückgängig" title="Rückgängig">↶<span class="icon-label"> Rückgängig</span></button>
+      <button type="button" class="button icon redo" (click)="redo()" [disabled]="!canRedo()" aria-label="Wiederholen" title="Wiederholen">↷<span class="icon-label"> Wiederholen</span></button>
+      <button type="button" class="button button--primary save" (click)="save()" [disabled]="!canSave() || busy()">Speichern</button>
+    </span>
+  </div>
+
+  <div class="stage-bar" role="tablist" aria-label="Stufen">
+    @for (s of working().stages; track s.id; let i = $index) {
+      <button type="button" role="tab" class="stage-tab" [class.stage-tab--on]="i === index()" [attr.aria-selected]="i === index()" (click)="showStage(i)">
+        {{ i + 1 }}. {{ s.name }}
+      </button>
+    }
+    <button type="button" class="stage-tab stage-add" (click)="newStage()">+ Stufe</button>
   </div>
 
   <div class="editor">
@@ -17,113 +30,220 @@
           [props]="[]"
           [paths]="paths()"
           [handles]="handles()"
+          [ghosts]="ghosts()"
+          [draft]="draft()"
+          [drawing]="tool().kind !== 'select'"
           (handleMoved)="moveHandle($event)"
           (handleSelected)="selectHandle($event)"
+          (rinkTapped)="tapped($event)"
+          (strokeDrawn)="stroked($event)"
         />
-        <p class="hint">Punkte ziehen: Startpositionen, Hütchen und die Wegpunkte des gewählten Schritts.</p>
+        @if (draft().length > 0) {
+          <div class="draft-bar">
+            <button type="button" class="button button--primary finish-draft" (click)="finishDraft()" [disabled]="draft().length < 2">Fertig</button>
+            <button type="button" class="button cancel-draft" (click)="cancelDraft()">Abbrechen</button>
+          </div>
+        }
+        @if (hint(); as message) {
+          <p class="hint-note" role="status">{{ message }}</p>
+        }
+        @if (creating() && stage.actors.length === 0 && !hint()) {
+          <p class="hint-note" role="status">Tippe aufs Spielfeld, um Figuren zu setzen.</p>
+        }
+        <p class="hint">{{ help() }}</p>
       }
     </div>
 
     <div class="panel-column">
+      @if (showSheet()) {
+        <div class="sheet">
+          <button type="button" class="sheet-close" (click)="clearSelection()" aria-label="Schliessen">×</button>
+
+          @if (selectedStep(); as step) {
+            <section class="panel step-form" aria-label="Schritt">
+              <h3>Schritt {{ step.label || step.id }}</h3>
+              <label>Art
+                <select name="type" [ngModel]="step.type" (ngModelChange)="setStepField('type', $event)">
+                  @for (type of stepTypes; track type) {
+                    <option [ngValue]="type">{{ typeLabels[type] }}</option>
+                  }
+                </select>
+              </label>
+              @if (step.type === 'PASS') {
+                <label>An
+                  <select name="target" [ngModel]="step.targetPartId ?? ''" (ngModelChange)="setStepField('targetPartId', $event)">
+                    <option value="">niemanden</option>
+                    @for (part of stage.parts; track part.id) {
+                      <option [value]="part.id">{{ partLabel(stage, part) }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              <label>Beginnt
+                <select name="after" [ngModel]="step.after ?? ''" (ngModelChange)="setAfter($event)">
+                  <option value="">mit dem Durchlauf</option>
+                  @for (other of anchors(stage, step); track other.id) {
+                    <option [value]="other.id">nach {{ typeLabels[other.type] }} {{ other.label || other.id }}</option>
+                  }
+                </select>
+              </label>
+              @if (isSet(step.after)) {
+                <label>Zeitpunkt
+                  <select name="edge" [ngModel]="step.afterEdge ?? 'END'" (ngModelChange)="setEdge($event)">
+                    <option value="END">wenn er endet</option>
+                    <option value="START">wenn er beginnt</option>
+                    <option value="DURING">währenddessen</option>
+                  </select>
+                </label>
+                @if (step.afterEdge === 'DURING') {
+                  <label>Wie weit (%)
+                    <input type="number" name="fraction" min="1" max="99" step="5" [ngModel]="percent(step.afterFraction)" (ngModelChange)="setFractionPercent($event)" />
+                  </label>
+                }
+              }
+              <label>Verzögerung (s)
+                <input type="number" name="delay" min="0" step="0.1" [ngModel]="step.delay" (ngModelChange)="setNumber('delay', $event)" />
+              </label>
+              @if (moving.includes(step.type)) {
+                <label>Tempo (m/s)
+                  <input type="number" name="speed" min="0.5" step="0.5" [ngModel]="step.speed" (ngModelChange)="setNumber('speed', $event)" />
+                </label>
+              } @else {
+                <label>Dauer (s)
+                  <input type="number" name="duration" min="0.5" step="0.5" [ngModel]="step.duration" (ngModelChange)="setNumber('duration', $event)" />
+                </label>
+              }
+              <label>Foto
+                <select name="sketch" [ngModel]="step.sketch" (ngModelChange)="setStepField('sketch', $event)">
+                  <option [ngValue]="0">von Hand gezeichnet</option>
+                  @for (n of photoChoices(step); track n) {
+                    <option [ngValue]="n">Foto {{ n }}</option>
+                  }
+                </select>
+              </label>
+              <div class="row-buttons">
+                @if (step.type !== 'WAIT') {
+                  <button type="button" class="button add-waypoint" (click)="addWaypoint()">Wegpunkt +</button>
+                  <button type="button" class="button remove-waypoint" (click)="removeSelectedWaypoint()" [disabled]="step.path.length <= 1">Wegpunkt löschen</button>
+                }
+                <button type="button" class="button button--danger delete-step" (click)="deleteStep()">Schritt löschen</button>
+              </div>
+            </section>
+          }
+
+          @if (selectedActor(); as actor) {
+            <section class="panel actor-form" aria-label="Figur">
+              <h3>Figur {{ actor.label }}</h3>
+              <label>Beschriftung
+                <input type="text" name="label" maxlength="4" [ngModel]="actor.label" (ngModelChange)="setActorField('label', $event)" />
+              </label>
+              <label>Art
+                <select name="kind" [ngModel]="actor.kind" (ngModelChange)="setActorField('kind', $event)">
+                  @for (kind of kinds; track kind) {
+                    <option [ngValue]="kind">{{ kindLabels[kind] }}</option>
+                  }
+                </select>
+              </label>
+              <label>Seite
+                <select name="side" [ngModel]="actor.side" (ngModelChange)="setActorField('side', $event)">
+                  @for (side of sides; track side) {
+                    <option [ngValue]="side">{{ side === 'NEUTRAL' ? 'neutral' : 'Team ' + side }}</option>
+                  }
+                </select>
+              </label>
+              @if (selectedPart(); as part) {
+                <label>Rolle
+                  <input type="text" name="partName" maxlength="40" [ngModel]="part.name" (ngModelChange)="setPartName($event)" />
+                </label>
+              }
+              <label class="check"><input type="checkbox" name="hasBall" [ngModel]="actor.hasBall" (ngModelChange)="setActorField('hasBall', $event)" /> startet mit Ball</label>
+              <div class="row-buttons">
+                <button type="button" class="button button--danger delete-actor" (click)="deleteActor()">Figur löschen</button>
+              </div>
+            </section>
+          }
+
+          @if (selectedProp(); as prop) {
+            <section class="panel prop-form" aria-label="Objekt">
+              <h3>{{ propLabels[prop.kind] }}</h3>
+              <label>Art
+                <select name="propKind" [ngModel]="prop.kind" (ngModelChange)="setPropKind($event)">
+                  @for (kind of propKinds; track kind) {
+                    <option [ngValue]="kind">{{ propLabels[kind] }}</option>
+                  }
+                </select>
+              </label>
+              <div class="row-buttons">
+                <button type="button" class="button button--danger delete-prop" (click)="deleteProp()">Objekt löschen</button>
+              </div>
+            </section>
+          }
+        </div>
+      }
+
       <section class="panel timeline" aria-label="Ablauf">
         <h3>Ablauf <span class="hint">{{ timeline().duration.toFixed(1) }} s</span></h3>
-        @for (row of timeline().rows; track row.part.id) {
-          <div class="timeline-row">
-            <span class="timeline-label">{{ row.label }}</span>
-            <span class="timeline-track">
-              @for (bar of row.bars; track bar.id) {
-                <button
-                  type="button"
-                  class="timeline-bar"
-                  [class]="'timeline-bar timeline-bar--' + bar.type.toLowerCase()"
-                  [class.timeline-bar--selected]="bar.id === selectedStepId()"
-                  [style.left.%]="bar.left"
-                  [style.width.%]="bar.width"
-                  [attr.aria-label]="typeLabels[bar.type] + ' ' + bar.id"
-                  (click)="selectStep(bar.id)"
-                ></button>
-              }
-            </span>
-          </div>
+        @if (timeline().rows.length === 0) {
+          <p class="hint">Sobald Figuren und Wege da sind, erscheinen sie hier. Wähle einen Balken und ziehe ihn, um ihn zeitlich zu verschieben.</p>
         }
+        <div class="timeline-scroll">
+          @for (row of timeline().rows; track row.part.id) {
+            <div class="timeline-row">
+              <span class="timeline-label">{{ row.label }}</span>
+              <span class="timeline-track" [style.width.px]="timeline().width">
+                @for (bar of row.bars; track bar.id) {
+                  <button
+                    type="button"
+                    [class]="'timeline-bar timeline-bar--' + bar.type.toLowerCase()"
+                    [class.timeline-bar--selected]="bar.id === selectedStepId()"
+                    [style.left.px]="barLeft(bar)"
+                    [style.width.px]="barWidth(bar)"
+                    [attr.aria-label]="typeLabels[bar.type] + ' ' + bar.id"
+                    (click)="selectStep(bar.id)"
+                    (pointerdown)="barDown($event, bar, 'move')"
+                    (pointermove)="barMove($event)"
+                    (pointerup)="barUp($event)"
+                    (pointercancel)="barCancel()"
+                  >
+                    @if (bar.id === selectedStepId()) {
+                      <span class="grip" (pointerdown)="barDown($event, bar, 'resize')"></span>
+                    }
+                  </button>
+                }
+              </span>
+            </div>
+          }
+        </div>
       </section>
 
-      @if (selectedStep(); as step) {
-        <section class="panel step-form" aria-label="Schritt">
-          <h3>Schritt {{ step.label || step.id }}</h3>
-          <label>Art
-            <select name="type" [ngModel]="step.type" (ngModelChange)="setStepField('type', $event)">
-              @for (type of stepTypes; track type) {
-                <option [ngValue]="type">{{ typeLabels[type] }}</option>
-              }
-            </select>
-          </label>
-          @if (step.type === 'PASS') {
-            <label>An
-              <select name="target" [ngModel]="step.targetPartId ?? ''" (ngModelChange)="setStepField('targetPartId', $event)">
-                <option value="">niemanden</option>
-                @for (part of stage.parts; track part.id) {
-                  <option [value]="part.id">{{ part.name }}</option>
-                }
-              </select>
-            </label>
-          }
-          <label>Beginnt
-            <select name="after" [ngModel]="step.after ?? ''" (ngModelChange)="setAfter($event)">
-              <option value="">mit dem Durchlauf</option>
-              @for (other of stage.steps; track other.id) {
-                @if (other.id !== step.id) {
-                  <option [value]="other.id">nach {{ typeLabels[other.type] }} {{ other.label || other.id }}</option>
-                }
-              }
-            </select>
-          </label>
-          @if (isSet(step.after)) {
-            <label>Zeitpunkt
-              <select name="edge" [ngModel]="step.afterEdge ?? 'END'" (ngModelChange)="setEdge($event)">
-                <option value="END">wenn er endet</option>
-                <option value="START">wenn er beginnt</option>
-              </select>
-            </label>
-          }
-          <label>Verzögerung (s)
-            <input type="number" name="delay" min="0" step="0.1" [ngModel]="step.delay" (ngModelChange)="setNumber('delay', $event)" />
-          </label>
-          @if (moving.includes(step.type)) {
-            <label>Tempo (m/s)
-              <input type="number" name="speed" min="0.5" step="0.5" [ngModel]="step.speed" (ngModelChange)="setNumber('speed', $event)" />
-            </label>
-          } @else {
-            <label>Dauer (s)
-              <input type="number" name="duration" min="0.5" step="0.5" [ngModel]="step.duration" (ngModelChange)="setNumber('duration', $event)" />
-            </label>
-          }
-          <div class="row-buttons">
-            @if (step.type !== 'WAIT') {
-              <button type="button" class="button" (click)="addWaypoint()">Wegpunkt +</button>
-              <button type="button" class="button" (click)="removeWaypoint()" [disabled]="step.path.length <= 1">Wegpunkt −</button>
+      <section class="panel stage-form" aria-label="Stufe">
+        <h3>Stufe {{ index() + 1 }}</h3>
+        <label>Name
+          <input type="text" name="stageName" maxlength="60" [ngModel]="stage.name" (ngModelChange)="renameStage($event)" />
+        </label>
+        <label>Feld
+          <select name="area" [ngModel]="stage.area" (ngModelChange)="setArea($event)">
+            <option value="FULL">ganzes Feld</option>
+            <option value="HALF">halbes Feld</option>
+          </select>
+        </label>
+        @if (sketchPositions().length > 0) {
+          <fieldset class="photos">
+            <legend>Gehört zu Foto</legend>
+            @for (n of sketchPositions(); track n) {
+              <label class="check">
+                <input type="checkbox" [name]="'stage-photo-' + n" [ngModel]="stage.sketches.includes(n)" (ngModelChange)="toggleSketch(n, $event)" />
+                {{ n }}
+              </label>
             }
-            <button type="button" class="button button--danger" (click)="deleteStep()">Schritt löschen</button>
-          </div>
-        </section>
-      }
-
-      @if (selectedActor(); as actor) {
-        <section class="panel actor-form" aria-label="Spielerin">
-          <h3>Figur {{ actor.label }}</h3>
-          <label>Beschriftung
-            <input type="text" name="label" maxlength="4" [ngModel]="actor.label" (ngModelChange)="setActorField('label', $event)" />
-          </label>
-          <label>Seite
-            <select name="side" [ngModel]="actor.side" (ngModelChange)="setActorField('side', $event)">
-              @for (side of sides; track side) {
-                <option [ngValue]="side">{{ side === 'NEUTRAL' ? 'neutral' : 'Team ' + side }}</option>
-              }
-            </select>
-          </label>
-          <label class="check"><input type="checkbox" name="hasBall" [ngModel]="actor.hasBall" (ngModelChange)="setActorField('hasBall', $event)" /> startet mit Ball</label>
-        </section>
-      }
+          </fieldset>
+        }
+        <div class="row-buttons">
+          <button type="button" class="button stage-up" (click)="moveStageBy(-1)" [disabled]="index() === 0">↑ Nach oben</button>
+          <button type="button" class="button stage-down" (click)="moveStageBy(1)" [disabled]="index() >= working().stages.length - 1">↓ Nach unten</button>
+          <button type="button" class="button button--danger delete-stage" (click)="deleteStage()" [disabled]="working().stages.length <= 1">Stufe löschen</button>
+        </div>
+      </section>
 
       <section class="panel repetition-form" aria-label="Wiederholung">
         <h3>Wiederholung</h3>
@@ -139,17 +259,31 @@
         </label>
         @if (stage.repetition.mode === 'SEAMLESS') {
           @for (part of stage.parts; track part.id) {
-            <label>{{ part.name }} wird zu
+            <label>{{ partLabel(stage, part) }} wird zu
               <select [name]="'next-' + part.id" [ngModel]="part.nextPartId ?? ''" (ngModelChange)="setNextPart(part.id, $event)">
                 <option value="">–</option>
                 @for (next of stage.parts; track next.id) {
-                  <option [value]="next.id">{{ next.name }}</option>
+                  <option [value]="next.id">{{ partLabel(stage, next) }}</option>
                 }
               </select>
             </label>
           }
         }
       </section>
+
+      @if (working().assumptions.length > 0) {
+        <section class="panel assumptions-form" aria-label="Annahmen">
+          <h3>Annahmen von Claude</h3>
+          <ul class="assumption-list">
+            @for (assumption of working().assumptions; track $index) {
+              <li>
+                <span>{{ assumption }}</span>
+                <button type="button" class="link-button" (click)="removeAssumption($index)" aria-label="Annahme entfernen">✕</button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
     </div>
   </div>
 
@@ -157,8 +291,33 @@
     <p class="error" role="alert">{{ message }}</p>
   }
   <div class="save-row">
-    <input type="text" class="summary" name="changeSummary" [ngModel]="changeSummary()" (ngModelChange)="changeSummary.set($event)" aria-label="Was wurde geändert?" />
-    <button type="button" class="button button--primary save" (click)="save()" [disabled]="!dirty() || busy()">Speichern</button>
-    <button type="button" class="button" (click)="cancelled.emit()">Abbrechen</button>
+    @if (!creating()) {
+      <input type="text" class="summary" name="changeSummary" [ngModel]="changeSummary()" (ngModelChange)="changeSummary.set($event)" aria-label="Was wurde geändert?" />
+    }
+    <button type="button" class="button cancel" (click)="cancelled.emit()">Abbrechen</button>
   </div>
+
+  @if (!preview()) {
+    <nav class="toolbar" aria-label="Werkzeuge">
+      <button type="button" class="tool tool--select" [class.tool--on]="toolId() === 'select'" [attr.aria-pressed]="toolId() === 'select'" [title]="selectTool.title" (click)="chooseTool('select')">
+        {{ selectTool.label }}
+      </button>
+      @for (group of toolGroups; track group.name) {
+        <span class="tool-group" role="group" [attr.aria-label]="group.name">
+          @for (t of group.tools; track t.id) {
+            <button
+              type="button"
+              [class]="'tool tool--' + t.id"
+              [class.tool--on]="toolId() === t.id"
+              [attr.aria-pressed]="toolId() === t.id"
+              [title]="t.title"
+              (click)="chooseTool(t.id)"
+            >
+              {{ t.label }}
+            </button>
+          }
+        </span>
+      }
+    </nav>
+  }
 }

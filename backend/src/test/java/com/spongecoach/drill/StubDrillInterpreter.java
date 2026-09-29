@@ -60,7 +60,7 @@ public class StubDrillInterpreter implements DrillInterpreter {
             DrillScript.Stage stage = playable.stages().get(0);
             DrillScript.Step step = stage.steps().get(0);
             DrillScript.Step broken = new DrillScript.Step(step.id(), "p9", step.type(), step.path(),
-                    step.targetPartId(), step.after(), step.afterEdge(), step.delay(), step.speed(),
+                    step.targetPartId(), step.after(), step.afterEdge(), step.afterFraction(), step.delay(), step.speed(),
                     step.duration(), step.sketch(), step.label());
             DrillScript.Stage brokenStage = new DrillScript.Stage(stage.id(), stage.name(), stage.sketches(),
                     stage.area(), stage.actors(), stage.parts(), stage.props(),
@@ -70,9 +70,12 @@ public class StubDrillInterpreter implements DrillInterpreter {
         String lastCoachTurn = input.turns().stream()
                 .filter(Turn::fromCoach)
                 .reduce((first, second) -> second)
-                .map(Turn::text)
+                // After a hand edit the turn starts with the edited script; the summary is the coach's words.
+                .map(turn -> turn.text().substring(turn.text().lastIndexOf("\n\n") + 1).strip())
                 .orElse("");
-        return ready(input, TestScripts.playable("Stufe 1"), lastCoachTurn);
+        // A Drill drawn by hand has no photos, so its steps are drawn on none.
+        DrillScript script = input.sketches().isEmpty() ? TestScripts.drawn("Stufe 1") : TestScripts.playable("Stufe 1");
+        return ready(input, script, lastCoachTurn);
     }
 
     private static Interpretation ready(Input input, DrillScript script, String changeSummary) {

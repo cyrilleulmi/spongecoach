@@ -16,11 +16,13 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.quarkiverse.cucumber.ScenarioScope;
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
@@ -96,6 +98,91 @@ public class DrillSteps {
     @Given("the coach saved a hand-edited script for the Drill {string}")
     public void theCoachSavedAHandEditedScript(String drill) {
         drills.saveHandEdit(drill).then().statusCode(200);
+    }
+
+    @Given("a deleted Drill {string}")
+    public void aDeletedDrill(String drill) {
+        fixtures.deletedDrill(drill);
+    }
+
+    @Given("a Drill {string} whose first sketch was removed")
+    public void aDrillWhoseFirstSketchWasRemoved(String drill) {
+        fixtures.drillWithRemovedSketch(drill);
+    }
+
+    @Given("a drawn Drill {string}")
+    public void aDrawnDrill(String drill) {
+        drills.draw(drill).then().statusCode(201);
+    }
+
+    @Given("a Drill {string} uploaded with {int} sketches")
+    public void aDrillUploadedWithSketches(String drill, int count) {
+        drills.upload(drill, count).then().statusCode(202);
+        drills.awaitJob(drills.id(drill));
+    }
+
+    @Given("the coach removed sketch {int} of the Drill {string}")
+    public void theCoachRemovedSketch(int position, String drill) {
+        drills.removeSketch(drill, position).then().statusCode(200);
+    }
+
+    @Given("the coach added a sketch noted {string} to the Drill {string}")
+    public void theCoachAddedASketch(String note, String drill) {
+        drills.addSketch(drill, note).then().statusCode(200);
+    }
+
+    @Given("the coach deleted the Drill {string}")
+    public void theCoachDeletedTheDrill(String drill) {
+        drills.delete(drill).then().statusCode(204);
+    }
+
+    // --- When: drawing ----------------------------------------------------------
+
+    @When("the coach draws the Drill {string}")
+    public void theCoachDraws(String drill) {
+        world.setResponse(drills.draw(drill));
+    }
+
+    @When("the coach draws a Drill with a blank name")
+    public void theCoachDrawsWithABlankName() {
+        world.setResponse(given().contentType(ContentType.JSON)
+                .body(Map.of("name", " ", "tagIds", List.of(), "script", TestScripts.drawn("Doppelpass")))
+                .when().post("/api/drills/drawn"));
+    }
+
+    @When("^the coach draws the Drill \"([^\"]*)\" with (.+)$")
+    public void theCoachDrawsABrokenScript(String drill, String problem) {
+        world.setResponse(drills.draw(drill, TestScripts.broken(problem)));
+    }
+
+    @When("the coach saves a script for the Drill {string} containing {}")
+    public void theCoachSavesAScriptContaining(String drill, String what) {
+        world.setResponse(drills.saveScript(drill, TestScripts.variant(what)));
+    }
+
+    @When("the coach adds a sketch noted {string} to the Drill {string}")
+    public void theCoachAddsASketch(String note, String drill) {
+        world.setResponse(drills.addSketch(drill, note));
+    }
+
+    @When("the coach removes sketch {int} of the Drill {string}")
+    public void theCoachRemovesASketch(int position, String drill) {
+        world.setResponse(drills.removeSketch(drill, position));
+    }
+
+    @When("the coach restores sketch {int} of the Drill {string}")
+    public void theCoachRestoresASketch(int position, String drill) {
+        world.setResponse(drills.restoreSketch(drill, position));
+    }
+
+    @When("the coach restores the Drill {string}")
+    public void theCoachRestoresTheDrill(String drill) {
+        world.setResponse(drills.restore(drill));
+    }
+
+    @When("the deleted Drills are listed")
+    public void theDeletedDrillsAreListed() {
+        world.setResponse(drills.listDeleted());
     }
 
     // --- When: uploading --------------------------------------------------------
@@ -360,6 +447,70 @@ public class DrillSteps {
         List<String> ids = given().when().get("/api/drills").then().statusCode(200).extract().path("id");
         assertTrue(!ids.contains(drills.id(drill).toString()), "a deleted Drill is still listed");
         drills.read(drill).then().statusCode(404);
+    }
+
+    @Then("the Drill {string} is ready with script version {int}, drawn by hand, with no sketches")
+    public void theDrillIsDrawn(String drill, int version) {
+        world.response().then().statusCode(201);
+        drills.read(drill).then().statusCode(200)
+                .body("status", equalTo("READY"))
+                .body("currentVersion", equalTo(version))
+                .body("versions.find { it.version == " + version + " }.source", equalTo("EDIT"))
+                .body("sketches", hasSize(0))
+                .body("script.stages[0].name", equalTo("Doppelpass"));
+    }
+
+    @Then("the Drill {string} has {int} sketches, the last one noted {string}, and is still at script version {int}")
+    public void theDrillHasSketchesTheLastNoted(String drill, int count, String note, int version) {
+        world.response().then().statusCode(200);
+        drills.read(drill).then().statusCode(200)
+                .body("status", equalTo("READY"))
+                .body("sketches", hasSize(count))
+                .body("sketches[" + (count - 1) + "].note", equalTo(note))
+                .body("currentVersion", equalTo(version));
+    }
+
+    @Then("the Drill {string} has no sketches and a removed sketch {int}, which is still served as a JPEG")
+    public void theDrillHasARemovedSketch(String drill, int position) {
+        world.response().then().statusCode(200);
+        drills.read(drill).then().statusCode(200)
+                .body("sketches", hasSize(0))
+                .body("deletedSketches.position", equalTo(List.of(position)));
+        given().when().get("/api/drills/" + drills.id(drill) + "/sketches/" + position)
+                .then().statusCode(200).contentType("image/jpeg");
+    }
+
+    @Then("the Drill {string} has a sketch {int} noted {string} and a removed sketch {int}")
+    public void theDrillHasASketchAndARemovedOne(String drill, int position, String note, int removed) {
+        world.response().then().statusCode(200);
+        drills.read(drill).then().statusCode(200)
+                .body("sketches.position", equalTo(List.of(position)))
+                .body("sketches[0].note", equalTo(note))
+                .body("deletedSketches.position", equalTo(List.of(removed)));
+    }
+
+    @Then("the Drill {string} has sketch {int} again and no removed sketches")
+    public void theDrillHasSketchAgain(String drill, int position) {
+        world.response().then().statusCode(200);
+        drills.read(drill).then().statusCode(200)
+                .body("sketches.position", equalTo(List.of(position)))
+                .body("deletedSketches", hasSize(0));
+    }
+
+    @Then("{string} is listed there")
+    public void isListedThere(String drill) {
+        List<String> ids = world.response().then().statusCode(200).extract().path("id");
+        assertTrue(ids.contains(drills.id(drill).toString()), drill + " is not among the deleted Drills");
+    }
+
+    @Then("the Drill {string} is listed again, with its script, and no longer among the deleted")
+    public void theDrillIsListedAgain(String drill) {
+        world.response().then().statusCode(200);
+        List<String> ids = given().when().get("/api/drills").then().statusCode(200).extract().path("id");
+        assertTrue(ids.contains(drills.id(drill).toString()), "a restored Drill is not listed");
+        List<String> deleted = drills.listDeleted().then().statusCode(200).extract().path("id");
+        assertTrue(!deleted.contains(drills.id(drill).toString()), "a restored Drill is still among the deleted");
+        drills.read(drill).then().statusCode(200).body("script.stages", not(hasSize(0)));
     }
 
     private void theDrillFails(String drill, String reason) {

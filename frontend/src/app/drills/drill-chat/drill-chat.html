@@ -48,7 +48,7 @@
   <details class="versions">
     <summary>
       Versionen ({{ versions().length }})
-      @if (canWrite() && previousVersion() !== null) {
+      @if (canRevert() && previousVersion() !== null) {
         <button type="button" class="button undo" (click)="reverted.emit(previousVersion()!); $event.preventDefault()" [disabled]="busy()">
           Rückgängig
         </button>
@@ -60,7 +60,7 @@
           <span class="version-number">V{{ version.version }}</span>
           <span class="version-source">{{ sourceLabel(version.source) }}</span>
           <span class="version-summary">{{ version.changeSummary }}</span>
-          @if (canWrite() && version.version !== currentVersion()) {
+          @if (canRevert() && version.version !== currentVersion()) {
             <button type="button" class="link-button restore" (click)="reverted.emit(version.version)" [disabled]="busy()">Wiederherstellen</button>
           }
         </li>

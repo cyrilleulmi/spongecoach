@@ -70,4 +70,35 @@ export class DrillApiService {
   delete(drillId: string): Observable<void> {
     return this.http.delete<void>(`/api/drills/${drillId}`);
   }
+
+  listDeleted(): Observable<DrillSummary[]> {
+    return this.http.get<DrillSummary[]>('/api/drills/deleted');
+  }
+
+  restore(drillId: string): Observable<DrillSummary> {
+    return this.http.post<DrillSummary>(`/api/drills/${drillId}/restore`, null);
+  }
+
+  /** Creates a Drill drawn by hand: ready at once, no photos, no interpreter job (ADR-0020). */
+  createDrawn(name: string, tagIds: string[], script: DrillScript, changeSummary: string): Observable<DrillDetail> {
+    return this.http.post<DrillDetail>('/api/drills/drawn', { name, tagIds, script, changeSummary });
+  }
+
+  /** Adds photos; starts no job. */
+  addSketches(drillId: string, sketches: SketchUpload[]): Observable<DrillDetail> {
+    const form = new FormData();
+    sketches.forEach((sketch, i) => {
+      form.append('sketches', sketch.jpeg, `sketch-${i + 1}.jpg`);
+      form.append('notes', sketch.note);
+    });
+    return this.http.post<DrillDetail>(`/api/drills/${drillId}/sketches`, form);
+  }
+
+  removeSketch(drillId: string, position: number): Observable<DrillDetail> {
+    return this.http.delete<DrillDetail>(`/api/drills/${drillId}/sketches/${position}`);
+  }
+
+  restoreSketch(drillId: string, position: number): Observable<DrillDetail> {
+    return this.http.post<DrillDetail>(`/api/drills/${drillId}/sketches/${position}/restore`, null);
+  }
 }

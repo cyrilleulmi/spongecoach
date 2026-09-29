@@ -1,0 +1,53 @@
+<header class="page-head">
+  <div>
+    <p class="eyebrow"><a routerLink="/uebungen">Übungen</a></p>
+    <h1>Übung zeichnen</h1>
+  </div>
+  <app-theme-toggle />
+</header>
+
+<div class="draw-shell">
+  @if (restoredDraft()) {
+    <p class="draft-banner" role="status">
+      Dein letzter Entwurf ist wieder da.
+      <button type="button" class="link-button discard-draft" (click)="discardDraft()">Verwerfen</button>
+    </p>
+  }
+
+  <app-drill-editor
+    [script]="script()"
+    [creating]="true"
+    (changed)="changed($event)"
+    (saved)="askName($event)"
+    (cancelled)="leave()"
+  />
+</div>
+
+<dialog #saveDialog class="save-dialog" (cancel)="pending.set(null)">
+  <form class="save-form" (ngSubmit)="create()">
+    <h2>Übung speichern</h2>
+    <label class="field">
+      <span class="field-label">Name</span>
+      <input type="text" name="name" class="name-input" placeholder="z. B. Doppelpass mit Abschluss" maxlength="200" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+    </label>
+    @if (tags().length > 0) {
+      <div class="field">
+        <span class="field-label">Tags</span>
+        <div class="tag-picker">
+          @for (tag of tags(); track tag.id) {
+            <button type="button" class="tag-chip" [class.tag-chip--on]="selectedTags().has(tag.id)" [attr.aria-pressed]="selectedTags().has(tag.id)" (click)="toggleTag(tag.id)">
+              {{ tag.name }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+    @if (errorMessage(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+    <div class="save-actions">
+      <button type="submit" class="button button--primary create" [disabled]="!canCreate()">{{ saving() ? 'Wird gespeichert …' : 'Speichern' }}</button>
+      <button type="button" class="button" (click)="closeSave()">Zurück</button>
+    </div>
+  </form>
+</dialog>

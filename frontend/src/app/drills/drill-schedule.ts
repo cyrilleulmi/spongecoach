@@ -138,7 +138,7 @@ export function schedule(stage: Stage, cast: Cast = initialCast(stage), mirrored
       }
       const anchorId = anchorOf(step);
       const anchor = anchorId ? resolved.get(anchorId) : undefined;
-      const anchorTime = anchor ? (step.afterEdge === 'START' ? anchor.start : anchor.end) : 0;
+      const anchorTime = anchor ? anchorMoment(step, anchor) : 0;
       return { step, start: anchorTime + Math.max(0, step.delay || 0) };
     });
     withStart.sort((a, b) => a.start - b.start);
@@ -167,6 +167,23 @@ export function schedule(stage: Stage, cast: Cast = initialCast(stage), mirrored
   const steps = [...resolved.values()].sort((a, b) => a.start - b.start || a.end - b.end);
   const duration_ = steps.reduce((max, s) => Math.max(max, s.end), 0);
   return { duration: duration_, steps, movements, flights, startPositions, ballsAtStart: balls, cast, mirrored, warnings };
+}
+
+/**
+ * The moment of the anchor Step a Step waits for: its start, its end (also when unset), or for
+ * `DURING` a fraction of the way through it, so a pass can leave a runner who is still running.
+ */
+function anchorMoment(step: Step, anchor: ScheduledStep): number {
+  switch (step.afterEdge) {
+    case 'START':
+      return anchor.start;
+    case 'DURING': {
+      const fraction = Math.min(1, Math.max(0, step.afterFraction || 0));
+      return anchor.start + fraction * (anchor.end - anchor.start);
+    }
+    default:
+      return anchor.end;
+  }
 }
 
 function duration(step: Step, from: Point, path: Point[]): number {

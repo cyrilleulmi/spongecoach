@@ -17,7 +17,10 @@ export class DrillChat {
   readonly messages = input.required<DrillMessage[]>();
   readonly versions = input.required<DrillVersion[]>();
   readonly currentVersion = input<number | null>(null);
+  /** Writing to Claude starts a paid job, so it is a Coach's (ADR-0019). */
   readonly canWrite = input(false);
+  /** Going back to an earlier version costs nothing, so anyone in the Team may (ADR-0020). */
+  readonly canRevert = input(false);
   readonly busy = input(false);
 
   readonly sent = output<string>();

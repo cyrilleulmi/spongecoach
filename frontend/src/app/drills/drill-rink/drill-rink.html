@@ -1,11 +1,13 @@
 <svg
   #svg
   class="rink"
+  [class.rink--drawing]="drawing()"
   [attr.viewBox]="box()"
   role="img"
   aria-label="Spielfeld"
+  (pointerdown)="down($event)"
   (pointermove)="drag($event)"
-  (pointerup)="endDrag()"
+  (pointerup)="up()"
   (pointercancel)="endDrag()"
 >
   <rect
@@ -84,6 +86,25 @@
     }
   }
 
+  @for (ghost of ghosts(); track ghost.id) {
+    @let at = svgPoint(ghost.point);
+    <g class="ghost" [class]="'ghost ghost--' + ghost.side.toLowerCase()" [attr.data-ghost]="ghost.id">
+      <circle [attr.cx]="at.x" [attr.cy]="at.y" r="0.5" />
+      <text [attr.x]="at.x" [attr.y]="at.y">{{ ghost.label }}</text>
+    </g>
+  }
+
+  @if (draft().length > 0) {
+    <polyline class="stroke stroke--draft" [attr.points]="draftPoints()" />
+    @for (point of draft(); track $index) {
+      @let at = svgPoint(point);
+      <circle class="stroke-dot" [attr.cx]="at.x" [attr.cy]="at.y" r="0.22" />
+    }
+  }
+  @if (live().length > 1) {
+    <polyline class="stroke stroke--live" [attr.points]="livePoints()" />
+  }
+
   @for (handle of handles(); track handle.id) {
     @let at = svgPoint(handle.point);
     <g
@@ -93,7 +114,8 @@
       [attr.data-handle]="handle.id"
       (pointerdown)="startDrag($event, handle.id)"
     >
-      <circle [attr.cx]="at.x" [attr.cy]="at.y" [attr.r]="handle.kind === 'actor' ? 0.5 : 0.3" />
+      <circle class="hit" [attr.cx]="at.x" [attr.cy]="at.y" [attr.r]="handle.kind === 'actor' ? hit.actor : hit.other" />
+      <circle class="dot" [attr.cx]="at.x" [attr.cy]="at.y" [attr.r]="handle.kind === 'actor' ? 0.5 : 0.35" />
       @if (handle.label) {
         <text [attr.x]="at.x" [attr.y]="at.y">{{ handle.label }}</text>
       }

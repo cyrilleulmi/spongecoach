@@ -78,8 +78,11 @@ _Avoid_: chain (superseded predecessor/successor model)
 An exercise a coach draws on a tactic board and the app animates on a small-court rink (ADR-0018). Has a name, Drill sketches, Drill tags, a sketch relation and one or more Stages. Team-scoped; not linked to Events or Focus. Created, edited and deleted by a Coach only; soft-deleted.
 _Avoid_: exercise (in code), Übung (in code/API)
 
+**Drawn drill**:
+A Drill made in the animator from nothing: no photos, no interpreter job, READY at once (ADR-0020). Its Steps name sketch 0 ("drawn by hand"). Any team member, Player included, may draw one; only starting Claude is a Coach's.
+
 **Drill sketch**:
-One photo of the tactic board belonging to a Drill, with its position and an optional note. Up to 12 per Drill. Several sketches are either a progression (each starts a new Stage) or a continuation (the next phase of the same run).
+One photo of the tactic board belonging to a Drill, with its position and an optional note. Up to 12 active per Drill. Removed softly and restorable; a removed photo's position is never reused, because script versions refer to photos by position. Several sketches are either a progression (each starts a new Stage) or a continuation (the next phase of the same run).
 
 **Drill tag**:
 A label from a fixed, seeded list (e.g. "Mit Gegenspielern", "Wiederholung spiegelverkehrt") a coach puts on a Drill. Filters the Drill list, and is a hint to the interpreter, never a fact — a drawing that contradicts a tag gets a Clarifying question.
@@ -96,7 +99,7 @@ What an Actor does in one run (the passer, the middle player). Steps refer to Pa
 _Avoid_: role (reserved for a User's Role)
 
 **Step**:
-One action in a Stage: run, dribble, pass, shot, roam or wait, with a path, a speed, and an order given as "after another Step plus a delay". A run may carry the ball; a dribble is active stickhandling; a roam is loose, undefined movement inside an area.
+One action in a Stage: run, dribble, pass, shot, roam or wait, with a path, a speed, and an order given as "after another Step plus a delay", or as *during* another Step at a fraction of its length (a pass while the runner still runs). A run may carry the ball; a dribble is active stickhandling; a roam is loose, undefined movement inside an area.
 
 **Repetition**:
 How a Stage's animation loops: *replay* (reset and play again) or *seamless* (Actors move into their next Parts and carry on), optionally *mirrored* (the next run comes from the other side, reflected across the rink's long axis).

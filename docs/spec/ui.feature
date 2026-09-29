@@ -383,11 +383,81 @@ Feature: What the coach sees
       When the coach edits by hand
       Then they can drag start points, waypoints and cones, change a Step's timing and speed, see the run as a timeline, undo, preview and save
 
-    @spec:ui.drill-player-read-only
-    Scenario: A Player watches Drills
+    @spec:ui.drill-player-draws
+    Scenario: A Player watches, draws and edits Drills, but cannot start Claude
       Given a Player is using the app
       Then "Übungen" is reachable and every Drill plays
-      And uploading, answering, correcting, editing, renaming and deleting are not offered
+      And drawing a Drill, editing it by hand, going back to an earlier version, renaming, deleting and its photos are offered
+      And uploading photos for Claude, answering, correcting by chat and retrying are not
+
+    @spec:ui.drill-photos
+    Scenario: Photos can be added, removed and brought back
+      Given a ready Drill
+      When the coach adds photos, removes one, and restores it from "Gelöschte Fotos"
+      Then the photos come and go without starting Claude, and a Coach can ask Claude to work new photos in
+
+    @spec:ui.drill-restore
+    Scenario: A deleted Drill can be brought back
+      When someone chooses "Gelöschte Übungen" on the Drill list and restores one
+      Then it is in the list again
+
+  Rule: A Drill is drawn by hand in the animator, on a phone as well as on a desktop (ADR-0020)
+
+    @spec:ui.drill-draw-choose
+    Scenario: Choosing how to make a Drill
+      When someone opens "Neue Übung"
+      Then "Selbst zeichnen" is offered to everyone, and uploading photos for Claude only to a Coach
+
+    @spec:ui.drill-draw-place
+    Scenario: Placing figures and objects
+      When the coach picks a figure or object from the tool bar and taps the rink
+      Then it is placed there, can be picked, moved, renamed and deleted, and there is nothing to save until there is a figure
+
+    @spec:ui.drill-draw-path
+    Scenario: Drawing a path
+      When the coach drags from a figure with a path tool, or taps the points one by one and presses "Fertig"
+      Then a Step is added after that figure's last Step, a freehand stroke is simplified to a few waypoints, and a waypoint can be moved, inserted or deleted
+
+    @spec:ui.drill-pass-during-run
+    Scenario: A pass or shot while someone runs
+      Given a run drawn on the rink
+      When the coach draws a pass or shot starting on the middle of that run
+      Then it starts part-way through the run, the runner keeps running, and it stays on that spot when the run gets faster
+
+    @spec:ui.drill-draw-pass-target
+    Scenario: Passing to a moving receiver
+      When a pass ends on another figure or on its run
+      Then the pass goes to that figure, aimed ahead of them so the ball arrives where they will be, and stays aimed when their run changes
+
+    @spec:ui.drill-draw-ball-hint
+    Scenario: A pass from someone without the ball
+      When a pass or shot starts at a figure that does not have the ball by then
+      Then it is drawn anyway, with a hint saying who has no ball
+
+    @spec:ui.drill-timeline-retime
+    Scenario: Re-timing on the timeline
+      When the coach picks a bar of the timeline and drags it, or drags its grip
+      Then the Step starts later or earlier, during, after or with its anchor as it lands, or gets a new speed or duration; an unpicked bar scrolls the timeline instead
+
+    @spec:ui.drill-draw-stages
+    Scenario: Several Stages
+      When the coach adds, renames, moves, removes a Stage or changes its field
+      Then the new Stage starts with the same figures and objects, the order changes with the buttons, and the last Stage cannot be removed
+
+    @spec:ui.drill-draw-save
+    Scenario: Saving a drawn Drill
+      When the coach saves
+      Then the name and tags are asked for, the Drill is created ready with no photos, and it opens; a refused script says why
+
+    @spec:ui.drill-draw-draft
+    Scenario: A drawing survives a reload
+      When the page is left or reloaded before saving
+      Then the drawing is offered again, and can be discarded
+
+    @spec:ui.drill-draw-mobile
+    Scenario: Drawing on a phone
+      Given a phone in portrait
+      Then the rink fills the width, the tools are a bar of labelled buttons at the bottom, the selected item's form is a sheet above it, every control is at least 44 px, and a whole drill can be drawn with touch alone
 
   Rule: Shell
 

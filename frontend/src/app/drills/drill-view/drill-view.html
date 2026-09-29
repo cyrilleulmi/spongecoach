@@ -29,6 +29,9 @@
         <h1>{{ drill.name }}</h1>
         <p class="head-meta">
           <span class="status" [class]="'status status--' + drill.status.toLowerCase()">{{ statusLabels[drill.status] }}</span>
+          @if (drill.sketches.length === 0 && drill.deletedSketches.length === 0) {
+            <span class="tag tag--drawn">gezeichnet</span>
+          }
           @for (tag of drill.tags; track tag.id) {
             <span class="tag">{{ tag.name }}</span>
           }
@@ -36,7 +39,7 @@
       }
     </div>
     <div class="head-actions">
-      @if (currentUser.isCoach() && !renaming()) {
+      @if (currentUser.canEditDrills() && !renaming()) {
         <button type="button" class="button rename-button" (click)="startRename()">Umbenennen</button>
         <button type="button" class="button button--danger delete-button" (click)="deleteDrill()">Löschen</button>
       }
@@ -84,7 +87,7 @@
 
     <div class="layout">
       <section class="card animation">
-        @if (stages().length > 1) {
+        @if (stages().length > 1 && !editing()) {
           <div class="stage-tabs" role="tablist" aria-label="Stufen">
             @for (s of stages(); track s.id; let i = $index) {
               <button type="button" role="tab" class="stage-tab" [class.stage-tab--on]="i === stageIndex()" [attr.aria-selected]="i === stageIndex()" (click)="stageIndex.set(i)">
@@ -98,6 +101,7 @@
             <app-drill-editor
               [script]="drill.script"
               [stageIndex]="stageIndex()"
+              [sketchPositions]="sketchPositions()"
               [busy]="busy()"
               [error]="editError()"
               (saved)="saveEdit($event)"
@@ -106,7 +110,7 @@
           } @else {
             <h2 class="stage-name">{{ stage.name }}</h2>
             <app-rink-player [stage]="stage" />
-            @if (currentUser.isCoach() && drill.status !== 'PENDING') {
+            @if (currentUser.canEditDrills() && drill.status !== 'PENDING') {
               <button type="button" class="button edit-button" (click)="editing.set(true); editError.set(null)">Von Hand bearbeiten</button>
             }
           }
@@ -128,13 +132,19 @@
 
       <aside class="side">
         <section class="card sketches">
-          <h2>Skizzen</h2>
+          <h2>Fotos</h2>
+          @if (drill.sketches.length === 0) {
+            <p class="empty no-photos">Keine Fotos. Diese Übung wurde von Hand gezeichnet; du kannst Fotos der Taktiktafel dazulegen.</p>
+          }
           <ol class="sketch-list">
             @for (sketch of drill.sketches; track sketch.position) {
               <li class="sketch" [class.sketch--asked]="focusedQuestion()?.sketch === sketch.position">
                 <img class="sketch-image" [src]="sketchSrc(sketch.position)" [alt]="'Skizze ' + sketch.position" />
                 @if (sketch.note) {
                   <p class="sketch-note">{{ sketch.note }}</p>
+                }
+                @if (currentUser.canEditDrills()) {
+                  <button type="button" class="link-button remove-sketch" (click)="removeSketch(sketch.position)" [disabled]="busy()">Foto entfernen</button>
                 }
                 @if (sketch.reading) {
                   <button type="button" class="link-button reading-toggle" (click)="toggleReading(sketch.position)">
@@ -152,6 +162,30 @@
               </li>
             }
           </ol>
+          @if (currentUser.canEditDrills() && drill.sketches.length < maxSketches) {
+            <label class="button add-photos">
+              Fotos hinzufügen
+              <input class="file-input" type="file" accept="image/*" multiple (change)="addPhotos($event)" [disabled]="busy()" />
+            </label>
+          }
+          @if (currentUser.isCoach() && newPhotos().length > 0) {
+            <button type="button" class="button button--primary work-in-photos" (click)="workInPhotos()" [disabled]="busy()">
+              Claude die neuen Fotos einarbeiten lassen
+            </button>
+          }
+          @if (drill.deletedSketches.length > 0) {
+            <details class="removed-sketches">
+              <summary>Gelöschte Fotos ({{ drill.deletedSketches.length }})</summary>
+              <ul class="removed-list">
+                @for (sketch of drill.deletedSketches; track sketch.position) {
+                  <li class="removed-sketch">
+                    <img class="sketch-image removed-image" [src]="sketchSrc(sketch.position)" [alt]="'Gelöschtes Foto ' + sketch.position" />
+                    <button type="button" class="button restore-sketch" (click)="restoreSketch(sketch.position)" [disabled]="busy()">Wiederherstellen</button>
+                  </li>
+                }
+              </ul>
+            </details>
+          }
         </section>
 
         <section class="card conversation">
@@ -161,6 +195,7 @@
             [versions]="drill.versions"
             [currentVersion]="drill.currentVersion"
             [canWrite]="currentUser.isCoach()"
+            [canRevert]="currentUser.canEditDrills()"
             [busy]="busy()"
             (sent)="chat($event)"
             (reverted)="revert($event)"

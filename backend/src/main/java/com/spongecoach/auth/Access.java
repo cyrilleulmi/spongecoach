@@ -43,6 +43,14 @@ public class Access {
         }
     }
 
+    /** Anyone in the Team, Player or Coach; a SysAdmin too. What a Drill write that costs nothing needs. */
+    public void requireTeamMember(Team team) {
+        boolean member = user.role() == Role.SYS_ADMIN || (user.teamId() != null && user.teamId().equals(team.id));
+        if (!member) {
+            throw new AccessDeniedException("only a member of this team may do this");
+        }
+    }
+
     /** Editing a Line: its name, roster, Skill ratings and Development goals. */
     public void requireLineMember(Line line) {
         if (!isCoachOf(line.team.id) && !isOnLine(line)) {

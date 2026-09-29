@@ -106,8 +106,10 @@ Drill is `PENDING`, then shows what came back:
 Next to the animation are the photos. Under each photo, **Erkanntes anzeigen** shows what Claude
 read on it (every symbol, placed on a rink), so a coach can see where a misreading came from.
 
-**4. Correcting.** A coach has four ways to change a Drill. All of them are Coach-only; a Player can
-only watch.
+**4. Correcting.** There are four ways to change a Drill. The two that call Claude are Coach-only;
+the two that don't are open to every team member, Player included (ADR-0020). Photos can also be
+added, removed and restored (never calling Claude), and a Drill can be drawn from scratch in the
+animator with no photos at all: `/uebungen/neu/zeichnen`, built for a phone.
 
 | Action | Calls Claude? | What it stores |
 | --- | --- | --- |
@@ -292,8 +294,10 @@ A Drill has one or more **Stages**. Each Stage is one continuous run and holds:
 - **Props**: cones, poles, small goals.
 - **Steps**: `RUN`, `DRIBBLE`, `PASS`, `SHOT`, `ROAM` or `WAIT`. Each has a path, a speed or a
   duration, and a **relative start**: "after Step X reaches its `START` or `END`, plus `delay`
-  seconds". A step without `after` starts with the run. Steps have no clock times, so changing
-  one speed moves everything that depends on it.
+  seconds", or `DURING` X: `afterFraction` (0 to 1, exclusive) of the way through it, which is how a
+  pass or shot happens while a runner is still running. A step without `after` starts with the run.
+  Steps have no clock times, so changing one speed moves everything that depends on it. A Step
+  whose `sketch` is 0 was drawn by hand, on no photo.
 - **Repetition**: `REPLAY` or `SEAMLESS`, and optionally `mirrored`.
 - The script also carries a list of **assumptions** in German.
 

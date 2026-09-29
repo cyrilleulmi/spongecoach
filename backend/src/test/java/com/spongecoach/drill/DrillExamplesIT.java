@@ -93,7 +93,7 @@ class DrillExamplesIT {
                     appendReadings(report, answer);
                 }
                 if (answer.status() == Interpretation.Status.READY) {
-                    List<String> errors = DrillScriptValidator.validate(answer.script(), sketches.size());
+                    List<String> errors = DrillScriptValidator.validate(answer.script(), java.util.stream.IntStream.rangeClosed(1, sketches.size()).boxed().collect(java.util.stream.Collectors.toSet()));
                     if (errors.isEmpty()) {
                         break;
                     }
@@ -115,7 +115,7 @@ class DrillExamplesIT {
                 turns.add(new DrillInterpreter.Turn(true, reply));
             }
             boolean playable = answer.status() == Interpretation.Status.READY
-                    && DrillScriptValidator.validate(answer.script(), sketches.size()).isEmpty();
+                    && DrillScriptValidator.validate(answer.script(), java.util.stream.IntStream.rangeClosed(1, sketches.size()).boxed().collect(java.util.stream.Collectors.toSet())).isEmpty();
             outcome = name + ": " + (playable ? "READY" : "NOT READY (" + answer.status() + ")");
             appendScript(report, answer.script());
         } catch (DrillUnavailableException e) {

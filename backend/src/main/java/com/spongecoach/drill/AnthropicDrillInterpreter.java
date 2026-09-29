@@ -153,6 +153,17 @@ public class AnthropicDrillInterpreter implements DrillInterpreter {
             blocks.add(ContentBlockParam.ofImage(image.build()));
         }
         String tags = input.tags().isEmpty() ? "keine" : String.join(", ", input.tags());
+        if (input.sketches().isEmpty()) {
+            // A Drill drawn by hand: no photos to cache, so the intro is the cached prefix (ADR-0020).
+            blocks.add(ContentBlockParam.ofText(TextBlockParam.builder()
+                    .text("Übung: " + input.drillName() + "\n"
+                            + "Tags: " + tags + "\n\n"
+                            + "Diese Übung hat keine Fotos; sie wurde von Hand gezeichnet. Das Skript steht in der "
+                            + "nächsten Nachricht. Arbeite nur am Skript.")
+                    .cacheControl(CacheControlEphemeral.builder().build())
+                    .build()));
+            return blocks;
+        }
         blocks.add(ContentBlockParam.ofText(TextBlockParam.builder()
                 .text("Übung: " + input.drillName() + "\n"
                         + "Tags: " + tags + "\n"

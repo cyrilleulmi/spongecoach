@@ -20,9 +20,11 @@ import jakarta.transaction.TransactionSynchronizationRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * Runs the interpreter off the request thread (ADR-0019). A request marks its Drill PENDING and
@@ -79,9 +81,10 @@ public class DrillJobs {
     void run(UUID drillId) {
         try {
             DrillInterpreter.Input input = QuarkusTransaction.requiringNew().call(() -> input(drillId));
-            int sketchCount = input.sketches().size();
+            Set<Integer> sketchPositions =
+                    input.sketches().stream().map(DrillInterpreter.Sketch::position).collect(Collectors.toSet());
             Interpretation answer = interpreter.interpret(input);
-            List<String> errors = check(answer, sketchCount);
+            List<String> errors = check(answer, sketchPositions);
             if (!errors.isEmpty()) {
                 // One retry, appended to the conversation so the interpreter sees its own answer
                 // and exactly what was wrong with it.
@@ -90,7 +93,7 @@ public class DrillJobs {
                 turns.add(new DrillInterpreter.Turn(true, retryRequest(errors)));
                 answer = interpreter.interpret(new DrillInterpreter.Input(
                         input.drillName(), input.sketches(), input.tags(), input.relation(), turns));
-                errors = check(answer, sketchCount);
+                errors = check(answer, sketchPositions);
             }
             if (!errors.isEmpty()) {
                 throw new DrillUnavailableException(
@@ -109,7 +112,7 @@ public class DrillJobs {
 
     private DrillInterpreter.Input input(UUID drillId) {
         Drill drill = Drill.findById(drillId);
-        List<DrillInterpreter.Sketch> sketches = drill.sketches.stream()
+        List<DrillInterpreter.Sketch> sketches = drill.activeSketches().stream()
                 .map(sketch -> new DrillInterpreter.Sketch(sketch.position, sketch.image, sketch.note))
                 .toList();
         List<String> tags = drill.tags.stream().map(tag -> tag.name).toList();
@@ -175,13 +178,13 @@ public class DrillJobs {
                 + ",\"script\":" + script + "}";
     }
 
-    private static List<String> check(Interpretation answer, int sketchCount) {
+    private static List<String> check(Interpretation answer, Set<Integer> sketchPositions) {
         if (answer.status() == Interpretation.Status.NEEDS_INPUT) {
             return answer.questions() == null || answer.questions().isEmpty()
                     ? List.of("NEEDS_INPUT without any question")
                     : List.of();
         }
-        return DrillScriptValidator.validate(answer.script(), sketchCount);
+        return DrillScriptValidator.validate(answer.script(), sketchPositions);
     }
 
     private static String retryRequest(List<String> errors) {

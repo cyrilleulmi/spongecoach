@@ -72,6 +72,10 @@ The conventions come from `docs/drills/examples/README.md`, where the coach conf
 prompt carries the rules, not the eight worked examples, so checking against the examples measures
 how well it generalises rather than whether it memorised them.
 
+**Amended by ADR-0020.** The schema and prompt know a `DURING` timing (`afterEdge` plus
+`afterFraction`) for a pass or shot that leaves a runner mid-run, and a Step `sketch` of 0 for a
+Step added by hand. A chat on a Drill with no photos sends no images and works on the script only.
+
 **Tags and notes are hints.** They go into the prompt as the coach's intent. If the drawing
 contradicts them, the model asks.
 

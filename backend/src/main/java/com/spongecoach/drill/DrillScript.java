@@ -67,8 +67,10 @@ public record DrillScript(List<Stage> stages, List<String> assumptions) {
     }
 
     /**
-     * One action. It starts when the Step {@code after} reaches {@code afterEdge} (its start or end),
-     * plus {@code delay} seconds; with no {@code after} it starts at the beginning of the run.
+     * One action. It starts when the Step {@code after} reaches {@code afterEdge} (its start or end,
+     * or {@code afterFraction} of the way through it for {@link Edge#DURING}), plus {@code delay}
+     * seconds; with no {@code after} it starts at the beginning of the run. {@code DURING} is how a
+     * pass or shot happens while someone is still running.
      *
      * <ul>
      *   <li>{@code RUN}, {@code DRIBBLE}: the Part's Actor moves along {@code path} at {@code speed}.
@@ -87,10 +89,12 @@ public record DrillScript(List<Stage> stages, List<String> assumptions) {
             String targetPartId,
             String after,
             Edge afterEdge,
+            /** For {@link Edge#DURING}: how far through {@code after} this Step starts, between 0 and 1 exclusive. */
+            double afterFraction,
             double delay,
             double speed,
             double duration,
-            /** Position (1-based) of the sketch this Step was drawn on. */
+            /** Position (1-based) of the sketch this Step was drawn on; 0 when it was drawn by hand. */
             int sketch,
             /** The number drawn next to it, if any. */
             String label) {
@@ -107,7 +111,9 @@ public record DrillScript(List<Stage> stages, List<String> assumptions) {
 
     public enum Edge {
         START,
-        END
+        END,
+        /** Part-way through the anchor Step, at {@link Step#afterFraction}. */
+        DURING
     }
 
     /**

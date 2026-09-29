@@ -177,6 +177,20 @@ public class Fixtures {
         return drill.id;
     }
 
+    /** A Drill the API already deleted; see {@link TestData#softDeleteDrill}. */
+    public UUID deletedDrill(String spokenName) {
+        UUID id = drill(spokenName, DrillStatus.READY);
+        testData.softDeleteDrill(id);
+        return id;
+    }
+
+    /** A ready Drill whose first photo was removed; see {@link TestData#softDeleteSketch}. */
+    public UUID drillWithRemovedSketch(String spokenName) {
+        UUID id = drill(spokenName, DrillStatus.READY);
+        testData.softDeleteSketch(id, 1);
+        return id;
+    }
+
     /** Registers a Drill the API created, and queues its removal. */
     public void registerDrill(String spokenName, UUID drillId, String actualName) {
         world.register(Kind.DRILL, spokenName, drillId, actualName);

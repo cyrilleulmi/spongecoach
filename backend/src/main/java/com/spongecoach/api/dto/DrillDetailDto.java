@@ -20,6 +20,7 @@ import java.util.UUID;
  * them, the current script, its version history and the conversation. What the frontend polls
  * while a job runs (ADR-0019). The JSON documents are handed out as stored.
  *
+ * @param deletedSketches removed photos, which can be restored (ADR-0020)
  * @param openQuestions the Clarifying questions waiting for an answer; empty unless NEEDS_INPUT
  */
 public record DrillDetailDto(
@@ -30,6 +31,7 @@ public record DrillDetailDto(
         SketchRelation sketchRelation,
         List<DrillTagDto> tags,
         List<Sketch> sketches,
+        List<Sketch> deletedSketches,
         Integer currentVersion,
         JsonNode script,
         List<Version> versions,
@@ -70,7 +72,8 @@ public record DrillDetailDto(
                 drill.error,
                 drill.sketchRelation,
                 drill.tags.stream().map(DrillTagDto::from).toList(),
-                drill.sketches.stream().map(DrillDetailDto::sketch).toList(),
+                drill.activeSketches().stream().map(DrillDetailDto::sketch).toList(),
+                drill.removedSketches().stream().map(DrillDetailDto::sketch).toList(),
                 drill.currentVersion,
                 script,
                 versions.stream()

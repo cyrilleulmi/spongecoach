@@ -162,7 +162,125 @@ Feature: Drills animated from tactic-board photos
       When the coach reverts the Drill "Slalom" to version 7
       Then the response is not found
 
+  Rule: A drill can be drawn by hand, without photos or the interpreter (ADR-0020)
+
+    @spec:drills.drawn-created
+    Scenario: A drawn Drill is ready at once
+      When the coach draws the Drill "Doppelpass"
+      Then the Drill "Doppelpass" is ready with script version 1, drawn by hand, with no sketches
+
+    @spec:drills.drawn-name-required
+    Scenario: A drawn Drill needs a name
+      When the coach draws a Drill with a blank name
+      Then the request is rejected as a bad request
+
+    @spec:drills.drawn-must-be-playable
+    Scenario Outline: A drawn Drill's script must be playable
+      When the coach draws the Drill "Doppelpass" with <problem>
+      Then the request is rejected as a bad request
+
+      Examples:
+        | problem                                  |
+        | a step for a part that does not exist    |
+        | a position off the rink                  |
+        | steps waiting for each other in a cycle  |
+
+    @spec:drills.drawn-cannot-be-retried
+    Scenario: A drawn Drill has nothing to interpret
+      Given a drawn Drill "Doppelpass"
+      When the coach retries the Drill "Doppelpass"
+      Then the request is rejected as a bad request
+
+    @spec:drills.drawn-chat
+    Scenario: The coach can still ask Claude to correct a drawn Drill
+      Given a drawn Drill "Doppelpass"
+      When the coach sends the correction "Mehr Tempo" for the Drill "Doppelpass"
+      Then the Drill "Doppelpass" becomes ready with script version 2
+      And version 2 of "Doppelpass" is summarised as "Mehr Tempo"
+
+    @spec:drills.step-drawn-by-hand
+    Scenario: A step added by hand belongs to no photo
+      Given a ready Drill "Slalom"
+      When the coach saves a script for the Drill "Slalom" containing a step drawn by hand
+      Then version 2 of "Slalom" is current, as a hand edit
+
+  Rule: A step can start part-way through another, so a pass happens while someone runs
+
+    @spec:drills.step-during-another
+    Scenario: A step may start part-way through another step
+      Given a ready Drill "Slalom"
+      When the coach saves a script for the Drill "Slalom" containing a step during another step
+      Then version 2 of "Slalom" is current, as a hand edit
+
+    @spec:drills.step-during-must-be-valid
+    Scenario Outline: A step during another needs a step and a fraction
+      Given a ready Drill "Slalom"
+      When the coach saves a hand-edited script for the Drill "Slalom" with <problem>
+      Then the request is rejected as a bad request
+
+      Examples:
+        | problem                                      |
+        | a during step with a fraction of 1           |
+        | a during step with a fraction of 0           |
+        | a during step with no step to happen during  |
+
+  Rule: Photos can be added, removed and restored, and a removed photo's position is never reused
+
+    @spec:drills.sketch-add
+    Scenario: A photo is added without starting the interpreter
+      Given a ready Drill "Slalom"
+      When the coach adds a sketch noted "Neu" to the Drill "Slalom"
+      Then the Drill "Slalom" has 2 sketches, the last one noted "Neu", and is still at script version 1
+
+    @spec:drills.sketch-add-limit
+    Scenario: A Drill holds at most 12 photos
+      Given a Drill "Voll" uploaded with 12 sketches
+      When the coach adds a sketch noted "Zu viel" to the Drill "Voll"
+      Then the request is rejected as a bad request
+
+    @spec:drills.sketch-delete-keeps-image
+    Scenario: A removed photo leaves the Drill but is kept
+      Given a ready Drill "Slalom"
+      When the coach removes sketch 1 of the Drill "Slalom"
+      Then the Drill "Slalom" has no sketches and a removed sketch 1, which is still served as a JPEG
+
+    @spec:drills.sketch-delete-keeps-versions
+    Scenario: Earlier versions still work after a photo is removed
+      Given a ready Drill "Slalom"
+      And the coach removed sketch 1 of the Drill "Slalom"
+      When the coach reverts the Drill "Slalom" to version 1
+      Then version 2 of "Slalom" is current, as a revert with the script of version 1
+
+    @spec:drills.sketch-position-not-reused
+    Scenario: A new photo never takes a removed photo's position
+      Given a ready Drill "Slalom"
+      And the coach removed sketch 1 of the Drill "Slalom"
+      When the coach adds a sketch noted "Neu" to the Drill "Slalom"
+      Then the Drill "Slalom" has a sketch 2 noted "Neu" and a removed sketch 1
+
+    @spec:drills.sketch-restore
+    Scenario: A removed photo comes back at its old position
+      Given a ready Drill "Slalom"
+      And the coach removed sketch 1 of the Drill "Slalom"
+      When the coach restores sketch 1 of the Drill "Slalom"
+      Then the Drill "Slalom" has sketch 1 again and no removed sketches
+
+    @spec:drills.sketch-restore-only-removed
+    Scenario: Restoring a photo that was never removed
+      Given a ready Drill "Slalom"
+      When the coach restores sketch 1 of the Drill "Slalom"
+      Then the response is not found
+
+    @spec:drills.sketch-restore-limit
+    Scenario: A photo cannot be restored past the limit of 12
+      Given a Drill "Voll" uploaded with 12 sketches
+      And the coach removed sketch 1 of the Drill "Voll"
+      And the coach added a sketch noted "Neu" to the Drill "Voll"
+      When the coach restores sketch 1 of the Drill "Voll"
+      Then the request is rejected as a bad request
+
   Rule: The Drill list
+
 
     @spec:drills.list-recent-first
     Scenario: The most recently changed Drill comes first
@@ -182,3 +300,25 @@ Feature: Drills animated from tactic-board photos
       Given a ready Drill "Slalom"
       When the coach deletes the Drill "Slalom"
       Then the Drill "Slalom" is not listed, and reading it is not found
+
+  Rule: A deleted Drill can be restored
+
+    @spec:drills.deleted-list
+    Scenario: Deleted Drills are listed apart
+      Given a ready Drill "Slalom"
+      And the coach deleted the Drill "Slalom"
+      When the deleted Drills are listed
+      Then "Slalom" is listed there
+
+    @spec:drills.restore
+    Scenario: Restoring a deleted Drill
+      Given a ready Drill "Slalom"
+      And the coach deleted the Drill "Slalom"
+      When the coach restores the Drill "Slalom"
+      Then the Drill "Slalom" is listed again, with its script, and no longer among the deleted
+
+    @spec:drills.restore-only-deleted
+    Scenario: Restoring a Drill that was never deleted
+      Given a ready Drill "Slalom"
+      When the coach restores the Drill "Slalom"
+      Then the response is not found

@@ -108,11 +108,16 @@ describe('DrillUpload', () => {
     expect(fixture.nativeElement.querySelector('.relation')).toBeNull();
   });
 
-  // spec: ui.drill-player-read-only
-  it('shows no upload form to a Player', async () => {
-    const fixture = await render('PLAYER');
+  // spec: ui.drill-draw-choose
+  it('offers everyone to draw a Drill, and only a Coach to have Claude read photos', async () => {
+    const coach = await render('COACH');
+    expect(coach.nativeElement.querySelector('.draw-link')?.getAttribute('href')).toBe('/uebungen/neu/zeichnen');
+    expect(coach.nativeElement.querySelector('form')).not.toBeNull();
+    TestBed.resetTestingModule();
 
-    expect(fixture.nativeElement.querySelector('form')).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('Nur Coaches');
+    const player = await render('PLAYER');
+    expect(player.nativeElement.querySelector('.draw-link')?.getAttribute('href')).toBe('/uebungen/neu/zeichnen');
+    expect(player.nativeElement.querySelector('form')).toBeNull();
+    expect(player.nativeElement.textContent).toContain('nur Coaches');
   });
 });

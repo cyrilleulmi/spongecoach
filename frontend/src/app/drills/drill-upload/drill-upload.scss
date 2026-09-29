@@ -163,3 +163,23 @@
     grid-column: 2 / -1;
   }
 }
+
+.draw-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.draw-choice p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.draw-link {
+  align-self: flex-start;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

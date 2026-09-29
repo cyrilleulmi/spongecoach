@@ -4,11 +4,10 @@ import { Router, RouterLink } from '@angular/router';
 import { CurrentUserService } from '../../auth/current-user.service';
 import { ThemeToggle } from '../../theme/theme-toggle/theme-toggle';
 import { DrillApiService } from '../drill-api.service';
-import { DrillTag, SketchRelation } from '../drill.model';
+import { DrillTag, MAX_SKETCHES, SketchRelation } from '../drill.model';
 import { normaliseTurns, prepareSketch } from '../image-prep';
 
-/** Up to this many photos per Drill (ADR-0018); the backend refuses more. */
-export const MAX_SKETCHES = 12;
+export { MAX_SKETCHES };
 
 interface PendingSketch {
   key: number;

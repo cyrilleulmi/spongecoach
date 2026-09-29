@@ -185,6 +185,31 @@ public class AuthorizationSteps {
         world.setResponse(drills.read(drill));
     }
 
+    @When("they add a sketch to the Drill {string}")
+    public void theyAddASketchToTheDrill(String drill) {
+        world.setResponse(drills.addSketch(drill, "Neu"));
+    }
+
+    @When("they remove the first sketch of the Drill {string}")
+    public void theyRemoveTheFirstSketchOfTheDrill(String drill) {
+        world.setResponse(drills.removeSketch(drill, 1));
+    }
+
+    @When("they draw a copy of the Drill {string}")
+    public void theyDrawACopyOfTheDrill(String drill) {
+        world.setResponse(drills.draw(drill + " 2"));
+    }
+
+    @When("they restore the Drill {string}")
+    public void theyRestoreTheDrill(String drill) {
+        world.setResponse(drills.restore(drill));
+    }
+
+    @When("they restore the first sketch of the Drill {string}")
+    public void theyRestoreTheFirstSketchOfTheDrill(String drill) {
+        world.setResponse(drills.restoreSketch(drill, 1));
+    }
+
     @When("they upload another drill like the Drill {string}")
     public void theyUploadAnotherDrill(String drill) {
         world.setResponse(drills.upload(drill + " 2", 1));

@@ -84,6 +84,14 @@ export class CurrentUserService {
     return this.isCoach() || (!!lineId && !!this.me()?.lineIds.includes(lineId));
   }
 
+  /**
+   * Drawing and editing Drills by hand, their photos, deleting and restoring: any User of the Team,
+   * Player included (ADR-0020). Whatever starts an interpreter job stays `isCoach`.
+   */
+  canEditDrills(): boolean {
+    return true;
+  }
+
   /** Editing a Player's profile, and answering attendance for them. */
   canEditPlayer(playerId: string | null | undefined): boolean {
     return this.isCoach() || (!!playerId && this.me()?.playerId === playerId);

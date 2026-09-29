@@ -19,7 +19,9 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /** An exercise drawn on a tactic board and animated by the app (ADR-0018). */
 @Entity
@@ -77,6 +79,25 @@ public class Drill extends PanacheEntityBase {
     /** Most recently changed first. */
     public static List<Drill> listActive() {
         return list("deletedAt is null order by updatedAt desc");
+    }
+
+    /** Most recently deleted first. */
+    public static List<Drill> listDeleted() {
+        return list("deletedAt is not null order by deletedAt desc");
+    }
+
+    /** The photos the coach sees and the interpreter reads: the ones not removed. */
+    public List<DrillSketch> activeSketches() {
+        return sketches.stream().filter(sketch -> sketch.deletedAt == null).toList();
+    }
+
+    public List<DrillSketch> removedSketches() {
+        return sketches.stream().filter(sketch -> sketch.deletedAt != null).toList();
+    }
+
+    /** Every position ever used, removed photos included: what a script version may still refer to. */
+    public Set<Integer> knownSketchPositions() {
+        return sketches.stream().map(sketch -> sketch.position).collect(Collectors.toSet());
     }
 
     /** Drills whose job was running when the app stopped; they can never finish (ADR-0019). */

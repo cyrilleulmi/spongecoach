@@ -10,9 +10,20 @@
   <app-theme-toggle />
 </header>
 
+<div class="shell shell--single">
+  <section class="card draw-choice">
+    <h2>Selbst zeichnen</h2>
+    <p>
+      Baue die Übung direkt im Animator: Figuren setzen, Wege ziehen, Pässe planen. Das geht auch auf dem Handy,
+      ohne Fotos und ohne Claude.
+    </p>
+    <a class="button button--primary draw-link" routerLink="/uebungen/neu/zeichnen">Selbst zeichnen</a>
+  </section>
+</div>
+
 @if (!currentUser.isCoach()) {
   <div class="shell shell--single">
-    <p class="empty">Nur Coaches können Übungen hochladen.</p>
+    <p class="empty">Fotos von Claude lesen lassen können nur Coaches.</p>
   </div>
 } @else {
 <div class="shell">

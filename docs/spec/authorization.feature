@@ -181,9 +181,11 @@ Feature: Who may change what
       When they create an Iteration "Vorbereitung"
       Then the request is refused as forbidden
 
-  Rule: Only a Coach changes Drills; every User may watch them
+  Rule: Only a Coach starts the interpreter; every team member draws and edits by hand
 
-    Every Drill write can start a paid interpreter job, so none of them is a Player's (ADR-0018).
+    Uploading photos, answering, chatting and retrying can start a paid interpreter job, so they are
+    a Coach's. Everything else, drawing, editing the script, photos, deleting and restoring, costs
+    nothing and is any team member's (ADR-0018, ADR-0020). With one Team, every Player is a member.
 
     @spec:auth.coach-changes-drills
     Scenario Outline: A Coach changes a Drill
@@ -193,18 +195,38 @@ Feature: Who may change what
       Then the request succeeds
 
       Examples:
-        | change                    |
-        | upload another drill like |
-        | rename                    |
-        | answer the questions of   |
-        | send a correction for     |
-        | retry                     |
+        | change                        |
+        | upload another drill like     |
+        | answer the questions of       |
+        | send a correction for         |
+        | retry                         |
+        | rename                        |
         | save a hand-edited script for |
-        | revert                    |
-        | delete                    |
+        | revert                        |
+        | add a sketch to               |
+        | remove the first sketch of    |
+        | draw a copy of                |
+        | delete                        |
 
-    @spec:auth.player-cannot-change-drills
-    Scenario Outline: A Player cannot change a Drill
+    @spec:auth.player-changes-drills-by-hand
+    Scenario Outline: A Player draws and edits a Drill by hand
+      Given "Carmela" is using the app as a Player
+      And a Drill "Bresil" waiting for answers
+      When they <change> the Drill "Bresil"
+      Then the request succeeds
+
+      Examples:
+        | change                        |
+        | rename                        |
+        | save a hand-edited script for |
+        | revert                        |
+        | add a sketch to               |
+        | remove the first sketch of    |
+        | draw a copy of                |
+        | delete                        |
+
+    @spec:auth.player-cannot-start-the-interpreter
+    Scenario Outline: A Player cannot start the interpreter
       Given "Carmela" is using the app as a Player
       And a Drill "Bresil" waiting for answers
       When they <change> the Drill "Bresil"
@@ -213,13 +235,33 @@ Feature: Who may change what
       Examples:
         | change                    |
         | upload another drill like |
-        | rename                    |
         | answer the questions of   |
         | send a correction for     |
         | retry                     |
-        | save a hand-edited script for |
-        | revert                    |
-        | delete                    |
+
+    @spec:auth.coach-restores-drills
+    Scenario Outline: A Coach restores a Drill or a sketch
+      Given a Coach "Cyrille" is using the app
+      And <starting point>
+      When they <restore>
+      Then the request succeeds
+
+      Examples:
+        | starting point                                 | restore                                     |
+        | a deleted Drill "Bresil"                       | restore the Drill "Bresil"                  |
+        | a Drill "Bresil" whose first sketch was removed | restore the first sketch of the Drill "Bresil" |
+
+    @spec:auth.player-restores-drills
+    Scenario Outline: A Player restores a Drill or a sketch
+      Given "Carmela" is using the app as a Player
+      And <starting point>
+      When they <restore>
+      Then the request succeeds
+
+      Examples:
+        | starting point                                 | restore                                     |
+        | a deleted Drill "Bresil"                       | restore the Drill "Bresil"                  |
+        | a Drill "Bresil" whose first sketch was removed | restore the first sketch of the Drill "Bresil" |
 
     @spec:auth.player-watches-drills
     Scenario: A Player reads a Drill

@@ -11,7 +11,8 @@ import { DrillEditor, ScriptEdit } from '../drill-editor/drill-editor';
 import { STATUS_LABELS } from '../drill-list/drill-list';
 import { DrillQuestions, QuestionAnswers } from '../drill-questions/drill-questions';
 import { DrillRink } from '../drill-rink/drill-rink';
-import { DrillDetail, DrillTag, Question } from '../drill.model';
+import { DrillDetail, DrillTag, MAX_SKETCHES, Question } from '../drill.model';
+import { prepareSketch } from '../image-prep';
 import { RinkPlayer } from '../rink-player/rink-player';
 
 /** How often the screen asks whether the interpreter is done (ADR-0019). */
@@ -48,10 +49,14 @@ export class DrillView implements OnInit, OnDestroy {
   protected readonly nameDraft = signal('');
   protected readonly tagDraft = signal<ReadonlySet<string>>(new Set());
   protected readonly allTags = signal<DrillTag[]>([]);
+  /** Photos added in this visit, for offering Claude to work them in. */
+  protected readonly newPhotos = signal<number[]>([]);
+  protected readonly maxSketches = MAX_SKETCHES;
 
   protected readonly busy = computed(() => this.drill()?.status === 'PENDING' || this.sending());
   protected readonly stages = computed(() => this.drill()?.script?.stages ?? []);
   protected readonly stage = computed(() => this.stages()[this.stageIndex()] ?? null);
+  protected readonly sketchPositions = computed(() => this.drill()?.sketches.map((sketch) => sketch.position) ?? []);
 
   private drillId = '';
   private pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -111,6 +116,52 @@ export class DrillView implements OnInit, OnDestroy {
         this.editError.set(error.error?.message ?? 'Das Skript konnte nicht gespeichert werden.');
       },
     });
+  }
+
+  /** Adds photos, upright and downscaled like an upload; starts no job (ADR-0020). */
+  protected async addPhotos(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []).filter((file) => file.type.startsWith('image/'));
+    input.value = '';
+    if (files.length === 0) return;
+    this.sending.set(true);
+    this.errorMessage.set(null);
+    let prepared;
+    try {
+      prepared = await Promise.all(files.map(async (file) => ({ jpeg: await prepareSketch(file, 0), note: '' })));
+    } catch {
+      this.errorMessage.set('Ein Foto konnte nicht gelesen werden.');
+      this.sending.set(false);
+      return;
+    }
+    const before = new Set(this.sketchPositions());
+    this.api.addSketches(this.drillId, prepared).subscribe({
+      next: (drill) => {
+        this.sending.set(false);
+        this.newPhotos.set(drill.sketches.map((sketch) => sketch.position).filter((position) => !before.has(position)));
+        this.show(drill);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.sending.set(false);
+        this.errorMessage.set(error.status === 400 ? `Höchstens ${MAX_SKETCHES} Fotos pro Übung.` : 'Die Fotos konnten nicht hinzugefügt werden.');
+      },
+    });
+  }
+
+  protected removeSketch(position: number): void {
+    this.run(this.api.removeSketch(this.drillId, position), 'Das Foto konnte nicht entfernt werden.');
+  }
+
+  protected restoreSketch(position: number): void {
+    this.run(this.api.restoreSketch(this.drillId, position), 'Das Foto konnte nicht wiederhergestellt werden.');
+  }
+
+  /** Asks Claude, in the chat, to work the photos added just now into the animation. */
+  protected workInPhotos(): void {
+    const positions = this.newPhotos();
+    if (positions.length === 0) return;
+    this.newPhotos.set([]);
+    this.chat(`Bitte arbeite ${positions.length === 1 ? 'das neue Foto' : 'die neuen Fotos'} ${positions.join(', ')} in die Animation ein.`);
   }
 
   protected startRename(): void {

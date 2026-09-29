@@ -7,6 +7,7 @@ function step(overrides: Partial<Step> & Pick<Step, 'id' | 'partId' | 'type'>): 
     targetPartId: '',
     after: '',
     afterEdge: 'END',
+    afterFraction: 0,
     delay: 0,
     speed: 0,
     duration: 0,
@@ -49,6 +50,39 @@ describe('drill schedule', () => {
     expect(pass.end).toBeCloseTo(Math.hypot(6, 4) / 10);
     expect(shot.start).toBeCloseTo(pass.end + 0.2);
     expect(run.duration).toBeCloseTo(shot.end);
+  });
+
+  // spec: ui.drill-pass-during-run
+  it('starts a pass part-way through a run, from where the runner is by then', () => {
+    const stage = passAndShot();
+    stage.steps = [
+      step({ id: 'run', partId: 'p2', type: 'RUN', path: [{ x: 3, y: 10 }], speed: 4 }),
+      step({ id: 'pass', partId: 'p2', type: 'PASS', path: [{ x: -3, y: 6 }], after: 'run', afterEdge: 'DURING', afterFraction: 0.5, speed: 10 }),
+    ];
+
+    const run = schedule(stage);
+    const runStep = run.steps.find((s) => s.step.id === 'run')!;
+    const pass = run.steps.find((s) => s.step.id === 'pass')!;
+    const flight = run.flights[0];
+
+    expect(runStep.end).toBeCloseTo(2);
+    expect(pass.start).toBeCloseTo(1);
+    expect(flight.points[0].x).toBeCloseTo(3);
+    expect(flight.points[0].y).toBeCloseTo(6);
+    // The runner is not held up by the pass: they keep running to the end of the run.
+    expect(run.movements.get('a2')![0].end).toBeCloseTo(2);
+  });
+
+  it('keeps a pass on the same spot of a run when the run gets faster', () => {
+    const stage = passAndShot();
+    stage.steps = [
+      step({ id: 'run', partId: 'p2', type: 'RUN', path: [{ x: 3, y: 10 }], speed: 8 }),
+      step({ id: 'pass', partId: 'p2', type: 'PASS', path: [{ x: -3, y: 6 }], after: 'run', afterEdge: 'DURING', afterFraction: 0.5, speed: 10 }),
+    ];
+
+    const flight = schedule(stage).flights[0];
+
+    expect(flight.points[0].y).toBeCloseTo(6);
   });
 
   it('starts a step together with its anchor when it waits for the anchor to start', () => {

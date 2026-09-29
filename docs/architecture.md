@@ -120,7 +120,13 @@ Player dropped from one of two attending Lines keeps their single answer through
 | POST | `/api/drills/{id}/retry` | 202, runs the interpreter again |
 | PUT | `/api/drills/{id}/script` | `{script, changeSummary}`; a hand edit, validated, saved as a new version |
 | POST | `/api/drills/{id}/revert/{version}` | makes an earlier version current, as a new version |
+| POST | `/api/drills/drawn` | `{name, tagIds, script, changeSummary}`; a Drill drawn by hand, READY as version 1, no photos, no job (ADR-0020) |
+| POST | `/api/drills/{id}/sketches` | multipart `sketches` + `notes`; adds photos, starts no job; the next position is never a removed photo's |
+| DELETE | `/api/drills/{id}/sketches/{n}` | soft-deletes a photo; still served, listed under `deletedSketches` |
+| POST | `/api/drills/{id}/sketches/{n}/restore` | brings a removed photo back (404 unless removed, 400 past 12) |
 | DELETE | `/api/drills/{id}` | soft delete |
+| GET | `/api/drills/deleted` | deleted Drills, most recently deleted first |
+| POST | `/api/drills/{id}/restore` | restores a deleted Drill (404 unless deleted) |
 
 `scheduledOn` is mandatory and unique within its Iteration (ADR-0011); a collision returns **409
 `scheduling_conflict`**. The same datetime in two different Iterations is fine.
@@ -161,7 +167,11 @@ Routes: `/team` (default), `/lines`, `/players`, `/players/:id`, `/uebungen`, `/
   (dragging on `DrillRink`, Step fields, a timeline per Part, undo, preview). The animation maths
   is in two pure modules: `drill-schedule.ts` turns a run's "after Step X" order into times and
   tracks the ball, and `drill-sampler.ts` gives every position at a time and strings runs into the
-  loop (replay, seamless hand-over, mirrored). Every User may watch; only a Coach changes anything.
+  loop (replay, seamless hand-over, mirrored). Every User may watch; any team member draws and
+  edits by hand, and only a Coach starts an interpreter job (ADR-0020). **`/uebungen/neu/zeichnen`**
+  is the animator for a Drill drawn from scratch, usable on a phone: `DrillEditor` in its mobile
+  layout, with the pure `drill-authoring.ts` doing every edit (place, stroke, snap, re-time,
+  Stages). A Step can start `DURING` another, so a pass happens while someone runs.
 - **Read-only past Events** are a frontend default for coaches (ADR-0012): an Event whose
   datetime has passed renders read-only, and a coach can lift the lock per Event with "Trotzdem
   bearbeiten". The lock returns when another Event is selected. For a Player it is a backend rule,

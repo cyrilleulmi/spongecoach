@@ -64,8 +64,10 @@ including the ball, Part rotation and mirroring. They are unit-tested without a 
 `paint-engine.ts` (ADR-0016). The renderer is SVG.
 
 **Who may do what.** Every User may watch every Drill (ADR-0017). Creating, editing, chatting
-about and deleting a Drill is Coach-only (`requireCoach`), because each of those can call a paid
-API. Deletion is soft (`deleted_at`, ADR-0004).
+about and deleting a Drill was Coach-only (`requireCoach`), because each of those can call a paid
+API. Deletion is soft (`deleted_at`, ADR-0004). *Amended by ADR-0020:* only the writes that start an
+interpreter job stay a Coach's; drawing, hand edits, photos, deleting and restoring are any team
+member's.
 
 **Examples in dev.** In the dev profile, `DrillExampleSeeder` loads the example Drills from
 `docs/drills/examples` on startup: the photos, the tags and photo relation from each
@@ -74,4 +76,4 @@ app has drills to look at without spending API credits. Each is added once by na
 after a coach deletes it.
 
 **Out of scope for now.** Linking a Drill to an Event or a Focus, Coach-created tags, cost limits,
-and exporting as video.
+and exporting as video. (Drawing a Drill without photos, first listed here, is ADR-0020.)

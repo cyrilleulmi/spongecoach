@@ -67,7 +67,7 @@ public class DrillExampleSeeder {
             Interpretation animation = DrillJson.readLenient(Files.readString(example.resolve("animation.json")), Interpretation.class);
             String expected = Files.exists(example.resolve("expected.md")) ? Files.readString(example.resolve("expected.md")) : "";
             List<byte[]> photos = photos(example);
-            List<String> errors = DrillScriptValidator.validate(animation.script(), photos.size());
+            List<String> errors = DrillScriptValidator.validate(animation.script(), java.util.stream.IntStream.rangeClosed(1, photos.size()).boxed().collect(java.util.stream.Collectors.toSet()));
             if (!errors.isEmpty()) {
                 Log.warnf("drill examples: %s is not playable, skipped: %s", name, errors);
                 return;

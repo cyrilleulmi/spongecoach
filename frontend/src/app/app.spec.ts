@@ -45,8 +45,8 @@ describe('App shell', () => {
     expect(links.map((a) => a.textContent?.trim())).toEqual(['Team-Übersicht', 'Blöcke', 'Spieler', 'Übungen']);
   });
 
-  // spec: ui.drill-player-read-only
-  it('shows Übungen to a Player too, to watch the Drills', async () => {
+  // spec: ui.drill-player-draws
+  it('shows Übungen to a Player too, to watch and draw Drills', async () => {
     const fixture = TestBed.createComponent(App);
     httpMock.expectOne('/api/users').flush([PLAYER]);
     httpMock.expectOne('/api/me').flush({ ...PLAYER, teamId: null, lineIds: [] });

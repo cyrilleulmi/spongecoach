@@ -50,5 +50,31 @@ A game Event. Note: German-Swiss usage — not "Spiel".
 Umbrella term covering both Training and Match. Belongs to exactly one Iteration and holds a position within it.
 _Avoid_: appointment, item
 
+**Drill** (German: *Übung*):
+An exercise drawn on a tactic board and animated by the app (ADR-0018).
+_Avoid_: Übung (in code/API)
+
+**Drill sketch** (German: *Skizze* / *Foto*):
+One photo of the tactic board belonging to a Drill.
+
+**Drill tag** (German: *Tag*):
+A label from a fixed list on a Drill, e.g. *Mit Gegenspielern*, *Wiederholung spiegelverkehrt*.
+
+**Stage** (German: *Stufe*):
+One continuous animated run of a Drill; a progression of photos gives several Stages.
+
+**Actor** (German: *Spieler* in UI copy):
+A figure in the animation. Not a Player: the UI may say *Spieler*, code never says Player for it.
+
+**Part** (no German pairing — internal concept, not shown in the UI):
+What an Actor does in one run; handed to another Actor in a seamless loop.
+
+**Step** (German: *Schritt*): run (*Laufweg*), dribble (*Dribbling*), pass (*Pass*), shot (*Schuss*), roam (*Bewegung*), wait (*Warten*).
+
+**Repetition** (German: *Wiederholung*): replay (*neu starten*), seamless (*nahtlos*), mirrored (*spiegelverkehrt*).
+
+**Clarifying question** (German: *Rückfrage*):
+A question the interpreter asks the coach instead of guessing.
+
 **Sequence** (no German pairing — internal/technical concept, not floorball vocabulary):
 Ordering by position: each Iteration is positioned relative to other Iterations, each Event relative to the other Events in its Iteration.

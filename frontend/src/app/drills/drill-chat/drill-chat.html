@@ -1,0 +1,70 @@
+<ul class="chat-log">
+  @for (message of messages(); track message.position) {
+    <li class="chat-message" [class.chat-message--coach]="message.author === 'COACH'">
+      @if (message.answers?.length) {
+        <ul class="answers">
+          @for (answer of message.answers; track answer.questionId) {
+            <li><span class="answer-question">{{ answer.question }}</span> {{ answer.answer }}</li>
+          }
+        </ul>
+      }
+      @if (message.content) {
+        <p class="chat-text">{{ message.content }}</p>
+      }
+      @if (message.questions?.length) {
+        <p class="chat-note">{{ message.questions!.length }} Rückfrage{{ message.questions!.length === 1 ? '' : 'n' }}</p>
+      }
+      @if (message.scriptVersion) {
+        <p class="chat-note">
+          Version {{ message.scriptVersion }}
+          @if (summaries().get(message.scriptVersion); as summary) {
+            · {{ summary }}
+          }
+        </p>
+      }
+    </li>
+  }
+  @if (busy()) {
+    <li class="chat-message chat-message--pending">Claude überlegt …</li>
+  }
+</ul>
+
+@if (canWrite()) {
+  <form class="chat-form" (ngSubmit)="send()">
+    <input
+      type="text"
+      class="chat-input"
+      name="message"
+      placeholder="Was stimmt nicht? z. B. «Die Verteidigerin soll früher starten»"
+      [ngModel]="draft()"
+      (ngModelChange)="draft.set($event)"
+      [disabled]="busy()"
+    />
+    <button type="submit" class="button button--primary chat-send" [disabled]="busy() || !draft().trim()">Senden</button>
+  </form>
+}
+
+@if (versions().length > 0) {
+  <details class="versions">
+    <summary>
+      Versionen ({{ versions().length }})
+      @if (canWrite() && previousVersion() !== null) {
+        <button type="button" class="button undo" (click)="reverted.emit(previousVersion()!); $event.preventDefault()" [disabled]="busy()">
+          Rückgängig
+        </button>
+      }
+    </summary>
+    <ol class="version-list">
+      @for (version of versions(); track version.version) {
+        <li class="version" [class.version--current]="version.version === currentVersion()">
+          <span class="version-number">V{{ version.version }}</span>
+          <span class="version-source">{{ sourceLabel(version.source) }}</span>
+          <span class="version-summary">{{ version.changeSummary }}</span>
+          @if (canWrite() && version.version !== currentVersion()) {
+            <button type="button" class="link-button restore" (click)="reverted.emit(version.version)" [disabled]="busy()">Wiederherstellen</button>
+          }
+        </li>
+      }
+    </ol>
+  </details>
+}

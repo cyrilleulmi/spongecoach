@@ -1,0 +1,62 @@
+@if (errorMessage(); as message) {
+  <p class="error-banner" role="alert">{{ message }}</p>
+}
+
+<header class="page-head">
+  <div>
+    <p class="eyebrow">Training</p>
+    <h1>Übungen</h1>
+  </div>
+  <div class="head-actions">
+    @if (currentUser.isCoach()) {
+      <a class="primary-action" routerLink="/uebungen/neu">Neue Übung</a>
+    }
+    <app-theme-toggle />
+  </div>
+</header>
+
+<div class="shell">
+  @if (tags().length > 0) {
+    <div class="tag-filter" role="group" aria-label="Nach Tags filtern">
+      @for (tag of tags(); track tag.id) {
+        <button
+          type="button"
+          class="tag-chip"
+          [class.tag-chip--on]="selectedTags().has(tag.id)"
+          [attr.aria-pressed]="selectedTags().has(tag.id)"
+          (click)="toggleTag(tag.id)"
+        >
+          {{ tag.name }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (loaded() && drills().length === 0) {
+    <p class="empty">
+      Noch keine Übungen.
+      @if (currentUser.isCoach()) {
+        Fotografiere eine Übung auf der Taktiktafel und lade sie hoch.
+      }
+    </p>
+  } @else if (loaded() && visible().length === 0) {
+    <p class="empty">Keine Übung trägt alle gewählten Tags.</p>
+  }
+
+  <ul class="drill-rows">
+    @for (drill of visible(); track drill.id) {
+      <li class="drill-row">
+        <a class="drill-link" [routerLink]="['/uebungen', drill.id]">
+          <span class="drill-name">{{ drill.name }}</span>
+          <span class="drill-meta">{{ drill.sketchCount }} {{ drill.sketchCount === 1 ? 'Foto' : 'Fotos' }}</span>
+        </a>
+        <span class="drill-tags">
+          @for (tag of drill.tags; track tag.id) {
+            <span class="tag">{{ tag.name }}</span>
+          }
+        </span>
+        <span class="status" [class]="'status status--' + drill.status.toLowerCase()">{{ statusLabels[drill.status] }}</span>
+      </li>
+    }
+  </ul>
+</div>

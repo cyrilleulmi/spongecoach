@@ -1,0 +1,100 @@
+@if (errorMessage(); as message) {
+  <p class="error-banner" role="alert">{{ message }}</p>
+}
+
+<header class="page-head">
+  <div>
+    <p class="eyebrow"><a routerLink="/uebungen">Übungen</a></p>
+    <h1>Neue Übung</h1>
+  </div>
+  <app-theme-toggle />
+</header>
+
+@if (!currentUser.isCoach()) {
+  <div class="shell shell--single">
+    <p class="empty">Nur Coaches können Übungen hochladen.</p>
+  </div>
+} @else {
+<div class="shell">
+  <form class="card upload-form" (ngSubmit)="upload()">
+    <label class="field">
+      <span class="field-label">Name</span>
+      <input type="text" name="name" placeholder="z. B. Bresil" [ngModel]="name()" (ngModelChange)="name.set($event)" />
+    </label>
+
+    <div class="field">
+      <span class="field-label">Fotos der Taktiktafel ({{ sketches().length }}/{{ maxSketches }})</span>
+      <ol class="sketch-list">
+        @for (sketch of sketches(); track sketch.key; let i = $index, first = $first, last = $last) {
+          <li class="sketch-item">
+            <span class="sketch-number">{{ i + 1 }}</span>
+            <img class="sketch-preview" [src]="sketch.previewUrl" [style.transform]="'rotate(' + sketch.turns * 90 + 'deg)'" alt="Foto {{ i + 1 }}" />
+            <input
+              type="text"
+              class="sketch-note"
+              [name]="'note-' + sketch.key"
+              placeholder="Notiz (optional), z. B. Fortsetzung von Foto 1"
+              [ngModel]="sketch.note"
+              (ngModelChange)="setNote(sketch.key, $event)"
+            />
+            <span class="sketch-tools">
+              <button type="button" class="icon-button" (click)="turn(sketch.key)" aria-label="Foto drehen">⟳</button>
+              <button type="button" class="icon-button" (click)="move(sketch.key, -1)" [disabled]="first" aria-label="Nach vorne">↑</button>
+              <button type="button" class="icon-button" (click)="move(sketch.key, 1)" [disabled]="last" aria-label="Nach hinten">↓</button>
+              <button type="button" class="icon-button" (click)="remove(sketch.key)" aria-label="Foto entfernen">✕</button>
+            </span>
+          </li>
+        }
+      </ol>
+      @if (sketches().length < maxSketches) {
+        <label class="button add-photos">
+          Fotos hinzufügen
+          <input class="file-input" type="file" accept="image/*" multiple (change)="addFiles($event)" />
+        </label>
+      }
+    </div>
+
+    @if (sketches().length > 1) {
+      <fieldset class="field relation">
+        <legend class="field-label">Wie hängen die Fotos zusammen?</legend>
+        <label><input type="radio" name="relation" value="PROGRESSION" [checked]="relation() === 'PROGRESSION'" (change)="relation.set('PROGRESSION')" /> Steigerung – jedes Foto eine eigene Stufe</label>
+        <label><input type="radio" name="relation" value="CONTINUOUS" [checked]="relation() === 'CONTINUOUS'" (change)="relation.set('CONTINUOUS')" /> Fortlaufend – die Fotos zeigen nacheinander denselben Ablauf</label>
+        <label><input type="radio" name="relation" value="MIXED" [checked]="relation() === 'MIXED'" (change)="relation.set('MIXED')" /> Gemischt – Claude fragt nach</label>
+      </fieldset>
+    }
+
+    @if (tags().length > 0) {
+      <div class="field">
+        <span class="field-label">Tags</span>
+        <div class="tag-picker">
+          @for (tag of tags(); track tag.id) {
+            <button type="button" class="tag-chip" [class.tag-chip--on]="selectedTags().has(tag.id)" [attr.aria-pressed]="selectedTags().has(tag.id)" (click)="toggleTag(tag.id)">
+              {{ tag.name }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="submit-row">
+      <button type="submit" class="button button--primary" [disabled]="!canUpload()">
+        {{ uploading() ? 'Wird hochgeladen …' : 'Hochladen und animieren' }}
+      </button>
+      <span class="hint">Claude liest die Fotos und fragt nach, wenn etwas unklar ist.</span>
+    </div>
+  </form>
+
+  <aside class="card legend">
+    <h2>So zeichnen</h2>
+    <dl>
+      @for (entry of legend; track entry.symbol) {
+        <div class="legend-row">
+          <dt>{{ entry.symbol }}</dt>
+          <dd>{{ entry.meaning }}</dd>
+        </div>
+      }
+    </dl>
+    <p class="hint">Farben oder Formen können die zwei Teams unterscheiden. Nur kräftige, frische Striche zählen.</p>
+  </aside>
+</div>
+}

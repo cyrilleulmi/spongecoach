@@ -1,0 +1,122 @@
+@use '../drill-styles';
+
+:host {
+  background: transparent;
+  min-height: 0;
+}
+
+.chat-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.chat-message {
+  align-self: flex-start;
+  max-width: 88%;
+  background: var(--paper);
+  border: 1px solid var(--line-soft);
+  border-radius: 0.8rem 0.8rem 0.8rem 0.2rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.88rem;
+}
+
+.chat-message--coach {
+  align-self: flex-end;
+  background: var(--accent-soft);
+  border-color: transparent;
+  border-radius: 0.8rem 0.8rem 0.2rem 0.8rem;
+}
+
+.chat-message--pending {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.chat-text {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.chat-note {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.answers {
+  margin: 0 0 0.3rem;
+  padding-left: 1rem;
+}
+
+.answer-question {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.chat-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.chat-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.versions {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.versions summary {
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.undo {
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+}
+
+.version-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.version {
+  display: grid;
+  grid-template-columns: 2.4rem 6.5rem 1fr auto;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--line-soft);
+  align-items: baseline;
+}
+
+.version--current {
+  font-weight: 700;
+}
+
+.version-source {
+  color: var(--ink-soft);
+}
+
+.link-button {
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}

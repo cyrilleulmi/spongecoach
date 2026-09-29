@@ -1,0 +1,102 @@
+<svg
+  #svg
+  class="rink"
+  [attr.viewBox]="box()"
+  role="img"
+  aria-label="Spielfeld"
+  (pointermove)="drag($event)"
+  (pointerup)="endDrag()"
+  (pointercancel)="endDrag()"
+>
+  <rect
+    class="surface"
+    [attr.x]="boards.x"
+    [attr.y]="boards.y"
+    [attr.width]="boards.width"
+    [attr.height]="boards.height"
+    [attr.rx]="boards.r"
+  />
+  <line class="marking" [attr.x1]="boards.x" y1="0" [attr.x2]="-boards.x" y2="0" />
+  <circle class="marking" cx="0" cy="0" r="1.5" />
+  @for (end of goalEnds; track end.end) {
+    <rect class="marking" [attr.x]="end.area.x" [attr.y]="end.area.y" [attr.width]="end.area.width" [attr.height]="end.area.height" />
+    <rect class="marking" [attr.x]="end.keeper.x" [attr.y]="end.keeper.y" [attr.width]="end.keeper.width" [attr.height]="end.keeper.height" />
+    <rect class="goal" [attr.x]="end.goalBack.x" [attr.y]="end.goalBack.y" [attr.width]="end.goalBack.width" [attr.height]="end.goalBack.height" />
+  }
+  @for (spot of faceOffs; track $index) {
+    <path class="marking" [attr.d]="'M' + (spot.x - 0.25) + ' ' + spot.y + 'h0.5M' + spot.x + ' ' + (spot.y - 0.25) + 'v0.5'" />
+  }
+
+  @for (path of drawnPaths(); track path.id) {
+    <g class="path" [class]="'path path--' + path.kind.toLowerCase()" [class.path--highlight]="path.highlight">
+      @for (stroke of path.strokes; track $index) {
+        <polyline [attr.points]="stroke" />
+      }
+      @if (path.head) {
+        <polygon class="head" [attr.points]="path.head" />
+      }
+    </g>
+  }
+
+  @for (prop of props(); track prop.id) {
+    @let at = svgPoint(prop.position);
+    @switch (prop.kind) {
+      @case ('CONE') {
+        <polygon class="prop prop--cone" [attr.points]="(at.x) + ',' + (at.y - 0.3) + ' ' + (at.x - 0.26) + ',' + (at.y + 0.2) + ' ' + (at.x + 0.26) + ',' + (at.y + 0.2)" />
+      }
+      @case ('SMALL_GOAL') {
+        <rect class="prop prop--goal" [attr.x]="at.x - 0.45" [attr.y]="at.y - 0.2" width="0.9" height="0.4" />
+      }
+      @default {
+        <circle class="prop prop--pole" [attr.cx]="at.x" [attr.cy]="at.y" r="0.15" />
+      }
+    }
+  }
+
+  @for (drawn of drawnSymbols(); track drawn.symbol.id) {
+    <g class="symbol" [class.symbol--highlight]="drawn.highlight">
+      @if (drawn.isLine) {
+        <polyline [attr.points]="drawn.points" />
+        @if (drawn.head) {
+          <polygon class="head" [attr.points]="drawn.head" />
+        }
+      } @else {
+        <circle [attr.cx]="drawn.at.x" [attr.cy]="drawn.at.y" r="0.35" />
+      }
+      @if (drawn.symbol.label) {
+        <text [attr.x]="drawn.at.x + 0.45" [attr.y]="drawn.at.y - 0.35">{{ drawn.symbol.label }}</text>
+      }
+      <title>{{ drawn.symbol.meaning }} ({{ (drawn.symbol.confidence * 100).toFixed(0) }} %)</title>
+    </g>
+  }
+
+  @if (frame(); as f) {
+    @for (actor of f.actors; track actor.id) {
+      @let at = svgPoint(actor);
+      <g class="actor" [class]="'actor actor--' + actor.side.toLowerCase()" [class.actor--goalie]="actor.kind === 'GOALIE'" [attr.data-actor]="actor.id">
+        <circle [attr.cx]="at.x" [attr.cy]="at.y" r="0.5" />
+        <text [attr.x]="at.x" [attr.y]="at.y">{{ actor.label }}</text>
+      </g>
+    }
+    @for (ball of f.balls; track ball.id) {
+      @let at = svgPoint(ball);
+      <circle class="ball" [class.ball--flying]="ball.inFlight" [attr.cx]="at.x" [attr.cy]="at.y" r="0.2" [attr.data-ball]="ball.id" />
+    }
+  }
+
+  @for (handle of handles(); track handle.id) {
+    @let at = svgPoint(handle.point);
+    <g
+      class="handle"
+      [class]="'handle handle--' + handle.kind"
+      [class.handle--selected]="handle.selected"
+      [attr.data-handle]="handle.id"
+      (pointerdown)="startDrag($event, handle.id)"
+    >
+      <circle [attr.cx]="at.x" [attr.cy]="at.y" [attr.r]="handle.kind === 'actor' ? 0.5 : 0.3" />
+      @if (handle.label) {
+        <text [attr.x]="at.x" [attr.y]="at.y">{{ handle.label }}</text>
+      }
+    </g>
+  }
+</svg>

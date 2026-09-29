@@ -1,0 +1,31 @@
+<app-drill-rink [area]="stage().area" [frame]="frame()" [props]="stage().props" [paths]="paths()" />
+
+<div class="controls">
+  <button type="button" class="control play-toggle" (click)="toggle()" [attr.aria-label]="playing() ? 'Pause' : 'Abspielen'">
+    {{ playing() ? '❚❚' : '▶' }}
+  </button>
+  <button type="button" class="control step" (click)="stepForward()" aria-label="Nächster Schritt">⏭</button>
+  <input
+    class="scrub"
+    type="range"
+    min="0"
+    [max]="playback().duration"
+    step="0.05"
+    [ngModel]="loopTime()"
+    (ngModelChange)="seek($event)"
+    aria-label="Zeit"
+  />
+  <select class="speed" [ngModel]="speed()" (ngModelChange)="setSpeed($event)" aria-label="Tempo">
+    @for (option of speeds; track option) {
+      <option [ngValue]="option">{{ option }}×</option>
+    }
+  </select>
+</div>
+@if (playback().runs.length > 1) {
+  <p class="run-info">
+    Durchlauf {{ slot().index + 1 }} von {{ playback().runs.length }}
+    @if (slot().run.mirrored) {
+      · gespiegelt
+    }
+  </p>
+}

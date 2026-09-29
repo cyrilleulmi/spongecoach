@@ -25,6 +25,9 @@ public class ApiExceptionMapper implements ExceptionMapper<Exception> {
         if (exception instanceof AccessDeniedException accessDenied) {
             return error(Response.Status.FORBIDDEN, "forbidden", accessDenied.getMessage());
         }
+        if (exception instanceof DrillBusyException drillBusy) {
+            return error(Response.Status.CONFLICT, "drill_busy", drillBusy.getMessage());
+        }
         if (exception instanceof WebApplicationException webApplicationException) {
             Response response = webApplicationException.getResponse();
             return error(

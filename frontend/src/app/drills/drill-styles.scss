@@ -1,0 +1,174 @@
+// Shared by the drill screens; the look follows the player and line screens.
+
+:host {
+  display: block;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Karla', ui-sans-serif, system-ui, sans-serif;
+  min-height: 100%;
+}
+
+h1,
+h2 {
+  font-family: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.6rem;
+}
+
+.error-banner {
+  margin: 0;
+  padding: 0.75rem 2rem;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin: 0 0 0.2rem;
+}
+
+.page-head {
+  padding: 1.5rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.empty {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.primary-action,
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.primary-action,
+.button--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.button--danger {
+  color: var(--danger-ink);
+}
+
+.tag,
+.tag-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border: 1px solid transparent;
+}
+
+.tag-chip {
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-color: var(--line);
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.7rem;
+}
+
+.tag-chip--on {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--line-soft);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.status--ready {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.status--needs_input {
+  background: #fdf1d8;
+  color: #7a5200;
+}
+
+.status--failed {
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+input[type='text'],
+textarea,
+select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  padding: 0.4rem 0.55rem;
+}
+
+textarea {
+  resize: vertical;
+}

@@ -1,0 +1,164 @@
+@if (stage(); as stage) {
+  <div class="editor-bar">
+    <div class="mode-switch" role="group" aria-label="Ansicht">
+      <button type="button" class="mode" [class.mode--on]="!preview()" (click)="preview.set(false)">Bearbeiten</button>
+      <button type="button" class="mode" [class.mode--on]="preview()" (click)="preview.set(true)">Vorschau</button>
+    </div>
+    <button type="button" class="button undo" (click)="undo()" [disabled]="!dirty()">Rückgängig</button>
+  </div>
+
+  <div class="editor">
+    <div class="rink-column">
+      @if (preview()) {
+        <app-rink-player [stage]="stage" />
+      } @else {
+        <app-drill-rink
+          [area]="stage.area"
+          [props]="[]"
+          [paths]="paths()"
+          [handles]="handles()"
+          (handleMoved)="moveHandle($event)"
+          (handleSelected)="selectHandle($event)"
+        />
+        <p class="hint">Punkte ziehen: Startpositionen, Hütchen und die Wegpunkte des gewählten Schritts.</p>
+      }
+    </div>
+
+    <div class="panel-column">
+      <section class="panel timeline" aria-label="Ablauf">
+        <h3>Ablauf <span class="hint">{{ timeline().duration.toFixed(1) }} s</span></h3>
+        @for (row of timeline().rows; track row.part.id) {
+          <div class="timeline-row">
+            <span class="timeline-label">{{ row.label }}</span>
+            <span class="timeline-track">
+              @for (bar of row.bars; track bar.id) {
+                <button
+                  type="button"
+                  class="timeline-bar"
+                  [class]="'timeline-bar timeline-bar--' + bar.type.toLowerCase()"
+                  [class.timeline-bar--selected]="bar.id === selectedStepId()"
+                  [style.left.%]="bar.left"
+                  [style.width.%]="bar.width"
+                  [attr.aria-label]="typeLabels[bar.type] + ' ' + bar.id"
+                  (click)="selectStep(bar.id)"
+                ></button>
+              }
+            </span>
+          </div>
+        }
+      </section>
+
+      @if (selectedStep(); as step) {
+        <section class="panel step-form" aria-label="Schritt">
+          <h3>Schritt {{ step.label || step.id }}</h3>
+          <label>Art
+            <select name="type" [ngModel]="step.type" (ngModelChange)="setStepField('type', $event)">
+              @for (type of stepTypes; track type) {
+                <option [ngValue]="type">{{ typeLabels[type] }}</option>
+              }
+            </select>
+          </label>
+          @if (step.type === 'PASS') {
+            <label>An
+              <select name="target" [ngModel]="step.targetPartId ?? ''" (ngModelChange)="setStepField('targetPartId', $event)">
+                <option value="">niemanden</option>
+                @for (part of stage.parts; track part.id) {
+                  <option [value]="part.id">{{ part.name }}</option>
+                }
+              </select>
+            </label>
+          }
+          <label>Beginnt
+            <select name="after" [ngModel]="step.after ?? ''" (ngModelChange)="setAfter($event)">
+              <option value="">mit dem Durchlauf</option>
+              @for (other of stage.steps; track other.id) {
+                @if (other.id !== step.id) {
+                  <option [value]="other.id">nach {{ typeLabels[other.type] }} {{ other.label || other.id }}</option>
+                }
+              }
+            </select>
+          </label>
+          @if (isSet(step.after)) {
+            <label>Zeitpunkt
+              <select name="edge" [ngModel]="step.afterEdge ?? 'END'" (ngModelChange)="setEdge($event)">
+                <option value="END">wenn er endet</option>
+                <option value="START">wenn er beginnt</option>
+              </select>
+            </label>
+          }
+          <label>Verzögerung (s)
+            <input type="number" name="delay" min="0" step="0.1" [ngModel]="step.delay" (ngModelChange)="setNumber('delay', $event)" />
+          </label>
+          @if (moving.includes(step.type)) {
+            <label>Tempo (m/s)
+              <input type="number" name="speed" min="0.5" step="0.5" [ngModel]="step.speed" (ngModelChange)="setNumber('speed', $event)" />
+            </label>
+          } @else {
+            <label>Dauer (s)
+              <input type="number" name="duration" min="0.5" step="0.5" [ngModel]="step.duration" (ngModelChange)="setNumber('duration', $event)" />
+            </label>
+          }
+          <div class="row-buttons">
+            @if (step.type !== 'WAIT') {
+              <button type="button" class="button" (click)="addWaypoint()">Wegpunkt +</button>
+              <button type="button" class="button" (click)="removeWaypoint()" [disabled]="step.path.length <= 1">Wegpunkt −</button>
+            }
+            <button type="button" class="button button--danger" (click)="deleteStep()">Schritt löschen</button>
+          </div>
+        </section>
+      }
+
+      @if (selectedActor(); as actor) {
+        <section class="panel actor-form" aria-label="Spielerin">
+          <h3>Figur {{ actor.label }}</h3>
+          <label>Beschriftung
+            <input type="text" name="label" maxlength="4" [ngModel]="actor.label" (ngModelChange)="setActorField('label', $event)" />
+          </label>
+          <label>Seite
+            <select name="side" [ngModel]="actor.side" (ngModelChange)="setActorField('side', $event)">
+              @for (side of sides; track side) {
+                <option [ngValue]="side">{{ side === 'NEUTRAL' ? 'neutral' : 'Team ' + side }}</option>
+              }
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" name="hasBall" [ngModel]="actor.hasBall" (ngModelChange)="setActorField('hasBall', $event)" /> startet mit Ball</label>
+        </section>
+      }
+
+      <section class="panel repetition-form" aria-label="Wiederholung">
+        <h3>Wiederholung</h3>
+        <label>Art
+          <select name="mode" [ngModel]="stage.repetition.mode" (ngModelChange)="setRepetition($event, stage.repetition.mirrored)">
+            <option value="REPLAY">neu starten</option>
+            <option value="SEAMLESS">nahtlos (Rollen wechseln)</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="mirrored" [ngModel]="stage.repetition.mirrored" (ngModelChange)="setRepetition(stage.repetition.mode, $event)" />
+          spiegelverkehrt
+        </label>
+        @if (stage.repetition.mode === 'SEAMLESS') {
+          @for (part of stage.parts; track part.id) {
+            <label>{{ part.name }} wird zu
+              <select [name]="'next-' + part.id" [ngModel]="part.nextPartId ?? ''" (ngModelChange)="setNextPart(part.id, $event)">
+                <option value="">–</option>
+                @for (next of stage.parts; track next.id) {
+                  <option [value]="next.id">{{ next.name }}</option>
+                }
+              </select>
+            </label>
+          }
+        }
+      </section>
+    </div>
+  </div>
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+  <div class="save-row">
+    <input type="text" class="summary" name="changeSummary" [ngModel]="changeSummary()" (ngModelChange)="changeSummary.set($event)" aria-label="Was wurde geändert?" />
+    <button type="button" class="button button--primary save" (click)="save()" [disabled]="!dirty() || busy()">Speichern</button>
+    <button type="button" class="button" (click)="cancelled.emit()">Abbrechen</button>
+  </div>
+}

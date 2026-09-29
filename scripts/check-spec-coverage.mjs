@@ -23,6 +23,7 @@ const CUCUMBER_FEATURES = new Set([
   'attendance.feature',
   'authorization.feature',
   'catalogs.feature',
+  'drills.feature',
   'focus-planning.feature',
   'lines.feature',
   'players.feature',

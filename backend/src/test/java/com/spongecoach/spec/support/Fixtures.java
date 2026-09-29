@@ -1,6 +1,8 @@
 package com.spongecoach.spec.support;
 
 import com.spongecoach.domain.AppUser;
+import com.spongecoach.domain.Drill;
+import com.spongecoach.domain.DrillStatus;
 import com.spongecoach.domain.Event;
 import com.spongecoach.domain.Iteration;
 import com.spongecoach.domain.Line;
@@ -10,6 +12,7 @@ import com.spongecoach.support.TestData;
 import io.quarkiverse.cucumber.ScenarioScope;
 import jakarta.inject.Inject;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -29,6 +32,8 @@ public class Fixtures {
 
     @Inject
     ScenarioWorld world;
+
+    private int drillCount;
 
     public UUID line(String spokenName) {
         if (world.knows(Kind.LINE, spokenName)) {
@@ -150,6 +155,32 @@ public class Fixtures {
         world.register(Kind.USER, spokenName, user.id, user.name);
         world.onCleanup(() -> testData.deleteUser(user.id));
         return user.id;
+    }
+
+    /**
+     * The actual name a Drill the scenario speaks of goes by, chosen before the Drill exists, so a
+     * Given can configure the interpreter for a Drill a later When uploads.
+     */
+    public String drillName(String spokenName) {
+        String key = "drillName:" + spokenName;
+        if (!world.noted(key)) {
+            world.note(key, world.uniquify(spokenName));
+        }
+        return world.recall(key);
+    }
+
+    /** A Drill in the given state with no interpreter job behind it; see {@link TestData#createDrill}. */
+    public UUID drill(String spokenName, DrillStatus status) {
+        // Created one after another, each later than the last, so "most recently changed" is stable.
+        Drill drill = testData.createDrill(drillName(spokenName), status, Instant.now().plusMillis(drillCount++));
+        registerDrill(spokenName, drill.id, drill.name);
+        return drill.id;
+    }
+
+    /** Registers a Drill the API created, and queues its removal. */
+    public void registerDrill(String spokenName, UUID drillId, String actualName) {
+        world.register(Kind.DRILL, spokenName, drillId, actualName);
+        world.onCleanup(() -> testData.deleteDrill(drillId));
     }
 
     public TestData testData() {

@@ -74,6 +74,39 @@ An Event type: a game. Note: German-Swiss usage — not "Spiel".
 Ordering by position: each Iteration has a position relative to other Iterations, and each Event has a position relative to the other Events in its Iteration. Positions are plain, coach-assigned numbers — nothing enforces they're gapless or unique.
 _Avoid_: chain (superseded predecessor/successor model)
 
+**Drill**:
+An exercise a coach draws on a tactic board and the app animates on a small-court rink (ADR-0018). Has a name, Drill sketches, Drill tags, a sketch relation and one or more Stages. Team-scoped; not linked to Events or Focus. Created, edited and deleted by a Coach only; soft-deleted.
+_Avoid_: exercise (in code), Übung (in code/API)
+
+**Drill sketch**:
+One photo of the tactic board belonging to a Drill, with its position and an optional note. Up to 12 per Drill. Several sketches are either a progression (each starts a new Stage) or a continuation (the next phase of the same run).
+
+**Drill tag**:
+A label from a fixed, seeded list (e.g. "Mit Gegenspielern", "Wiederholung spiegelverkehrt") a coach puts on a Drill. Filters the Drill list, and is a hint to the interpreter, never a fact — a drawing that contradicts a tag gets a Clarifying question.
+
+**Stage**:
+One continuous animated run of a Drill. Progression photos make separate Stages (1 v G → 1 v 1 → 2 v 1); continuation photos extend one. Holds Actors, Parts, Props, Steps and a Repetition.
+
+**Actor**:
+A figure in a Stage's animation: player, goalie or coach, on side A, B or neutral. Not a Player — a Drill is about positions, not about who in the Team plays them. Keeps its id across Stages.
+_Avoid_: Player (reserved for a Team member)
+
+**Part**:
+What an Actor does in one run (the passer, the middle player). Steps refer to Parts, so a seamless loop can hand them to different Actors on the next run.
+_Avoid_: role (reserved for a User's Role)
+
+**Step**:
+One action in a Stage: run, dribble, pass, shot, roam or wait, with a path, a speed, and an order given as "after another Step plus a delay". A run may carry the ball; a dribble is active stickhandling; a roam is loose, undefined movement inside an area.
+
+**Repetition**:
+How a Stage's animation loops: *replay* (reset and play again) or *seamless* (Actors move into their next Parts and carry on), optionally *mirrored* (the next run comes from the other side, reflected across the rink's long axis).
+
+**Drill script**:
+A Drill's Stages as one versioned jsonb document; every AI change, manual edit and revert makes a new version (ADR-0018).
+
+**Clarifying question**:
+A question the interpreter asks the coach instead of guessing something that changes who, what, where or in what order (ADR-0019). A Drill waiting for answers is in status NEEDS_INPUT.
+
 ## Sample data
 
 The canonical example data for mockups, prototypes, and seed data (see [Seed data content](https://github.com/cyrilleulmi/spongecoach/issues/10)). Use this — not placeholder names — whenever a Line/Player/Skill/Development goal example is needed; a Focus example is just a short German sentence naming what a Line works on (e.g. "Spielaufbau aus der tiefen Zone"), not drawn from a catalog.
@@ -96,3 +129,7 @@ The canonical example data for mockups, prototypes, and seed data (see [Seed dat
 **Development goal catalog**: Ballverluste im eigenen Drittel reduzieren, Überzahlspiel verbessern, Kompakte Defensive aufbauen, Abschlüsse aus dem Slot erhöhen
 
 **Example Focus text** (each set per Line per Event, not a catalog): Spielaufbau aus der tiefen Zone, Abschlussübungen 2-auf-1, Einläufe im Überzahlspiel, Cross-Pässe unter Druck, Rebound-Kontrolle nach Pad-Abwehr
+
+**Drill tag list** (seeded, fixed in v1): Mit Gegenspielern, Ohne Gegenspieler, Mit Goalie, Überzahl, Schiessen, Passen, Stockführung, Spielaufbau, Aufwärmen, Wiederholung spiegelverkehrt
+
+**Example Drills** (real tactic-board photos with confirmed interpretations in [docs/drills/examples/](docs/drills/examples/)): Acht, Bresil, Halbkreis, Karussell, Langkurz, Slalom, Waschmaschine, 3v2

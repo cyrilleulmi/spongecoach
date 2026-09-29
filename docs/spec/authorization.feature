@@ -180,3 +180,50 @@ Feature: Who may change what
       Given "Carmela" is using the app as a Player
       When they create an Iteration "Vorbereitung"
       Then the request is refused as forbidden
+
+  Rule: Only a Coach changes Drills; every User may watch them
+
+    Every Drill write can start a paid interpreter job, so none of them is a Player's (ADR-0018).
+
+    @spec:auth.coach-changes-drills
+    Scenario Outline: A Coach changes a Drill
+      Given a Coach "Cyrille" is using the app
+      And a Drill "Bresil" waiting for answers
+      When they <change> the Drill "Bresil"
+      Then the request succeeds
+
+      Examples:
+        | change                    |
+        | upload another drill like |
+        | rename                    |
+        | answer the questions of   |
+        | send a correction for     |
+        | retry                     |
+        | save a hand-edited script for |
+        | revert                    |
+        | delete                    |
+
+    @spec:auth.player-cannot-change-drills
+    Scenario Outline: A Player cannot change a Drill
+      Given "Carmela" is using the app as a Player
+      And a Drill "Bresil" waiting for answers
+      When they <change> the Drill "Bresil"
+      Then the request is refused as forbidden
+
+      Examples:
+        | change                    |
+        | upload another drill like |
+        | rename                    |
+        | answer the questions of   |
+        | send a correction for     |
+        | retry                     |
+        | save a hand-edited script for |
+        | revert                    |
+        | delete                    |
+
+    @spec:auth.player-watches-drills
+    Scenario: A Player reads a Drill
+      Given "Carmela" is using the app as a Player
+      And a Drill "Bresil" waiting for answers
+      When they read the Drill "Bresil"
+      Then the request succeeds

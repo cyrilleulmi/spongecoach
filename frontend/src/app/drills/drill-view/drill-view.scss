@@ -1,0 +1,186 @@
+@use '../drill-styles';
+
+.eyebrow a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin: 0.4rem 0 0;
+}
+
+.rename {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tag-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.rename-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shell {
+  padding: 1.5rem 2rem 2.5rem;
+  max-width: 76rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.working {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.failed p {
+  margin: 0 0 0.75rem;
+  color: var(--danger-ink);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.stage-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.stage-tab {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.stage-tab--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.stage-name {
+  text-align: center;
+}
+
+.edit-button {
+  margin-top: 1rem;
+}
+
+.assumptions {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.assumptions summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.assumptions ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--ink-soft);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sketch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.sketch {
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  transition: background 0.2s;
+}
+
+.sketch--asked {
+  background: #fdf1d8;
+}
+
+.sketch-image {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 0.4rem;
+  background: var(--line-soft);
+}
+
+.sketch-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.link-button {
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.2rem 0;
+}
+
+.player-questions {
+  margin: 0 0 0.5rem;
+  padding-left: 1.2rem;
+}
+
+@media (max-width: 60rem) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .shell {
+    padding: 1rem;
+  }
+}

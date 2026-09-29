@@ -1,0 +1,172 @@
+@if (errorMessage(); as message) {
+  <p class="error-banner" role="alert">{{ message }}</p>
+}
+
+@if (notFound()) {
+  <div class="shell">
+    <p class="empty">Übung nicht gefunden. <a routerLink="/uebungen">Zu den Übungen</a></p>
+  </div>
+}
+
+@if (drill(); as drill) {
+  <header class="page-head">
+    <div>
+      <p class="eyebrow"><a routerLink="/uebungen">Übungen</a></p>
+      @if (renaming()) {
+        <form class="rename" (ngSubmit)="saveRename()">
+          <input type="text" name="name" [ngModel]="nameDraft()" (ngModelChange)="nameDraft.set($event)" aria-label="Name" />
+          <div class="tag-picker">
+            @for (tag of allTags(); track tag.id) {
+              <button type="button" class="tag-chip" [class.tag-chip--on]="tagDraft().has(tag.id)" (click)="toggleDraftTag(tag.id)">{{ tag.name }}</button>
+            }
+          </div>
+          <span class="rename-actions">
+            <button type="submit" class="button button--primary">Speichern</button>
+            <button type="button" class="button" (click)="renaming.set(false)">Abbrechen</button>
+          </span>
+        </form>
+      } @else {
+        <h1>{{ drill.name }}</h1>
+        <p class="head-meta">
+          <span class="status" [class]="'status status--' + drill.status.toLowerCase()">{{ statusLabels[drill.status] }}</span>
+          @for (tag of drill.tags; track tag.id) {
+            <span class="tag">{{ tag.name }}</span>
+          }
+        </p>
+      }
+    </div>
+    <div class="head-actions">
+      @if (currentUser.isCoach() && !renaming()) {
+        <button type="button" class="button rename-button" (click)="startRename()">Umbenennen</button>
+        <button type="button" class="button button--danger delete-button" (click)="deleteDrill()">Löschen</button>
+      }
+      <app-theme-toggle />
+    </div>
+  </header>
+
+  <div class="shell">
+    @switch (drill.status) {
+      @case ('PENDING') {
+        <p class="card working" role="status">
+          <span class="spinner" aria-hidden="true"></span>
+          Claude liest die Skizzen … das dauert meist eine bis zwei Minuten.
+        </p>
+      }
+      @case ('FAILED') {
+        <div class="card failed" role="alert">
+          <p>{{ drill.error || 'Das Interpretieren ist fehlgeschlagen.' }}</p>
+          @if (currentUser.isCoach()) {
+            <button type="button" class="button button--primary retry" (click)="retry()" [disabled]="busy()">Erneut versuchen</button>
+          }
+        </div>
+      }
+      @case ('NEEDS_INPUT') {
+        <section class="card questions-card">
+          <h2>Rückfragen von Claude</h2>
+          @if (currentUser.isCoach()) {
+            <app-drill-questions
+              [questions]="drill.openQuestions"
+              [busy]="busy()"
+              (answered)="answer($event)"
+              (focused)="focusedQuestion.set($event)"
+            />
+          } @else {
+            <ul class="player-questions">
+              @for (question of drill.openQuestions; track question.id) {
+                <li>{{ question.text }}</li>
+              }
+            </ul>
+            <p class="empty">Ein Coach beantwortet die Fragen.</p>
+          }
+        </section>
+      }
+    }
+
+    <div class="layout">
+      <section class="card animation">
+        @if (stages().length > 1) {
+          <div class="stage-tabs" role="tablist" aria-label="Stufen">
+            @for (s of stages(); track s.id; let i = $index) {
+              <button type="button" role="tab" class="stage-tab" [class.stage-tab--on]="i === stageIndex()" [attr.aria-selected]="i === stageIndex()" (click)="stageIndex.set(i)">
+                {{ i + 1 }}. {{ s.name }}
+              </button>
+            }
+          </div>
+        }
+        @if (stage(); as stage) {
+          @if (editing() && drill.script) {
+            <app-drill-editor
+              [script]="drill.script"
+              [stageIndex]="stageIndex()"
+              [busy]="busy()"
+              [error]="editError()"
+              (saved)="saveEdit($event)"
+              (cancelled)="editing.set(false)"
+            />
+          } @else {
+            <h2 class="stage-name">{{ stage.name }}</h2>
+            <app-rink-player [stage]="stage" />
+            @if (currentUser.isCoach() && drill.status !== 'PENDING') {
+              <button type="button" class="button edit-button" (click)="editing.set(true); editError.set(null)">Von Hand bearbeiten</button>
+            }
+          }
+        } @else if (drill.status !== 'PENDING') {
+          <p class="empty">Noch keine Animation.</p>
+        }
+
+        @if (drill.script?.assumptions?.length) {
+          <details class="assumptions">
+            <summary>Annahmen von Claude ({{ drill.script!.assumptions.length }})</summary>
+            <ul>
+              @for (assumption of drill.script!.assumptions; track $index) {
+                <li>{{ assumption }}</li>
+              }
+            </ul>
+          </details>
+        }
+      </section>
+
+      <aside class="side">
+        <section class="card sketches">
+          <h2>Skizzen</h2>
+          <ol class="sketch-list">
+            @for (sketch of drill.sketches; track sketch.position) {
+              <li class="sketch" [class.sketch--asked]="focusedQuestion()?.sketch === sketch.position">
+                <img class="sketch-image" [src]="sketchSrc(sketch.position)" [alt]="'Skizze ' + sketch.position" />
+                @if (sketch.note) {
+                  <p class="sketch-note">{{ sketch.note }}</p>
+                }
+                @if (sketch.reading) {
+                  <button type="button" class="link-button reading-toggle" (click)="toggleReading(sketch.position)">
+                    {{ readingShown(sketch.position) ? 'Erkanntes ausblenden' : 'Erkanntes anzeigen' }}
+                  </button>
+                  @if (readingShown(sketch.position)) {
+                    <app-drill-rink
+                      class="reading"
+                      [area]="sketch.reading.boardSide"
+                      [symbols]="sketch.reading.symbols"
+                      [highlightedSymbols]="focusedQuestion()?.symbolIds ?? []"
+                    />
+                  }
+                }
+              </li>
+            }
+          </ol>
+        </section>
+
+        <section class="card conversation">
+          <h2>Gespräch mit Claude</h2>
+          <app-drill-chat
+            [messages]="drill.messages"
+            [versions]="drill.versions"
+            [currentVersion]="drill.currentVersion"
+            [canWrite]="currentUser.isCoach()"
+            [busy]="busy()"
+            (sent)="chat($event)"
+            (reverted)="revert($event)"
+          />
+        </section>
+      </aside>
+    </div>
+  </div>
+}

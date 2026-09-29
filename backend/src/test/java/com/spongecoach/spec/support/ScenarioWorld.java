@@ -111,6 +111,10 @@ public class ScenarioWorld {
         notes.put(key, value);
     }
 
+    public boolean noted(String key) {
+        return notes.containsKey(key);
+    }
+
     @SuppressWarnings("unchecked")
     public <T> T recall(String key) {
         if (!notes.containsKey(key)) {

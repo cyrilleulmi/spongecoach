@@ -53,13 +53,24 @@ and a SysAdmin may do everything.
 | `PUT /api/events/{id}` | Event fields, whole Focus set | ✓ | ✓ | ✗ | `requireCoach` |
 | `PUT /api/events/{id}/focus/{lineId}` | one Line's Focus | ✓ | ✓ | *own Line, not done* | `requireFocus` |
 | `PUT /api/events/{id}/attendance/{playerId}` | an answer | ✓ | ✓ | *self, not done* | `requireAttendance` |
+| `POST /api/drills` | upload a Drill (starts an interpreter job) | ✓ | ✓ | ✗ | `requireCoach` |
+| `PUT /api/drills/{id}` | rename, retag a Drill | ✓ | ✓ | ✗ | `requireCoach` |
+| `POST /api/drills/{id}/answers` | answer Clarifying questions (starts a job) | ✓ | ✓ | ✗ | `requireCoach` |
+| `POST /api/drills/{id}/chat` | send a correction (starts a job) | ✓ | ✓ | ✗ | `requireCoach` |
+| `POST /api/drills/{id}/retry` | interpret again (starts a job) | ✓ | ✓ | ✗ | `requireCoach` |
+| `PUT /api/drills/{id}/script` | save a hand-edited script | ✓ | ✓ | ✗ | `requireCoach` |
+| `POST /api/drills/{id}/revert/{version}` | make an earlier version current | ✓ | ✓ | ✗ | `requireCoach` |
+| `DELETE /api/drills/{id}` | delete a Drill (soft) | ✓ | ✓ | ✗ | `requireCoach` |
 
 "Coach ✓" always means *within their own Team*. With one hardcoded Team, that is every row today.
+
+Drills are Coach-only for writes because every one of them can start a paid interpreter job
+(ADR-0018, ADR-0019); a Player may still watch every Drill.
 
 ## Frontend mirror
 
 `CurrentUserService` answers the same questions: `isCoach`, `canEditLine(lineId)`,
-`canEditPlayer(playerId)`. `EventDetail` adds the done-Event rule. A control the User can't use is
+`canEditPlayer(playerId)`. The drill screens use `isCoach` for every Drill control. `EventDetail` adds the done-Event rule. A control the User can't use is
 hidden, or shown as plain text. The frontend never grants what the backend refuses.
 
 ## Changing this

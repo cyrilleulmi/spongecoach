@@ -316,11 +316,84 @@ Feature: What the coach sees
       Given a Player is using the app
       Then renaming and deleting Iterations, creating Iterations and adding Events are not offered
 
+  Rule: Drills are animated from photos of the tactic board (ADR-0018, ADR-0019)
+
+    @spec:ui.drill-list
+    Scenario: The Drill list
+      Then "Übungen" lists every Drill with its status, tags and number of photos, the most recently changed first
+
+    @spec:ui.drill-list-filter
+    Scenario: Filtering Drills by tag
+      When the coach picks one or more tags
+      Then only the Drills carrying all of them are listed
+
+    @spec:ui.drill-upload
+    Scenario: Uploading a Drill
+      When the coach adds photos of the tactic board, orders and turns them, adds notes, picks tags and how the photos relate, and uploads
+      Then the photos are sent upright and downscaled, and the new Drill opens
+
+    @spec:ui.drill-upload-legend
+    Scenario: The upload screen shows how to draw
+      Then next to the upload form a legend explains the usual symbols
+
+    @spec:ui.drill-waits-while-interpreting
+    Scenario: The Drill says when Claude is still reading it
+      Given a Drill being interpreted
+      Then its screen says Claude is reading the sketches, and checks again every few seconds until it is done
+
+    @spec:ui.drill-questions
+    Scenario: Answering Claude's questions
+      Given a Drill waiting for answers
+      Then each question offers its suggested answers and a text field
+      And the coach sends the answers, or lets Claude decide with "Rate einfach"
+
+    @spec:ui.drill-failed-retry
+    Scenario: A failed interpretation can be tried again
+      Given a failed Drill
+      Then its screen shows why, and the coach can try again
+
+    @spec:ui.drill-plays
+    Scenario: A Drill plays on the rink
+      Given a ready Drill
+      Then its Stage plays on the small-court rink in a loop, with the Step paths drawn faintly
+      And the coach can pause, scrub, change the speed and step from one Step to the next
+
+    @spec:ui.drill-stages
+    Scenario: A Drill with several Stages
+      Given a ready Drill with several Stages
+      Then each Stage is a tab, and choosing one plays it
+
+    @spec:ui.drill-readings
+    Scenario: What Claude read on a photo
+      Then each photo can show the symbols Claude read on it, drawn on the rink
+      And while the coach looks at a question, its photo and symbols are highlighted
+
+    @spec:ui.drill-chat-correction
+    Scenario: Correcting the animation by chat
+      When the coach tells Claude what is wrong
+      Then the message and Claude's reply appear in the conversation, the reply with its new version
+
+    @spec:ui.drill-revert
+    Scenario: Undoing a change
+      When the coach chooses "Rückgängig", or restores an earlier version
+      Then that version plays again
+
+    @spec:ui.drill-editor
+    Scenario: Editing the animation by hand
+      When the coach edits by hand
+      Then they can drag start points, waypoints and cones, change a Step's timing and speed, see the run as a timeline, undo, preview and save
+
+    @spec:ui.drill-player-read-only
+    Scenario: A Player watches Drills
+      Given a Player is using the app
+      Then "Übungen" is reachable and every Drill plays
+      And uploading, answering, correcting, editing, renaming and deleting are not offered
+
   Rule: Shell
 
     @spec:ui.navigation
     Scenario: Moving between the screens
-      Then Team-Übersicht, Blöcke and Spieler are reachable from the header
+      Then Team-Übersicht, Blöcke, Spieler and Übungen are reachable from the header
 
     @spec:ui.default-route-is-team
     Scenario: Landing on the team overview

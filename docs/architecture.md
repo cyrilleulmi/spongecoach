@@ -30,6 +30,11 @@ dropdown and sent as a cookie (ADR-0017). UUID primary keys everywhere (ADR-0002
   `Access` holds every write rule: resources call it after loading the row, so an unknown id is
   still 404 and a refused write is 403 `forbidden`. Reads are never checked (ADR-0017). Which Role
   may call which endpoint is in [permissions.md](permissions.md).
+- `drill/` — the Drill interpreter (ADR-0018, ADR-0019): the `DrillScript` records and their
+  `DrillScriptValidator`, the `DrillInterpreter` that calls Claude, and `DrillJobs`, which runs it
+  off the request thread. The one place with logic that outlives a request. In dev,
+  `DrillExampleSeeder` loads the example Drills from `docs/drills/examples` on startup. How the
+  flow, the Claude calls and the animation fit together: [drills/README.md](drills/README.md).
 - `domain/` — Panache entities with public fields and static finders. Join tables that carry a
   payload are entities (`LineSkill`, `LineFocusEvent`, `EventAttendance`); join tables that do not
   are `@ManyToMany` (`line_player`, `event_line`).
@@ -51,9 +56,13 @@ Team 1─* Iteration 1─* Event
          Event ──* EventAttendance   (one answer per (Event, Player): PENDING|ATTENDING|DECLINED)
          Event ──* LineFocusEvent    (at most one per (Event, Line); `focus` is free text, ADR-0014)
 AppUser ──0..1 Team, ──0..1 Player  (app_user: role SYS_ADMIN|COACH|PLAYER; seeded only, ADR-0017)
+Team 1─* Drill ─*─* DrillTag         (drill_drill_tag; tags are a fixed seeded list, ADR-0018)
+         Drill 1─* DrillSketch        (JPEG bytes + the interpreter's latest symbol `reading`)
+         Drill 1─* DrillScriptVersion (the Stages as one jsonb document; every change is a new version)
+         Drill 1─* DrillMessage       (the conversation with the interpreter, append-only, ADR-0019)
 ```
 
-Soft delete (`deleted_at`) on Line, Skill, DevelopmentGoal, PlayerSkill, PlayerDevelopmentGoal (ADR-0004). `Line.color` is assigned
+Soft delete (`deleted_at`) on Line, Skill, DevelopmentGoal, PlayerSkill, PlayerDevelopmentGoal, Drill (ADR-0004). `Line.color` is assigned
 once at creation from a fixed 8-color dial palette, so a Line's color survives its own deletion on
 historic Event dials.
 
@@ -100,14 +109,28 @@ Player dropped from one of two attending Lines keeps their single answer through
 | PUT | `/api/events/{id}` | `{eventTypeId?, name?, scheduledOn?, focusAttachments?}` — `focusAttachments` is `[{lineId, focus}]` free text; a non-null value **replaces the whole set**. Coach only |
 | PUT | `/api/events/{id}/focus/{lineId}` | `{focus}` — one attending Line's Focus alone; blank or null clears it. What the frontend uses |
 | PUT | `/api/events/{id}/attendance/{playerId}` | `{status, declineMessage?}`; the message is kept only while `DECLINED` |
+| GET | `/api/drill-tags` | the fixed Drill tag list |
+| GET | `/api/drills` | active Drills, most recently changed first, with status, tags and `sketchCount` |
+| GET | `/api/drills/{id}` | **the drill screen**: sketches with their `reading`, the current `script`, `versions`, `messages`, `openQuestions`; polled while `PENDING` |
+| GET | `/api/drills/{id}/sketches/{n}` | a sketch as `image/jpeg`, cached immutable |
+| POST | `/api/drills` | multipart: `name`, `sketchRelation`, `tagIds`, 1–12 JPEG `sketches` with `notes`; **202**, the interpretation runs in the background |
+| PUT | `/api/drills/{id}` | `{name?, tagIds?}` |
+| POST | `/api/drills/{id}/answers` | `{answers: [{questionId, text}], guess}`; 202, starts a job |
+| POST | `/api/drills/{id}/chat` | `{message}`; 202, starts a job |
+| POST | `/api/drills/{id}/retry` | 202, runs the interpreter again |
+| PUT | `/api/drills/{id}/script` | `{script, changeSummary}`; a hand edit, validated, saved as a new version |
+| POST | `/api/drills/{id}/revert/{version}` | makes an earlier version current, as a new version |
+| DELETE | `/api/drills/{id}` | soft delete |
 
 `scheduledOn` is mandatory and unique within its Iteration (ADR-0011); a collision returns **409
 `scheduling_conflict`**. The same datetime in two different Iterations is fine.
 
+A drill request while that Drill's job is still running returns **409 `drill_busy`** (ADR-0019).
+
 ## Frontend
 
-Four routes: `/team` (default), `/lines`, `/players`, `/players/:id`. The header nav reads
-Team-Übersicht · Blöcke · Spieler.
+Routes: `/team` (default), `/lines`, `/players`, `/players/:id`, `/uebungen`, `/uebungen/neu`,
+`/uebungen/:id`. The header nav reads Team-Übersicht · Blöcke · Spieler · Übungen.
 
 - **`/lines`** — one Line at a time; `?line=<id>` preselects one, which is how a Line badge
   elsewhere jumps here; otherwise it opens the first Line the User is on, else the first Line. Roster rows link to the player screen. Ratings are optimistic with rollback; every other association
@@ -129,6 +152,16 @@ Team-Übersicht · Blöcke · Spieler.
   renders "Spieler nicht gefunden". Clicking the Avatar opens `AvatarPainter`, a modal canvas
   (brush, spray, fill, eraser, undo) with a circle guide over the saved square; its pixel math lives
   in `paint-engine.ts` so it is testable without a canvas (ADR-0016).
+- **`/uebungen`** — the Drill list, filterable by tag. **`/uebungen/neu`** uploads a Drill: photos
+  in order, each turnable and with a note, tags, how the photos relate, and the drawing legend.
+  `image-prep.ts` makes each photo upright (applying its EXIF rotation) and at most 1568 px on the
+  long side before upload. **`/uebungen/:id`** polls while the Drill is `PENDING`; shows the
+  questions, the Stages as tabs with `RinkPlayer`, the photos with what Claude read on them, the
+  assumptions, and the conversation with its versions. `DrillEditor` edits a Stage by hand
+  (dragging on `DrillRink`, Step fields, a timeline per Part, undo, preview). The animation maths
+  is in two pure modules: `drill-schedule.ts` turns a run's "after Step X" order into times and
+  tracks the ball, and `drill-sampler.ts` gives every position at a time and strings runs into the
+  loop (replay, seamless hand-over, mirrored). Every User may watch; only a Coach changes anything.
 - **Read-only past Events** are a frontend default for coaches (ADR-0012): an Event whose
   datetime has passed renders read-only, and a coach can lift the lock per Event with "Trotzdem
   bearbeiten". The lock returns when another Event is selected. For a Player it is a backend rule,
@@ -157,5 +190,11 @@ tied to them by `// spec:` marker comments. ADR-0013 records why the two layers 
 - Playwright e2e stubs the API in the browser; no e2e runs against the real backend.
 - Backend does not enforce read-only past Events for coaches — the frontend does, deliberately. It does for Players.
 - No authentication: anyone who reaches the app can pick any User (ADR-0017).
+- Drill interpreter jobs live in memory: a restart fails whatever was running, and the coach
+  retries (ADR-0019).
+- The small-court dimensions (`Rink.java`, `rink.ts`) come from a summary of the swiss unihockey
+  rules, not from the rulebook itself.
+- No cost limit on the paid interpreter calls yet: every upload, answer, chat message and retry is
+  one or two Claude requests.
 - `Line.count()` drives the palette index and counts soft-deleted Lines, so colors can repeat
   before all eight are used.

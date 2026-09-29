@@ -1,0 +1,54 @@
+:host {
+  display: block;
+}
+
+app-drill-rink {
+  max-width: 26rem;
+  margin: 0 auto;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.control {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  flex: none;
+}
+
+.play-toggle {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.scrub {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.speed {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 0.4rem;
+  padding: 0.25rem 0.3rem;
+}
+
+.run-info {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}

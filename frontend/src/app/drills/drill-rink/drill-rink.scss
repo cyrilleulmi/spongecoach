@@ -1,0 +1,186 @@
+:host {
+  display: block;
+  --rink-surface: #eef3f6;
+  --rink-marking: #8a96a3;
+  --side-a: #2f6db5;
+  --side-b: #c0392b;
+  --side-neutral: #2c7a68;
+  --ball: #f5a623;
+  --path: #1b2430;
+}
+
+:host-context([data-theme='dark']) {
+  --rink-surface: #1d2a33;
+  --rink-marking: #5d6c78;
+  --path: #eceae2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host-context(:root:not([data-theme='light'])) {
+    --rink-surface: #1d2a33;
+    --rink-marking: #5d6c78;
+    --path: #eceae2;
+  }
+}
+
+.rink {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+
+.surface {
+  fill: var(--rink-surface);
+  stroke: var(--rink-marking);
+  stroke-width: 0.12;
+}
+
+.marking {
+  fill: none;
+  stroke: var(--rink-marking);
+  stroke-width: 0.07;
+}
+
+.goal {
+  fill: none;
+  stroke: var(--side-b);
+  stroke-width: 0.1;
+}
+
+.path polyline {
+  fill: none;
+  stroke: var(--path);
+  stroke-width: 0.08;
+  opacity: 0.3;
+  stroke-linejoin: round;
+}
+
+.path .head {
+  fill: var(--path);
+  opacity: 0.3;
+}
+
+.path--pass polyline {
+  stroke-dasharray: 0.35 0.25;
+}
+
+.path--roam polyline {
+  stroke-dasharray: 0.12 0.18;
+}
+
+.path--highlight polyline {
+  opacity: 0.9;
+  stroke: var(--side-a);
+}
+
+.path--highlight .head {
+  opacity: 0.9;
+  fill: var(--side-a);
+}
+
+.head {
+  stroke: none;
+}
+
+.prop--cone {
+  fill: #f07b22;
+}
+
+.prop--goal {
+  fill: none;
+  stroke: var(--path);
+  stroke-width: 0.08;
+}
+
+.prop--pole {
+  fill: var(--path);
+}
+
+.symbol polyline,
+.symbol circle {
+  fill: none;
+  stroke: var(--side-a);
+  stroke-width: 0.1;
+  opacity: 0.55;
+}
+
+.symbol .head {
+  fill: var(--side-a);
+  opacity: 0.55;
+}
+
+.symbol text {
+  font-size: 0.6px;
+  fill: var(--path);
+}
+
+.symbol--highlight polyline,
+.symbol--highlight circle {
+  stroke: var(--side-b);
+  stroke-width: 0.16;
+  opacity: 1;
+}
+
+.actor circle {
+  fill: var(--side-neutral);
+  stroke: #fff;
+  stroke-width: 0.08;
+}
+
+.actor--a circle {
+  fill: var(--side-a);
+}
+
+.actor--b circle {
+  fill: var(--side-b);
+}
+
+.actor--goalie circle {
+  stroke: var(--path);
+  stroke-width: 0.14;
+}
+
+.actor text,
+.handle text {
+  fill: #fff;
+  font-size: 0.42px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  font-family: 'Karla', ui-sans-serif, system-ui, sans-serif;
+}
+
+.ball {
+  fill: var(--ball);
+  stroke: #7a4a00;
+  stroke-width: 0.05;
+}
+
+.handle {
+  cursor: grab;
+}
+
+.handle circle {
+  fill: var(--side-a);
+  fill-opacity: 0.85;
+  stroke: #fff;
+  stroke-width: 0.08;
+}
+
+.handle--waypoint circle {
+  fill: #fff;
+  stroke: var(--side-a);
+  stroke-width: 0.1;
+}
+
+.handle--prop circle {
+  fill: #f07b22;
+}
+
+.handle--selected circle {
+  stroke: #f5a623;
+  stroke-width: 0.16;
+}

@@ -1,6 +1,7 @@
 package com.spongecoach.spec.steps;
 
 import com.spongecoach.domain.Role;
+import com.spongecoach.spec.support.DrillClient;
 import com.spongecoach.spec.support.Fixtures;
 import com.spongecoach.spec.support.Kind;
 import com.spongecoach.spec.support.ScenarioWorld;
@@ -38,6 +39,9 @@ public class AuthorizationSteps {
 
     @Inject
     Session session;
+
+    @Inject
+    DrillClient drills;
 
     // --- Given ------------------------------------------------------------------
 
@@ -174,6 +178,51 @@ public class AuthorizationSteps {
             UUID id = UUID.fromString(response.path("id"));
             world.onCleanup(() -> fixtures.testData().deleteIteration(id));
         }
+    }
+
+    @When("they read the Drill {string}")
+    public void theyReadTheDrill(String drill) {
+        world.setResponse(drills.read(drill));
+    }
+
+    @When("they upload another drill like the Drill {string}")
+    public void theyUploadAnotherDrill(String drill) {
+        world.setResponse(drills.upload(drill + " 2", 1));
+    }
+
+    @When("they rename the Drill {string}")
+    public void theyRenameTheDrill(String drill) {
+        world.setResponse(drills.rename(drill, world.uniquify(drill), null));
+    }
+
+    @When("they answer the questions of the Drill {string}")
+    public void theyAnswerTheQuestionsOfTheDrill(String drill) {
+        world.setResponse(drills.answer(drill, "q1", "Verteidigerinnen"));
+    }
+
+    @When("they send a correction for the Drill {string}")
+    public void theySendACorrectionForTheDrill(String drill) {
+        world.setResponse(drills.chat(drill, "Mehr Tempo"));
+    }
+
+    @When("they retry the Drill {string}")
+    public void theyRetryTheDrill(String drill) {
+        world.setResponse(drills.retry(drill));
+    }
+
+    @When("they save a hand-edited script for the Drill {string}")
+    public void theySaveAHandEditedScriptForTheDrill(String drill) {
+        world.setResponse(drills.saveHandEdit(drill));
+    }
+
+    @When("they revert the Drill {string}")
+    public void theyRevertTheDrill(String drill) {
+        world.setResponse(drills.revert(drill, 1));
+    }
+
+    @When("they delete the Drill {string}")
+    public void theyDeleteTheDrill(String drill) {
+        world.setResponse(drills.delete(drill));
     }
 
     // --- Then -------------------------------------------------------------------

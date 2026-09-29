@@ -3,6 +3,14 @@ package com.spongecoach.support;
 import com.spongecoach.domain.AppUser;
 import com.spongecoach.domain.AttendanceStatus;
 import com.spongecoach.domain.DevelopmentGoal;
+import com.spongecoach.domain.Drill;
+import com.spongecoach.domain.DrillMessage;
+import com.spongecoach.domain.DrillMessageAuthor;
+import com.spongecoach.domain.DrillScriptSource;
+import com.spongecoach.domain.DrillScriptVersion;
+import com.spongecoach.domain.DrillSketch;
+import com.spongecoach.domain.DrillStatus;
+import com.spongecoach.domain.DrillTag;
 import com.spongecoach.domain.Event;
 import com.spongecoach.domain.EventAttendance;
 import com.spongecoach.domain.EventAttendanceId;
@@ -22,8 +30,10 @@ import com.spongecoach.domain.PlayerSkill;
 import com.spongecoach.domain.PlayerSkillRating;
 import com.spongecoach.domain.PlayerSkillRatingId;
 import com.spongecoach.domain.Role;
+import com.spongecoach.domain.SketchRelation;
 import com.spongecoach.domain.Skill;
 import com.spongecoach.domain.Team;
+import com.spongecoach.drill.DrillJson;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -420,5 +430,100 @@ public class TestData {
                 .setParameter(1, iterationId)
                 .executeUpdate();
         Iteration.deleteById(iterationId);
+    }
+
+    // --- Drills (ADR-0018) --------------------------------------------------------
+
+    /** The question a Drill "waiting for answers" asks. */
+    public static final String OPEN_QUESTION = "Sind die Kreise Verteidigerinnen oder Hütchen?";
+
+    /**
+     * A Drill with one sketch, in the given state, with no interpreter job behind it:
+     * <ul>
+     *   <li>{@code READY}: version 1, and the interpreter's reply that made it.
+     *   <li>{@code NEEDS_INPUT}: an earlier version 1, and the interpreter's open question.
+     *   <li>{@code FAILED}: no version, and an error.
+     *   <li>{@code PENDING}: no version, as if a job were still running.
+     * </ul>
+     */
+    @Transactional
+    public Drill createDrill(String name, DrillStatus status, Instant updatedAt) {
+        Drill drill = new Drill();
+        drill.id = UUID.randomUUID();
+        drill.team = Team.theTeam();
+        drill.name = name;
+        drill.sketchRelation = SketchRelation.MIXED;
+        drill.status = status;
+        drill.createdAt = updatedAt;
+        drill.updatedAt = updatedAt;
+        drill.persist();
+
+        DrillSketch sketch = new DrillSketch();
+        sketch.id = UUID.randomUUID();
+        sketch.drill = drill;
+        sketch.position = 1;
+        sketch.image = Jpegs.sketch();
+        sketch.persist();
+        drill.sketches.add(sketch);
+
+        if (status == DrillStatus.FAILED) {
+            drill.error = "Claude ist nicht erreichbar.";
+        }
+        if (status == DrillStatus.READY || status == DrillStatus.NEEDS_INPUT) {
+            DrillScriptVersion version = new DrillScriptVersion();
+            version.id = UUID.randomUUID();
+            version.drill = drill;
+            version.version = 1;
+            version.source = DrillScriptSource.AI;
+            version.script = DrillJson.write(TestScripts.playable("Stufe 1"));
+            version.createdAt = updatedAt;
+            version.persist();
+            drill.currentVersion = 1;
+
+            DrillMessage reply = new DrillMessage();
+            reply.id = UUID.randomUUID();
+            reply.drill = drill;
+            reply.position = 1;
+            reply.author = DrillMessageAuthor.INTERPRETER;
+            reply.createdAt = updatedAt;
+            if (status == DrillStatus.READY) {
+                reply.content = "Skript erstellt.";
+                reply.scriptVersion = 1;
+            } else {
+                reply.content = "Eine Rückfrage.";
+                reply.questions = "[{\"id\":\"q1\",\"text\":\"" + OPEN_QUESTION
+                        + "\",\"options\":[\"Verteidigerinnen\",\"Hütchen\"],\"sketch\":1,\"symbolIds\":[]}]";
+            }
+            reply.persist();
+        }
+        return drill;
+    }
+
+    /** A seeded Drill tag, by name. */
+    public UUID drillTagId(String name) {
+        DrillTag tag = DrillTag.find("name", name).firstResult();
+        if (tag == null) {
+            throw new IllegalArgumentException("no seeded drill tag named " + name);
+        }
+        return tag.id;
+    }
+
+    @Transactional
+    public DrillStatus drillStatus(UUID drillId) {
+        Drill drill = Drill.findById(drillId);
+        return drill == null ? null : drill.status;
+    }
+
+    /** Removes a Drill and everything under it, soft-deleted or not. */
+    @Transactional
+    public void deleteDrill(UUID drillId) {
+        for (String table : List.of("drill_message", "drill_script_version", "drill_sketch", "drill_drill_tag")) {
+            entityManager.createNativeQuery("delete from " + table + " where drill_id = ?1")
+                    .setParameter(1, drillId)
+                    .executeUpdate();
+        }
+        entityManager.createNativeQuery("delete from drill where id = ?1")
+                .setParameter(1, drillId)
+                .executeUpdate();
     }
 }

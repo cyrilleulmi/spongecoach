@@ -10,5 +10,6 @@ public enum Kind {
     PLAYER_GOAL,
     ITERATION,
     EVENT,
-    USER
+    USER,
+    DRILL
 }

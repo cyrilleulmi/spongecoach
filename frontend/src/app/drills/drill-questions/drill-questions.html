@@ -1,0 +1,40 @@
+<ol class="questions">
+  @for (question of questions(); track question.id) {
+    <li class="question" (mouseenter)="focused.emit(question)" (mouseleave)="focused.emit(null)">
+      <p class="question-text">
+        {{ question.text }}
+        @if (question.sketch > 0) {
+          <span class="question-sketch">Foto {{ question.sketch }}</span>
+        }
+      </p>
+      @if (question.options.length > 0) {
+        <div class="options">
+          @for (option of question.options; track option) {
+            <button
+              type="button"
+              class="option"
+              [class.option--on]="texts()[question.id] === option"
+              (click)="setText(question.id, option)"
+              [disabled]="busy()"
+            >
+              {{ option }}
+            </button>
+          }
+        </div>
+      }
+      <textarea
+        class="answer"
+        rows="2"
+        [name]="'answer-' + question.id"
+        placeholder="Antwort"
+        [ngModel]="texts()[question.id] ?? ''"
+        (ngModelChange)="setText(question.id, $event)"
+        [disabled]="busy()"
+      ></textarea>
+    </li>
+  }
+</ol>
+<div class="actions">
+  <button type="button" class="button button--primary send-answers" (click)="send()" [disabled]="busy() || !anyAnswer()">Antworten</button>
+  <button type="button" class="button guess" (click)="guess()" [disabled]="busy()">Rate einfach</button>
+</div>

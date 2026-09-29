@@ -1,0 +1,181 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "message", "readings", "questions", "script", "changeSummary"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["NEEDS_INPUT", "READY"],
+      "description": "NEEDS_INPUT when something that changes who, what, where or in what order is unclear; READY when the script can be played."
+    },
+    "message": {
+      "type": "string",
+      "description": "A short note to the coach, in German."
+    },
+    "readings": {
+      "type": "array",
+      "description": "What was read on each sketch. Empty when the sketches were not re-read in this turn.",
+      "items": { "$ref": "#/$defs/reading" }
+    },
+    "questions": {
+      "type": "array",
+      "description": "Clarifying questions, most important first, at most 5. Empty with READY.",
+      "items": { "$ref": "#/$defs/question" }
+    },
+    "script": { "$ref": "#/$defs/script" },
+    "changeSummary": {
+      "type": "string",
+      "description": "What changed against the previous version, in German. Empty for a first version."
+    }
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "description": "Metres across the rink, -7 (left) to 7 (right)." },
+        "y": { "type": "number", "description": "Metres along the rink, -12 to 12; the goal lines are at ±9.65." }
+      }
+    },
+    "reading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sketch", "boardSide", "orientation", "symbols"],
+      "properties": {
+        "sketch": { "type": "integer", "description": "1-based position of the sketch." },
+        "boardSide": { "type": "string", "enum": ["FULL", "HALF"] },
+        "orientation": { "type": "string", "description": "How the board lies in the photo, e.g. 'gedreht, Tor links'." },
+        "symbols": { "type": "array", "items": { "$ref": "#/$defs/symbol" } }
+      }
+    },
+    "symbol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "color", "points", "label", "confidence", "meaning"],
+      "properties": {
+        "id": { "type": "string", "description": "Unique across the whole answer, e.g. 's1-4'." },
+        "kind": {
+          "type": "string",
+          "enum": ["CROSS", "GOALIE_MARK", "CIRCLE", "SQUARE", "DOT", "RUN_LINE", "DRIBBLE_LINE", "PASS_LINE", "SHOT_LINE", "MOVEMENT_ARROW", "NUMBER", "TEXT", "OTHER"]
+        },
+        "color": { "type": "string" },
+        "points": {
+          "type": "array",
+          "description": "Rink position of a mark, or the points along a line, start first.",
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "label": { "type": "string", "description": "A number or letter written on or next to it; empty if none." },
+        "confidence": { "type": "number", "description": "0 to 1." },
+        "meaning": { "type": "string", "description": "What it is taken to mean, in German." }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "options", "sketch", "symbolIds"],
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string", "description": "In German. A game situation gets a concrete proposal." },
+        "options": { "type": "array", "items": { "type": "string" }, "description": "Suggested answers; empty for free text." },
+        "sketch": { "type": "integer", "description": "The sketch it is about, 1-based; 0 for the whole Drill." },
+        "symbolIds": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "script": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stages", "assumptions"],
+      "properties": {
+        "stages": { "type": "array", "items": { "$ref": "#/$defs/stage" } },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Everything filled in with a default rather than read from the drawing, in German."
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "sketches", "area", "actors", "parts", "props", "steps", "repetition"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Short German name, e.g. '2 gegen 1'." },
+        "sketches": { "type": "array", "items": { "type": "integer" } },
+        "area": { "type": "string", "enum": ["FULL", "HALF"] },
+        "actors": { "type": "array", "items": { "$ref": "#/$defs/actor" } },
+        "parts": { "type": "array", "items": { "$ref": "#/$defs/part" } },
+        "props": { "type": "array", "items": { "$ref": "#/$defs/prop" } },
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+        "repetition": { "$ref": "#/$defs/repetition" }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "side", "label", "start", "hasBall"],
+      "properties": {
+        "id": { "type": "string", "description": "Stable across Stages for the same figure." },
+        "kind": { "type": "string", "enum": ["PLAYER", "GOALIE", "COACH"] },
+        "side": { "type": "string", "enum": ["A", "B", "NEUTRAL"] },
+        "label": { "type": "string", "description": "Short, e.g. 'A1', 'C', 'G'." },
+        "start": { "$ref": "#/$defs/point" },
+        "hasBall": { "type": "boolean" }
+      }
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "actorId", "nextPartId"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "German, e.g. 'Passgeber', 'Mitte'." },
+        "actorId": { "type": "string" },
+        "nextPartId": { "type": "string", "description": "With a SEAMLESS repetition, the Part this Actor plays in the next run; empty otherwise." }
+      }
+    },
+    "prop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "position"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string", "enum": ["CONE", "POLE", "SMALL_GOAL", "OTHER"] },
+        "position": { "$ref": "#/$defs/point" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "partId", "type", "path", "targetPartId", "after", "afterEdge", "delay", "speed", "duration", "sketch", "label"],
+      "properties": {
+        "id": { "type": "string" },
+        "partId": { "type": "string" },
+        "type": { "type": "string", "enum": ["RUN", "DRIBBLE", "PASS", "SHOT", "ROAM", "WAIT"] },
+        "path": {
+          "type": "array",
+          "description": "Waypoints after the current position, ending at the destination (the ball's for PASS and SHOT). Empty only for WAIT.",
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "targetPartId": { "type": "string", "description": "PASS: the receiving Part. Empty otherwise." },
+        "after": { "type": "string", "description": "The Step this one waits for; empty to start with the run." },
+        "afterEdge": { "type": "string", "enum": ["START", "END"], "description": "Start with that Step (START) or after it (END)." },
+        "delay": { "type": "number", "description": "Seconds after that moment." },
+        "speed": { "type": "number", "description": "m/s for RUN, DRIBBLE, PASS, SHOT; 0 for ROAM and WAIT." },
+        "duration": { "type": "number", "description": "Seconds for ROAM and WAIT; 0 otherwise." },
+        "sketch": { "type": "integer", "description": "1-based position of the sketch it is drawn on." },
+        "label": { "type": "string", "description": "The number drawn next to it; empty if none." }
+      }
+    },
+    "repetition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "mirrored"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["REPLAY", "SEAMLESS"] },
+        "mirrored": { "type": "boolean", "description": "Every other run comes from the other side, reflected across the long axis." }
+      }
+    }
+  }
+}

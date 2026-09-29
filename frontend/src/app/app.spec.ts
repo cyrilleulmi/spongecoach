@@ -6,6 +6,7 @@ import { App } from './app';
 import { routes } from './app.routes';
 
 const ADMIN = { id: 'u-admin', name: 'Admin', role: 'SYS_ADMIN', playerId: null };
+const PLAYER = { id: 'u-carmela', name: 'Carmela', role: 'PLAYER', playerId: 'p-1' };
 
 describe('App shell', () => {
   let httpMock: HttpTestingController;
@@ -29,7 +30,7 @@ describe('App shell', () => {
   }
 
   // spec: ui.navigation
-  it('renders the three top-level nav links', async () => {
+  it('renders the top-level nav links', async () => {
     const fixture = TestBed.createComponent(App);
     signIn();
     await router.navigateByUrl('/team');
@@ -41,7 +42,23 @@ describe('App shell', () => {
     httpMock.match('/api/lines').forEach((r) => r.flush([]));
 
     const links = Array.from(fixture.nativeElement.querySelectorAll('.app-nav a')) as HTMLElement[];
-    expect(links.map((a) => a.textContent?.trim())).toEqual(['Team-Übersicht', 'Blöcke', 'Spieler']);
+    expect(links.map((a) => a.textContent?.trim())).toEqual(['Team-Übersicht', 'Blöcke', 'Spieler', 'Übungen']);
+  });
+
+  // spec: ui.drill-player-read-only
+  it('shows Übungen to a Player too, to watch the Drills', async () => {
+    const fixture = TestBed.createComponent(App);
+    httpMock.expectOne('/api/users').flush([PLAYER]);
+    httpMock.expectOne('/api/me').flush({ ...PLAYER, teamId: null, lineIds: [] });
+    await router.navigateByUrl('/team');
+    fixture.detectChanges();
+
+    httpMock.match('/api/iterations').forEach((r) => r.flush([]));
+    httpMock.match('/api/event-types').forEach((r) => r.flush([]));
+    httpMock.match('/api/lines').forEach((r) => r.flush([]));
+
+    const links = Array.from(fixture.nativeElement.querySelectorAll('.app-nav a')) as HTMLElement[];
+    expect(links.map((a) => a.textContent?.trim())).toContain('Übungen');
   });
 
   // spec: ui.default-route-is-team

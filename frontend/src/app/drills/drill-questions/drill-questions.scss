@@ -1,0 +1,62 @@
+@use '../drill-styles';
+
+:host {
+  background: transparent;
+  min-height: 0;
+}
+
+.questions {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.question-text {
+  margin: 0 0 0.45rem;
+  font-weight: 600;
+}
+
+.question-sketch {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+  margin-left: 0.35rem;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.option {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.option--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.answer {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}

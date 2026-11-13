@@ -261,3 +261,21 @@ h2 {
 .avatar-button:hover .avatar-edit {
   transform: rotate(-12deg) scale(1.1);
 }
+
+.jersey {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--muted, #667);
+
+  input {
+    width: 4rem;
+  }
+}
+
+.error-inline {
+  margin: 0.25rem 0 0;
+  color: var(--danger, #c0392b);
+  font-size: 0.8125rem;
+}

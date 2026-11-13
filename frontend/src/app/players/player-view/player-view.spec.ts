@@ -240,4 +240,29 @@ describe('PlayerView', () => {
     expect(other.querySelector('.avatar-button')).not.toBeNull();
     expect((other.querySelector('.seg') as HTMLButtonElement).disabled).toBe(false);
   });
+
+  // [TEST-MR] SmartCodeReview test data - do not merge.
+  describe('jersey number', () => {
+    type WithJersey = { saveJerseyNumber(value: string): void };
+
+    it('saves a new jersey number', async () => {
+      await render();
+      const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;
+      view.saveJerseyNumber('7');
+
+      const put = httpMock.expectOne('/api/players/p-1');
+      expect(put.request.body).toEqual({ jerseyNumber: 7 });
+      put.flush({ ...CARMELA, jerseyNumber: 7 });
+    });
+
+    it('explains a number that a teammate already wears', async () => {
+      const el = await render();
+      const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;
+      view.saveJerseyNumber('7');
+
+      httpMock.expectOne('/api/players/p-1').flush({ error: 'conflict' }, { status: 409, statusText: 'Conflict' });
+      harness.detectChanges();
+      expect(el.textContent).toContain('Die Nummer 7 trägt schon jemand im Team.');
+    });
+  });
 });

@@ -38,6 +38,23 @@
       <div>
         <a class="eyebrow back" routerLink="/players">&larr; Spieler</a>
         <h1>{{ player.name }}</h1>
+        @if (canEdit()) {
+          <label class="jersey">
+            Trikotnummer
+            <input
+              type="number"
+              min="1"
+              max="99"
+              [value]="player.jerseyNumber ?? ''"
+              (change)="saveJerseyNumber($any($event.target).value)"
+            />
+          </label>
+        } @else {
+          <span class="jersey">{{ jerseyLabel() }}</span>
+        }
+        @if (jerseyError(); as message) {
+          <p class="error-inline" role="alert">{{ message }}</p>
+        }
         <div class="line-badges">
           @for (line of player.lines; track line.id) {
             <app-line-badge [line]="line" />

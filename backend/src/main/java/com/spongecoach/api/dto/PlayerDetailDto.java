@@ -12,7 +12,8 @@ public record PlayerDetailDto(
         List<CatalogRefDto> lines,
         List<PlayerSkillRatingDto> skills,
         List<CatalogRefDto> developmentGoals,
-        Long avatarVersion) {
+        Long avatarVersion,
+        Integer jerseyNumber) {
 
     public static PlayerDetailDto from(Player player, List<PlayerSkillRating> ratings) {
         return new PlayerDetailDto(
@@ -24,6 +25,7 @@ public record PlayerDetailDto(
                         .filter(goal -> goal.deletedAt == null)
                         .map(CatalogRefDto::from)
                         .toList(),
-                player.avatarVersion());
+                player.avatarVersion(),
+                player.jerseyNumber);
     }
 }

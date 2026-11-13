@@ -43,6 +43,7 @@ public class PlayerResource {
     private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'};
     private static final int AVATAR_MAX_BYTES = 200 * 1024;
     private static final int AVATAR_MAX_SIDE = 512;
+    private static final int JERSEY_NUMBER_MAX = 99;
 
     @Inject
     Access access;
@@ -70,6 +71,10 @@ public class PlayerResource {
         if (request.developmentGoalIds() != null) {
             player.developmentGoals = new ArrayList<>(
                     request.developmentGoalIds().stream().map(this::findGoalOrThrow).toList());
+        }
+        if (request.jerseyNumber() != null) {
+            validateJerseyNumber(player, request.jerseyNumber());
+            player.jerseyNumber = request.jerseyNumber();
         }
         return PlayerDetailDto.from(player, PlayerSkillRating.listForPlayer(playerId));
     }
@@ -184,6 +189,16 @@ public class PlayerResource {
         int height = header.getInt();
         if (width != height || width < 1 || width > AVATAR_MAX_SIDE) {
             throw new BadRequestException("avatar must be square and at most " + AVATAR_MAX_SIDE + " px");
+        }
+    }
+
+    /** 1-99 and not worn by a teammate; a coach can always fix duplicates by renumbering one of them. */
+    private static void validateJerseyNumber(Player player, int jerseyNumber) {
+        if (jerseyNumber < 1 || jerseyNumber > JERSEY_NUMBER_MAX) {
+            throw new BadRequestException("jersey number must be between 1 and " + JERSEY_NUMBER_MAX);
+        }
+        if (Player.isJerseyNumberTaken(player.team.id, jerseyNumber, player.id)) {
+            throw new ConflictException("jersey number " + jerseyNumber + " is already taken");
         }
     }
 

@@ -6,6 +6,8 @@ export interface PlayerSummary {
   lines: CatalogRef[];
   /** Null while the Player shows initials; otherwise the cache-busting token for their Avatar image. */
   avatarVersion: number | null;
+  /** Null while the Player has no jersey number. */
+  jerseyNumber: number | null;
 }
 
 export interface PlayerSkillRating {
@@ -22,4 +24,5 @@ export interface PlayerDetail {
   skills: PlayerSkillRating[];
   developmentGoals: CatalogRef[];
   avatarVersion: number | null;
+  jerseyNumber: number | null;
 }

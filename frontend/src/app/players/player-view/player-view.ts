@@ -39,6 +39,11 @@ export class PlayerView implements OnInit {
   protected readonly painterOpen = signal(false);
   protected readonly savingAvatar = signal(false);
   protected readonly avatarError = signal<string | null>(null);
+  protected readonly jerseyError = signal<string | null>(null);
+  protected readonly jerseyLabel = computed(() => {
+    const number = this.detail()?.jerseyNumber;
+    return number != null ? `#${number}` : 'Keine Nummer';
+  });
   protected readonly currentAvatarUrl = computed(() => {
     const player = this.detail();
     return player?.avatarVersion != null ? avatarUrl(player.id, player.avatarVersion) : null;
@@ -189,6 +194,25 @@ export class PlayerView implements OnInit {
         this.toggleGoal(created.id);
       },
       error: () => this.errorMessage.set('Ziel konnte nicht angelegt werden.'),
+    });
+  }
+
+  /** Saves the jersey number; the backend rejects numbers a teammate already wears (409). */
+  protected saveJerseyNumber(value: string): void {
+    const current = this.detail();
+    const jerseyNumber = Number.parseInt(value, 10);
+    if (!current || Number.isNaN(jerseyNumber) || jerseyNumber === current.jerseyNumber) {
+      return;
+    }
+    this.jerseyError.set(null);
+    this.api.setJerseyNumber(current.id, jerseyNumber).subscribe({
+      next: (updated) => this.detail.set(updated),
+      error: (error: HttpErrorResponse) =>
+        this.jerseyError.set(
+          error.status === 409
+            ? `Die Nummer ${jerseyNumber} trägt schon jemand im Team.`
+            : 'Trikotnummer konnte nicht gespeichert werden.',
+        ),
     });
   }
 

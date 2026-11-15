@@ -80,7 +80,7 @@ public class PlayerResource {
         return PlayerDetailDto.from(player, PlayerSkillRating.listForPlayer(playerId));
     }
 
-    /** Takes the jersey number away again; a Player without a number is left untouched (no-op). */
+    /** Takes the jersey number away again; only a coach may, since numbers are handed out by the team. A Player without a number is left untouched (no-op). */
     @DELETE
     @Path("/{playerId}/jersey-number")
     @Transactional
@@ -89,7 +89,7 @@ public class PlayerResource {
         if (player == null) {
             throw new NotFoundException("Player " + playerId + " not found");
         }
-        access.requireSelf(player);
+        access.requireCoach(player.team);
         if (player.jerseyNumber == null) {
             return Response.noContent().build();
         }

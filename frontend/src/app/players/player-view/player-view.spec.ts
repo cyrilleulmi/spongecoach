@@ -22,6 +22,7 @@ const CARMELA: PlayerDetail = {
   skills: [{ skillId: SKILL.id, name: SKILL.name, color: SKILL.color, rating: 60 }],
   developmentGoals: [GOAL],
   avatarVersion: null,
+  jerseyNumber: 9,
 };
 
 describe('PlayerView', () => {

@@ -38,6 +38,10 @@ public class Player extends PanacheEntityBase {
     @Column(name = "jersey_number")
     public Integer jerseyNumber;
 
+    /** When the jersey number was last set; null while the Player has none. */
+    @Column(name = "jersey_number_changed_at")
+    public Instant jerseyNumberChangedAt;
+
     /** Includes soft-deleted Lines; callers filter. */
     @ManyToMany(mappedBy = "players", fetch = FetchType.LAZY)
     @OrderBy("name asc")

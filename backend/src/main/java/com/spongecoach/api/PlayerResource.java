@@ -75,6 +75,7 @@ public class PlayerResource {
         if (request.jerseyNumber() != null) {
             validateJerseyNumber(player, request.jerseyNumber());
             player.jerseyNumber = request.jerseyNumber();
+            player.jerseyNumberChangedAt = Instant.now();
         }
         return PlayerDetailDto.from(player, PlayerSkillRating.listForPlayer(playerId));
     }

@@ -279,3 +279,13 @@ h2 {
   color: var(--danger, #c0392b);
   font-size: 0.8125rem;
 }
+
+.jersey-clear {
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+  background: none;
+  border: none;
+  color: var(--muted, #667);
+  text-decoration: underline;
+  cursor: pointer;
+}

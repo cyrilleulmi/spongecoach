@@ -216,6 +216,22 @@ export class PlayerView implements OnInit {
     });
   }
 
+  /** Removes the jersey number after a confirmation; nothing to do for a Player without one. */
+  protected clearJerseyNumber(): void {
+    const current = this.detail();
+    if (!current || current.jerseyNumber == null) {
+      return;
+    }
+    if (!window.confirm(`Trikotnummer ${current.jerseyNumber} wirklich entfernen?`)) {
+      return;
+    }
+    this.jerseyError.set(null);
+    this.api.clearJerseyNumber(current.id).subscribe({
+      next: () => this.detail.set({ ...current, jerseyNumber: null }),
+      error: () => this.jerseyError.set('Trikotnummer konnte nicht entfernt werden.'),
+    });
+  }
+
   protected openPainter(): void {
     this.avatarError.set(null);
     this.painterOpen.set(true);

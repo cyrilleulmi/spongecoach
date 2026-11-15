@@ -29,6 +29,10 @@ export class PlayerApiService {
     return this.http.put<PlayerDetail>(`/api/players/${playerId}`, { jerseyNumber });
   }
 
+  clearJerseyNumber(playerId: string): Observable<void> {
+    return this.http.delete<void>(`/api/players/${playerId}/jersey-number`);
+  }
+
   setSkillRating(playerId: string, skillId: string, rating: number): Observable<PlayerSkillRating> {
     return this.http.put<PlayerSkillRating>(`/api/players/${playerId}/skills/${skillId}`, { rating });
   }

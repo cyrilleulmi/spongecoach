@@ -79,6 +79,24 @@ public class PlayerResource {
         return PlayerDetailDto.from(player, PlayerSkillRating.listForPlayer(playerId));
     }
 
+    /** Takes the jersey number away again; a Player without a number is left untouched (no-op). */
+    @DELETE
+    @Path("/{playerId}/jersey-number")
+    @Transactional
+    public Response clearJerseyNumber(@PathParam("playerId") UUID playerId) {
+        Player player = Player.findById(playerId);
+        if (player == null) {
+            throw new NotFoundException("Player " + playerId + " not found");
+        }
+        access.requireSelf(player);
+        if (player.jerseyNumber == null) {
+            return Response.noContent().build();
+        }
+        player.jerseyNumber = null;
+        player.persist();
+        return Response.noContent().build();
+    }
+
     @GET
     @Path("/{playerId}/skills")
     public List<PlayerSkillRatingDto> listSkills(@PathParam("playerId") UUID playerId) {
@@ -194,12 +212,19 @@ public class PlayerResource {
 
     /** 1-99 and not worn by a teammate; a coach can always fix duplicates by renumbering one of them. */
     private static void validateJerseyNumber(Player player, int jerseyNumber) {
-        if (jerseyNumber < 1 || jerseyNumber > JERSEY_NUMBER_MAX) {
+        if (!isInRange(jerseyNumber)) {
             throw new BadRequestException("jersey number must be between 1 and " + JERSEY_NUMBER_MAX);
         }
         if (Player.isJerseyNumberTaken(player.team.id, jerseyNumber, player.id)) {
             throw new ConflictException("jersey number " + jerseyNumber + " is already taken");
         }
+    }
+
+    private static boolean isInRange(int jerseyNumber) {
+        if (jerseyNumber < 1) {
+            return false;
+        }
+        return jerseyNumber <= JERSEY_NUMBER_MAX;
     }
 
     private Player findPlayerOrThrow(UUID playerId) {

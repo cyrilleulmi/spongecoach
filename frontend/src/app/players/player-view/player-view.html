@@ -49,6 +49,9 @@
               (change)="saveJerseyNumber($any($event.target).value)"
             />
           </label>
+          @if (player.jerseyNumber != null) {
+            <button type="button" class="jersey-clear" (click)="clearJerseyNumber()">Nummer entfernen</button>
+          }
         } @else {
           <span class="jersey">{{ jerseyLabel() }}</span>
         }

@@ -3,9 +3,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { of } from 'rxjs';
 import { CurrentUserService } from '../../auth/current-user.service';
 import { CurrentUser } from '../../auth/user.model';
 import { PlayerView } from './player-view';
+import { PlayerApiService } from '../player-api.service';
 import { PlayerDetail } from '../player.model';
 
 const SKILL = { id: 'ps-1', name: 'Schusstechnik', color: '#b1467a' };
@@ -288,5 +290,31 @@ describe('PlayerView', () => {
         httpMock.expectNone('/api/players/p-1');
       });
     });
+  });
+});
+
+// [TEST-MR] SmartCodeReview test data - do not merge.
+describe('jersey number with a stubbed API', () => {
+  const api = {
+    getPlayer: jest.fn(() => of(CARMELA)),
+    listSkillCatalog: jest.fn(() => of([SKILL, SKILL_2])),
+    listGoalCatalog: jest.fn(() => of([GOAL, GOAL_2])),
+    setJerseyNumber: jest.fn((playerId: string, jerseyNumber: number) => of({ ...CARMELA, jerseyNumber })),
+  };
+
+  it('hands the typed number to the API and shows the saved one', async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        { provide: PlayerApiService, useValue: api },
+        provideRouter([{ path: 'players/:id', component: PlayerView }]),
+      ],
+    }).compileComponents();
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/players/p-1');
+
+    const view = harness.routeDebugElement!.componentInstance as unknown as { saveJerseyNumber(value: string): void };
+    view.saveJerseyNumber('11');
+
+    expect(api.setJerseyNumber).toHaveBeenCalledWith('p-1', 11);
   });
 });

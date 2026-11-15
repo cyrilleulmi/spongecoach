@@ -23,7 +23,7 @@
             [playerId]="player.id"
             [avatarVersion]="player.avatarVersion"
           />
-          <span class="player-name">{{ player.name }}</span>
+          <span class="player-name">{{ label(player) }}</span>
         </a>
         <span class="line-badges">
           @for (line of player.lines; track line.id) {

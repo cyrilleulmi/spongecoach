@@ -43,6 +43,8 @@ public class PlayerResource {
     private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'};
     private static final int AVATAR_MAX_BYTES = 200 * 1024;
     private static final int AVATAR_MAX_SIDE = 512;
+    private static final int JERSEY_NUMBER_MAX = 99;
+    private static final int JERSEY_NUMBER_MIN = 1;
 
     @Inject
     Access access;
@@ -71,7 +73,30 @@ public class PlayerResource {
             player.developmentGoals = new ArrayList<>(
                     request.developmentGoalIds().stream().map(this::findGoalOrThrow).toList());
         }
+        if (request.jerseyNumber() != null) {
+            validateJerseyNumber(player, request.jerseyNumber());
+            player.jerseyNumber = request.jerseyNumber();
+            player.jerseyNumberChangedAt = Instant.now();
+        }
         return PlayerDetailDto.from(player, PlayerSkillRating.listForPlayer(playerId));
+    }
+
+    /** Takes the jersey number away again; only a coach may, since numbers are handed out by the team. A Player without a number is left untouched (no-op). */
+    @DELETE
+    @Path("/{playerId}/jersey-number")
+    @Transactional
+    public Response clearJerseyNumber(@PathParam("playerId") UUID playerId) {
+        Player player = Player.findById(playerId);
+        if (player == null) {
+            throw new NotFoundException("Player " + playerId + " not found");
+        }
+        access.requireCoach(player.team);
+        if (player.jerseyNumber == null) {
+            return Response.noContent().build();
+        }
+        player.jerseyNumber = null;
+        player.persist();
+        return Response.noContent().build();
     }
 
     @GET
@@ -185,6 +210,23 @@ public class PlayerResource {
         if (width != height || width < 1 || width > AVATAR_MAX_SIDE) {
             throw new BadRequestException("avatar must be square and at most " + AVATAR_MAX_SIDE + " px");
         }
+    }
+
+    /** 1-99 and not worn by a teammate; a coach can always fix duplicates by renumbering one of them. */
+    private static void validateJerseyNumber(Player player, int jerseyNumber) {
+        if (!isInRange(jerseyNumber)) {
+            throw new BadRequestException("jersey number " + jerseyNumber + " must be between 1 and " + JERSEY_NUMBER_MAX);
+        }
+        if (Player.isJerseyNumberTaken(player.team.id, jerseyNumber, player.id)) {
+            throw new ConflictException("jersey number " + jerseyNumber + " is already taken");
+        }
+    }
+
+    private static boolean isInRange(int jerseyNumber) {
+        if (jerseyNumber < JERSEY_NUMBER_MIN) {
+            return false;
+        }
+        return jerseyNumber <= JERSEY_NUMBER_MAX;
     }
 
     private Player findPlayerOrThrow(UUID playerId) {

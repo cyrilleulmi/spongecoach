@@ -34,6 +34,14 @@ public class Player extends PanacheEntityBase {
     @Column(name = "avatar_updated_at")
     public Instant avatarUpdatedAt;
 
+    /** Jersey number, unique within the team; null when the Player has none yet. */
+    @Column(name = "jersey_number")
+    public Integer jerseyNumber;
+
+    /** When the jersey number was last set; null while the Player has none. */
+    @Column(name = "jersey_number_changed_at")
+    public Instant jerseyNumberChangedAt;
+
     /** Includes soft-deleted Lines; callers filter. */
     @ManyToMany(mappedBy = "players", fetch = FetchType.LAZY)
     @OrderBy("name asc")
@@ -49,6 +57,11 @@ public class Player extends PanacheEntityBase {
 
     public static List<Player> listAllOrderedByName() {
         return list("order by name asc");
+    }
+
+    /** True when another Player of the same team already wears this number. */
+    public static boolean isJerseyNumberTaken(UUID teamId, int jerseyNumber, UUID exceptPlayerId) {
+        return count("team.id = ?1 and jerseyNumber = ?2 and id <> ?3", teamId, jerseyNumber, exceptPlayerId) > 0;
     }
 
     /** Cache-busting token for the Avatar image URL; null means no Avatar, show initials. */

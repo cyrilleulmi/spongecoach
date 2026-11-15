@@ -59,7 +59,7 @@ class JerseyNumberValidationTest {
         Player carmela = newPlayer("Carmela");
         BadRequestException rejected = assertThrows(BadRequestException.class,
                 () -> resource.update(carmela.id, new PlayerUpdateRequest(null, jerseyNumber)));
-        assertEquals("jersey number must be between 1 and 99", rejected.getMessage());
+        assertEquals("jersey number " + jerseyNumber + " must be between 1 and 99", rejected.getMessage());
     }
 
     private static Player newPlayer(String name) {

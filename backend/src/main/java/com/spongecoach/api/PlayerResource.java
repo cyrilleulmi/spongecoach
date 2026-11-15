@@ -44,6 +44,7 @@ public class PlayerResource {
     private static final int AVATAR_MAX_BYTES = 200 * 1024;
     private static final int AVATAR_MAX_SIDE = 512;
     private static final int JERSEY_NUMBER_MAX = 99;
+    private static final int JERSEY_NUMBER_MIN = 1;
 
     @Inject
     Access access;
@@ -222,7 +223,7 @@ public class PlayerResource {
     }
 
     private static boolean isInRange(int jerseyNumber) {
-        if (jerseyNumber < 1) {
+        if (jerseyNumber < JERSEY_NUMBER_MIN) {
             return false;
         }
         return jerseyNumber <= JERSEY_NUMBER_MAX;

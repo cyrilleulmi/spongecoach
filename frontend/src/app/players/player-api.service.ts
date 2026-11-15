@@ -29,6 +29,10 @@ export class PlayerApiService {
     return this.http.put<PlayerDetail>(`/api/players/${playerId}`, { jerseyNumber });
   }
 
+  hasJerseyNumber(player: PlayerDetail): boolean {
+    return player.jerseyNumber != null;
+  }
+
   clearJerseyNumber(playerId: string): Observable<void> {
     return this.http.delete<void>(`/api/players/${playerId}/jersey-number`);
   }

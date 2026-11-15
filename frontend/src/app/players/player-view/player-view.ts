@@ -200,7 +200,7 @@ export class PlayerView implements OnInit {
   /** Saves the jersey number; the backend rejects numbers a teammate already wears (409). */
   protected saveJerseyNumber(value: string): void {
     const current = this.detail();
-    const jerseyNumber = Number.parseInt(value, 10);
+    const jerseyNumber = Math.round(Number.parseFloat(value));
     if (!current || Number.isNaN(jerseyNumber) || jerseyNumber === current.jerseyNumber) {
       return;
     }

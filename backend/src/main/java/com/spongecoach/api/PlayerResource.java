@@ -214,7 +214,7 @@ public class PlayerResource {
     /** 1-99 and not worn by a teammate; a coach can always fix duplicates by renumbering one of them. */
     private static void validateJerseyNumber(Player player, int jerseyNumber) {
         if (!isInRange(jerseyNumber)) {
-            throw new BadRequestException("jersey number must be between 1 and " + JERSEY_NUMBER_MAX);
+            throw new BadRequestException("jersey number " + jerseyNumber + " must be between 1 and " + JERSEY_NUMBER_MAX);
         }
         if (Player.isJerseyNumberTaken(player.team.id, jerseyNumber, player.id)) {
             throw new ConflictException("jersey number " + jerseyNumber + " is already taken");

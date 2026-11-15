@@ -92,9 +92,18 @@ export class CurrentUserService {
     return true;
   }
 
-  /** Editing a Player's profile, and answering attendance for them. */
+  /**
+   * Editing a Player's profile (including their jersey number), and answering attendance for them.
+   * A coach may edit every Player; a Player only themselves.
+   */
   canEditPlayer(playerId: string | null | undefined): boolean {
-    return this.isCoach() || (!!playerId && this.me()?.playerId === playerId);
+    return this.isCoach() || this.isSelf(playerId);
+  }
+
+  /** Whether the current User is this Player; false for a User without a Player (SysAdmin, coach). */
+  private isSelf(playerId: string | null | undefined): boolean {
+    const own = this.me()?.playerId;
+    return !!playerId && !!own && own === playerId;
   }
 
   protected reloadPage(): void {

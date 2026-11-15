@@ -23,6 +23,7 @@ dependencies {
     implementation("io.quarkus:quarkus-hibernate-orm")
     implementation("com.anthropic:anthropic-java:2.34.0")
     testImplementation("io.quarkus:quarkus-junit")
+    testImplementation("io.quarkus:quarkus-junit-mockito")
     testImplementation("io.rest-assured:rest-assured")
     testImplementation("io.quarkiverse.cucumber:quarkus-cucumber:1.3.0")
 }

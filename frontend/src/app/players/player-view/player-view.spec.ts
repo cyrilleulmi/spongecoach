@@ -250,6 +250,36 @@ describe('PlayerView', () => {
         httpMock.expectNone('/api/players/p-1');
       });
 
+      it('ignores an empty text', async () => {
+        await render();
+        const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;
+        view.saveJerseyNumber('');
+
+        httpMock.expectNone('/api/players/p-1');
+      });
+
+      it('ignores a number written as a word', async () => {
+        await render();
+        const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;
+        view.saveJerseyNumber('sieben');
+
+        httpMock.expectNone('/api/players/p-1');
+      });
+
+      it.each([
+        ['-3', 400, 'Trikotnummer konnte nicht gespeichert werden.'],
+        ['150', 400, 'Trikotnummer konnte nicht gespeichert werden.'],
+        ['23', 409, 'Die Nummer 23 trägt schon jemand im Team.'],
+      ])('shows the message for the typed text %s (server answers %i)', async (typed, status, message) => {
+        const el = await render();
+        const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;
+        view.saveJerseyNumber(typed);
+
+        httpMock.expectOne('/api/players/p-1').flush({ error: 'x' }, { status, statusText: 'Error' });
+        harness.detectChanges();
+        expect(el.textContent).toContain(message);
+      });
+
       it('does not save the number the player already wears', async () => {
         await render('p-1', true, { ...CARMELA, jerseyNumber: 7 });
         const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;

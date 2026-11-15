@@ -7,10 +7,12 @@ import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,6 +45,26 @@ class PlayerResourceTest {
         Player lia = playerWithNumber("Lia", null);
         assertTrue(Player.isJerseyNumberTaken(carmela.team.id, 7, lia.id));
         assertFalse(Player.isJerseyNumberTaken(carmela.team.id, 7, carmela.id));
+    }
+
+    @Nested
+    class ClearJerseyNumber {
+
+        @Test
+        @TestTransaction
+        void removesTheNumber() {
+            Player carmela = playerWithNumber("Carmela", 7);
+            resource.clearJerseyNumber(carmela.id);
+            assertNull(Player.<Player>findById(carmela.id).jerseyNumber);
+        }
+
+        @Test
+        @TestTransaction
+        void isANoOpWithoutNumber() {
+            Player carmela = playerWithNumber("Carmela", null);
+            assertEquals(204, resource.clearJerseyNumber(carmela.id).getStatus());
+            assertNull(Player.<Player>findById(carmela.id).jerseyNumber);
+        }
     }
 
     private static Player playerWithNumber(String name, Integer jerseyNumber) {

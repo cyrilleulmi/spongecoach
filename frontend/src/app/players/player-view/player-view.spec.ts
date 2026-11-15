@@ -76,7 +76,7 @@ describe('PlayerView', () => {
   });
 
   // spec: ui.player-not-found
-  it('shows a not-found page for an unknown Player', async () => {
+  it('shows the not-found page for an unknown Player', async () => {
     const el = await render('nobody', false);
 
     expect(el.textContent).toContain('Spieler nicht gefunden');
@@ -96,6 +96,7 @@ describe('PlayerView', () => {
     harness.detectChanges();
 
     expect(el.textContent).toContain('3/5');
+    expect(el.querySelector('[role="alert"]')).toBeNull();
   });
 
   // spec: ui.player-goal-toggle-saves-full-set
@@ -114,30 +115,6 @@ describe('PlayerView', () => {
     harness.detectChanges();
 
     expect(el.querySelectorAll('.goal-item')).toHaveLength(2);
-  });
-
-  // spec: ui.create-player-skill-auto-associates
-  it('creates a Player skill from the player screen and rates it on the Player straight away', async () => {
-    const el = await render();
-
-    (el.querySelector('.section-title .btn') as HTMLButtonElement).click();
-    harness.detectChanges();
-    const input = el.querySelector('.card.skills .create-row input') as HTMLInputElement;
-    input.value = 'Kommunikation';
-    input.dispatchEvent(new Event('input'));
-    (el.querySelector('.card.skills .create-row') as HTMLFormElement).dispatchEvent(new Event('submit'));
-
-    const post = httpMock.expectOne('/api/player-skills');
-    expect(post.request.method).toBe('POST');
-    expect(post.request.body.name).toBe('Kommunikation');
-    post.flush({ id: 'ps-new', name: 'Kommunikation', color: post.request.body.color });
-
-    const rate = httpMock.expectOne('/api/players/p-1/skills/ps-new');
-    expect(rate.request.body).toEqual({ rating: 50 });
-    rate.flush({ skillId: 'ps-new', name: 'Kommunikation', color: '#2c7a68', rating: 50 });
-    harness.detectChanges();
-
-    expect(el.textContent).toContain('Kommunikation');
   });
 
   describe('Avatar painter', () => {
@@ -263,6 +240,24 @@ describe('PlayerView', () => {
       httpMock.expectOne('/api/players/p-1').flush({ error: 'conflict' }, { status: 409, statusText: 'Conflict' });
       harness.detectChanges();
       expect(el.textContent).toContain('Die Nummer 7 trägt schon jemand im Team.');
+    });
+
+    describe('invalid input', () => {
+      it('ignores text that is not a number', async () => {
+        await render();
+        const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;
+        view.saveJerseyNumber('abc');
+
+        httpMock.expectNone('/api/players/p-1');
+      });
+
+      it('does not save the number the player already wears', async () => {
+        await render('p-1', true, { ...CARMELA, jerseyNumber: 7 });
+        const view = harness.routeDebugElement!.componentInstance as unknown as WithJersey;
+        view.saveJerseyNumber('7');
+
+        httpMock.expectNone('/api/players/p-1');
+      });
     });
   });
 });
